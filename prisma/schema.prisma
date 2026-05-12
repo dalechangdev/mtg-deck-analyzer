@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Canonical card identity — one row per unique card (oracle_id from Scryfall)
+model Card {
+  id               String   @id // Scryfall oracle_id
+  name             String
+  manaCost         String?
+  cmc              Float
+  typeLine         String
+  oracleText       String?
+  colors           String[]
+  colorIdentity    String[] // WUBRG subset — drives Commander legality checks
+  keywords         String[]
+  power            String?
+  toughness        String?
+  loyalty          String?
+  isCommanderLegal Boolean  @default(false)
+  canBeCommander   Boolean  @default(false) // legendary creature or designated planeswalker
+
+  printings CardPrinting[]
+  faces     CardFace[]
+  deckCards DeckCard[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([colorIdentity])
+}
+
+// Double-faced cards, adventure cards, split cards, etc.
+model CardFace {
+  id         String  @id @default(cuid())
+  cardId     String
+  card       Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  faceIndex  Int
+  name       String
+  manaCost   String?
+  typeLine   String
+  oracleText String?
+  power      String?
+  toughness  String?
+  loyalty    String?
+  imageUri   String?
+
+  @@index([cardId])
+}
+
+// One row per Scryfall card id — same card printed in many sets
+model CardPrinting {
+  id              String  @id // Scryfall card id (uuid)
+  cardId          String
+  card            Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  setCode         String
+  setName         String
+  rarity          String
+  collectorNumber String
+  imageUris       Json?   // { small, normal, large, png, art_crop, border_crop }
+  scryfallUri     String?
+
+  @@index([cardId])
+  @@index([setCode])
+}
+
+model Deck {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  cards       DeckCard[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DeckCard {
+  id          String  @id @default(cuid())
+  deckId      String
+  deck        Deck    @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  cardId      String
+  card        Card    @relation(fields: [cardId], references: [id])
+  quantity    Int     @default(1)
+  isCommander Boolean @default(false)
+
+  @@unique([deckId, cardId])
+  @@index([deckId])
+}
