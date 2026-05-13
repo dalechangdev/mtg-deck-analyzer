@@ -16,6 +16,7 @@ interface Props {
   initialEntries: DeckEntry[];
   initialDescription: string;
   initialThemes: string[];
+  initialMaybeboardName: string;
 }
 
 export function DeckBuilder({
@@ -24,17 +25,20 @@ export function DeckBuilder({
   initialEntries,
   initialDescription,
   initialThemes,
+  initialMaybeboardName,
 }: Props) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [entries, setEntries] = useState<DeckEntry[]>(initialEntries);
   const [description, setDescription] = useState(initialDescription);
   const [themes, setThemes] = useState<string[]>(initialThemes);
+  const [maybeboardName, setMaybeboardName] = useState(initialMaybeboardName);
   const [themeInput, setThemeInput] = useState("");
   const [showStrategy, setShowStrategy] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const nameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const descDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maybeNameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const commander = entries.find((e) => e.isCommander);
   const validation = validateDeck(entries);
@@ -73,6 +77,19 @@ export function DeckBuilder({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: val }),
+      });
+    }, 800);
+  }
+
+  // --- Maybeboard name save (debounced) ---
+  function handleMaybeboardNameChange(val: string) {
+    setMaybeboardName(val);
+    clearTimeout(maybeNameDebounceRef.current ?? undefined);
+    maybeNameDebounceRef.current = setTimeout(() => {
+      fetch(`/api/decks/${deckId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maybeboardName: val || null }),
       });
     }, 800);
   }
@@ -351,6 +368,8 @@ export function DeckBuilder({
             onRemove={removeCard}
             onSetCommander={setCommander}
             onMoveCard={moveCard}
+            maybeboardName={maybeboardName}
+            onMaybeboardNameChange={handleMaybeboardNameChange}
           />
         </div>
       </div>

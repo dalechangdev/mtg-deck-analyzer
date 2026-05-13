@@ -54,6 +54,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       initialEntries={entries}
       initialDescription={deck.description ?? ""}
       initialThemes={deck.themes}
+      initialMaybeboardName={deck.maybeboardName ?? ""}
     />
   );
 }

@@ -8,9 +8,11 @@ interface Props {
   onRemove: (deckCardId: string) => void;
   onSetCommander: (deckCardId: string) => void;
   onMoveCard: (deckCardId: string, slot: "main" | "maybe") => void;
+  maybeboardName: string;
+  onMaybeboardNameChange: (val: string) => void;
 }
 
-export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard }: Props) {
+export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybeboardName, onMaybeboardNameChange }: Props) {
   const validation = validateDeck(entries);
   const commander = entries.find((e) => e.isCommander);
   const mainCards = entries.filter((e) => !e.isCommander && e.slot === "main");
@@ -93,8 +95,16 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard }: Pro
         {/* Maybeboard */}
         {maybeCards.length > 0 && (
           <section className="border-b border-border">
-            <div className="px-3 py-1.5 text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider bg-amber-950/20 sticky top-0">
-              Maybeboard ({maybeCards.reduce((sum, e) => sum + e.quantity, 0)})
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-950/20 sticky top-0">
+              <input
+                value={maybeboardName}
+                onChange={(e) => onMaybeboardNameChange(e.target.value)}
+                placeholder="Maybeboard"
+                className="flex-1 text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider bg-transparent focus:outline-none placeholder:text-amber-500/40 min-w-0"
+              />
+              <span className="text-[11px] text-amber-500/60 flex-shrink-0">
+                ({maybeCards.reduce((sum, e) => sum + e.quantity, 0)})
+              </span>
             </div>
             {maybeCards.map((entry) => (
               <CardRow

@@ -66,6 +66,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     name: deck.name,
     description: deck.description,
     themes: deck.themes,
+    maybeboardName: deck.maybeboardName,
     entries: deck.cards.map(toEntry),
   });
 }
@@ -80,6 +81,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
   if (body.description !== undefined) data.description = body.description ?? null;
   if (body.themes !== undefined) data.themes = body.themes;
+  if (body.maybeboardName !== undefined) data.maybeboardName = body.maybeboardName ?? null;
   if (Object.keys(data).length === 0) return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   const deck = await prisma.deck.update({ where: { id }, data });
   return NextResponse.json({ id: deck.id, name: deck.name, description: deck.description, themes: deck.themes });

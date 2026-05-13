@@ -70,11 +70,12 @@ model CardPrinting {
 }
 
 model Deck {
-  id          String     @id @default(cuid())
-  name        String
-  description String?
-  themes      String[]
-  cards       DeckCard[]
+  id            String     @id @default(cuid())
+  name          String
+  description   String?
+  themes        String[]
+  maybeboardName String?
+  cards         DeckCard[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
