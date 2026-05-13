@@ -12,7 +12,12 @@ export async function GET(req: Request) {
   const where = {
     isCommanderLegal: true,
     ...(q && { name: { contains: q, mode: "insensitive" as const } }),
-    ...(colors.length > 0 && { colorIdentity: { hasSome: colors } }),
+    ...(colors.length > 0 && {
+      OR: [
+        { colorIdentity: { hasSome: colors } },
+        { colorIdentity: { equals: [] } },
+      ],
+    }),
     ...(commanderOnly && { canBeCommander: true }),
   };
 
