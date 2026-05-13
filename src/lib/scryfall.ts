@@ -66,7 +66,7 @@ export async function searchCards(query: string, page = 1): Promise<{ data: Scry
 }
 
 export function canBeCommander(card: ScryfallCard): boolean {
-  const type = card.type_line.toLowerCase();
+  const type = card.type_line?.toLowerCase() ?? "";
   if (type.includes("legendary") && type.includes("creature")) return true;
   if (card.oracle_text?.toLowerCase().includes("can be your commander")) return true;
   return false;
