@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import type { CardData, DeckEntry } from "@/lib/commander";
-import { isColorSubset } from "@/lib/commander";
+import { isColorSubset, isBasicLand } from "@/lib/commander";
 
 interface Props {
   commanderColorIdentity: string[];
@@ -29,6 +29,7 @@ export function SearchPanel({ commanderColorIdentity, entries, onAdd }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const inDeckIds = new Set(entries.map((e) => e.cardId));
+
 
   useEffect(() => {
     clearTimeout(debounceRef.current ?? undefined);
@@ -94,7 +95,7 @@ export function SearchPanel({ commanderColorIdentity, entries, onAdd }: Props) {
           <div className="p-4 text-xs text-muted-foreground">No results</div>
         )}
         {results.map((card) => {
-          const alreadyIn = inDeckIds.has(card.cardId);
+          const alreadyIn = !isBasicLand(card.typeLine) && inDeckIds.has(card.cardId);
           const colorIllegal =
             commanderColorIdentity.length > 0 &&
             !isColorSubset(card.colorIdentity, commanderColorIdentity);

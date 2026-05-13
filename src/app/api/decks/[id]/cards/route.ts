@@ -12,12 +12,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!card) return NextResponse.json({ error: "Card not found" }, { status: 404 });
 
   const isBasic = card.typeLine.toLowerCase().includes("basic land");
-  if (!isBasic) {
-    const existing = await prisma.deckCard.findUnique({
-      where: { deckId_cardId: { deckId, cardId } },
-    });
-    if (existing) return NextResponse.json({ error: "Card already in deck" }, { status: 409 });
-  }
 
   // Only one commander allowed
   if (isCommander) {
@@ -27,9 +21,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
   }
 
-  const deckCard = await prisma.deckCard.create({
-    data: { deckId, cardId, isCommander, quantity: 1 },
-  });
+  let deckCard;
+  if (isBasic) {
+    deckCard = await prisma.deckCard.upsert({
+      where: { deckId_cardId: { deckId, cardId } },
+      create: { deckId, cardId, isCommander: false, quantity: 1 },
+      update: { quantity: { increment: 1 } },
+    });
+  } else {
+    const existing = await prisma.deckCard.findUnique({
+      where: { deckId_cardId: { deckId, cardId } },
+    });
+    if (existing) return NextResponse.json({ error: "Card already in deck" }, { status: 409 });
+    deckCard = await prisma.deckCard.create({
+      data: { deckId, cardId, isCommander, quantity: 1 },
+    });
+  }
 
   return NextResponse.json({ id: deckCard.id }, { status: 201 });
 }

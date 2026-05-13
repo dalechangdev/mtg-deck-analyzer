@@ -6,6 +6,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; deckCardId: string }> }
 ) {
   const { deckCardId } = await params;
-  await prisma.deckCard.delete({ where: { id: deckCardId } });
+  const updated = await prisma.deckCard.update({
+    where: { id: deckCardId },
+    data: { quantity: { decrement: 1 } },
+  });
+  if (updated.quantity <= 0) {
+    await prisma.deckCard.delete({ where: { id: deckCardId } });
+  }
   return new NextResponse(null, { status: 204 });
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 function toEntry(dc: {
   id: string;
   isCommander: boolean;
+  quantity: number;
   card: {
     id: string;
     name: string;
@@ -23,6 +24,7 @@ function toEntry(dc: {
   return {
     deckCardId: dc.id,
     isCommander: dc.isCommander,
+    quantity: dc.quantity,
     cardId: dc.card.id,
     name: dc.card.name,
     manaCost: dc.card.manaCost,

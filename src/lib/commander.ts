@@ -12,6 +12,7 @@ export type CardData = {
 export type DeckEntry = CardData & {
   deckCardId: string;
   isCommander: boolean;
+  quantity: number;
 };
 
 export type DeckValidation = {
@@ -53,7 +54,7 @@ export function validateDeck(entries: DeckEntry[]): DeckValidation {
   }
 
   return {
-    cardCount: entries.length,
+    cardCount: entries.reduce((sum, e) => sum + e.quantity, 0),
     commanderSet: !!commander,
     colorViolations,
     duplicates,

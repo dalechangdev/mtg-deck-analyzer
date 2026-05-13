@@ -33,6 +33,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
     return {
       deckCardId: dc.id,
       isCommander: dc.isCommander,
+      quantity: dc.quantity,
       cardId: dc.card.id,
       name: dc.card.name,
       manaCost: dc.card.manaCost,

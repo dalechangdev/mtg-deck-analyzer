@@ -65,7 +65,7 @@ export function DeckPanel({ entries, onRemove, onSetCommander }: Props) {
           return (
             <section key={cat} className="border-b border-border">
               <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30 sticky top-0">
-                {cat} ({cards.length})
+                {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
               </div>
               {cards.map((entry) => (
                 <CardRow
@@ -110,6 +110,9 @@ function CardRow({
       <div className="flex-1 min-w-0">
         <span className={`text-xs truncate block ${isViolation ? "text-red-400" : ""}`}>
           {isViolation && <span className="mr-1">⚠</span>}
+          {entry.quantity > 1 && (
+            <span className="text-muted-foreground mr-1">{entry.quantity}×</span>
+          )}
           {entry.name}
         </span>
         {entry.manaCost && (

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SearchPanel } from "./search-panel";
 import { DeckPanel } from "./deck-panel";
 import { Input } from "@/components/ui/input";
-import { validateDeck } from "@/lib/commander";
+import { validateDeck, isBasicLand } from "@/lib/commander";
 import type { CardData, DeckEntry } from "@/lib/commander";
 
 interface Props {
@@ -47,8 +47,26 @@ export function DeckBuilder({ deckId, initialName, initialEntries }: Props) {
   // --- Add card ---
   const addCard = useCallback(
     async (card: CardData) => {
+      const existing = entries.find((e) => e.cardId === card.cardId);
+      if (isBasicLand(card.typeLine) && existing) {
+        setEntries((prev) =>
+          prev.map((e) => (e.cardId === card.cardId ? { ...e, quantity: e.quantity + 1 } : e))
+        );
+        const res = await fetch(`/api/decks/${deckId}/cards`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cardId: card.cardId }),
+        });
+        if (!res.ok) {
+          setEntries((prev) =>
+            prev.map((e) => (e.cardId === card.cardId ? { ...e, quantity: e.quantity - 1 } : e))
+          );
+        }
+        return;
+      }
+
       const tempId = `temp-${Date.now()}-${Math.random()}`;
-      const optimistic: DeckEntry = { ...card, deckCardId: tempId, isCommander: false };
+      const optimistic: DeckEntry = { ...card, deckCardId: tempId, isCommander: false, quantity: 1 };
       setEntries((prev) => [...prev, optimistic]);
 
       const res = await fetch(`/api/decks/${deckId}/cards`, {
@@ -67,16 +85,23 @@ export function DeckBuilder({ deckId, initialName, initialEntries }: Props) {
         prev.map((e) => (e.deckCardId === tempId ? { ...e, deckCardId: realId } : e))
       );
     },
-    [deckId]
+    [deckId, entries]
   );
 
   // --- Remove card ---
   const removeCard = useCallback(
     async (deckCardId: string) => {
-      setEntries((prev) => prev.filter((e) => e.deckCardId !== deckCardId));
+      const entry = entries.find((e) => e.deckCardId === deckCardId);
+      if (entry && isBasicLand(entry.typeLine) && entry.quantity > 1) {
+        setEntries((prev) =>
+          prev.map((e) => (e.deckCardId === deckCardId ? { ...e, quantity: e.quantity - 1 } : e))
+        );
+      } else {
+        setEntries((prev) => prev.filter((e) => e.deckCardId !== deckCardId));
+      }
       await fetch(`/api/decks/${deckId}/cards/${deckCardId}`, { method: "DELETE" });
     },
-    [deckId]
+    [deckId, entries]
   );
 
   // --- Set commander ---
