@@ -62,7 +62,7 @@ async function run() {
                 setName: card.set_name,
                 rarity: card.rarity,
                 collectorNumber: card.collector_number,
-                imageUris: card.image_uris ?? null,
+                imageUris: card.image_uris as Record<string, string> | undefined,
                 scryfallUri: card.scryfall_uri,
               },
             },
