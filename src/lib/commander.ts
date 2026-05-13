@@ -5,6 +5,7 @@ export type CardData = {
   typeLine: string;
   oracleText: string | null;
   colorIdentity: string[];
+  keywords: string[];
   canBeCommander: boolean;
   imageUrl: string | null;
 };
@@ -13,6 +14,7 @@ export type DeckEntry = CardData & {
   deckCardId: string;
   isCommander: boolean;
   quantity: number;
+  slot: "main" | "maybe";
 };
 
 export type DeckValidation = {
@@ -36,7 +38,7 @@ export function isColorSubset(cardIdentity: string[], commanderIdentity: string[
 
 export function validateDeck(entries: DeckEntry[]): DeckValidation {
   const commander = entries.find((e) => e.isCommander);
-  const nonCommander = entries.filter((e) => !e.isCommander);
+  const nonCommander = entries.filter((e) => !e.isCommander && e.slot === "main");
 
   const colorViolations: string[] = [];
   const duplicates: string[] = [];

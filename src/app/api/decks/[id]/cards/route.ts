@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: deckId } = await params;
-  const { cardId, isCommander = false } = await req.json();
+  const { cardId, isCommander = false, slot = "main" } = await req.json();
 
   if (!cardId) return NextResponse.json({ error: "cardId required" }, { status: 400 });
 
@@ -25,7 +25,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (isBasic) {
     deckCard = await prisma.deckCard.upsert({
       where: { deckId_cardId: { deckId, cardId } },
-      create: { deckId, cardId, isCommander: false, quantity: 1 },
+      create: { deckId, cardId, isCommander: false, quantity: 1, slot },
       update: { quantity: { increment: 1 } },
     });
   } else {
@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
     if (existing) return NextResponse.json({ error: "Card already in deck" }, { status: 409 });
     deckCard = await prisma.deckCard.create({
-      data: { deckId, cardId, isCommander, quantity: 1 },
+      data: { deckId, cardId, isCommander, quantity: 1, slot },
     });
   }
 

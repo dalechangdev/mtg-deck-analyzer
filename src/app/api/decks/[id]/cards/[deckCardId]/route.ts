@@ -1,6 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string; deckCardId: string }> }
+) {
+  const { deckCardId } = await params;
+  const { slot } = await req.json();
+  if (slot !== "main" && slot !== "maybe") {
+    return NextResponse.json({ error: "slot must be 'main' or 'maybe'" }, { status: 400 });
+  }
+  const updated = await prisma.deckCard.update({
+    where: { id: deckCardId },
+    data: { slot },
+  });
+  return NextResponse.json({ id: updated.id, slot: updated.slot });
+}
+
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string; deckCardId: string }> }

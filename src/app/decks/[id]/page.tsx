@@ -34,16 +34,26 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       deckCardId: dc.id,
       isCommander: dc.isCommander,
       quantity: dc.quantity,
+      slot: (dc.slot ?? "main") as "main" | "maybe",
       cardId: dc.card.id,
       name: dc.card.name,
       manaCost: dc.card.manaCost,
       typeLine: dc.card.typeLine,
       oracleText: dc.card.oracleText,
       colorIdentity: dc.card.colorIdentity,
+      keywords: dc.card.keywords,
       canBeCommander: dc.card.canBeCommander,
       imageUrl,
     };
   });
 
-  return <DeckBuilder deckId={id} initialName={deck.name} initialEntries={entries} />;
+  return (
+    <DeckBuilder
+      deckId={id}
+      initialName={deck.name}
+      initialEntries={entries}
+      initialDescription={deck.description ?? ""}
+      initialThemes={deck.themes}
+    />
+  );
 }

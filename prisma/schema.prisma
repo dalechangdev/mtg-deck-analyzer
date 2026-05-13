@@ -73,6 +73,7 @@ model Deck {
   id          String     @id @default(cuid())
   name        String
   description String?
+  themes      String[]
   cards       DeckCard[]
 
   createdAt DateTime @default(now())
@@ -87,6 +88,7 @@ model DeckCard {
   card        Card    @relation(fields: [cardId], references: [id])
   quantity    Int     @default(1)
   isCommander Boolean @default(false)
+  slot        String  @default("main") // "main" | "maybe"
 
   @@unique([deckId, cardId])
   @@index([deckId])

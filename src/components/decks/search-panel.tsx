@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import type { CardData, DeckEntry } from "@/lib/commander";
 import { isColorSubset, isBasicLand } from "@/lib/commander";
+import { scoreCardSynergy, THEME_LABELS } from "@/lib/synergy";
+import type { SynergyTheme } from "@/lib/synergy";
 
 interface Props {
   commanderColorIdentity: string[];
+  commanderThemes: Set<SynergyTheme>;
   entries: DeckEntry[];
-  onAdd: (card: CardData) => void;
+  onAdd: (card: CardData, slot?: "main" | "maybe") => void;
 }
 
 const COLOR_LABELS: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
@@ -20,7 +23,21 @@ const COLOR_STYLE: Record<string, string> = {
   G: "bg-green-700 border-green-900 text-white",
 };
 
-export function SearchPanel({ commanderColorIdentity, entries, onAdd }: Props) {
+const SYNERGY_STYLE: Record<0 | 1 | 2 | 3, string> = {
+  0: "bg-muted/50 text-muted-foreground",
+  1: "bg-yellow-900/40 text-yellow-400",
+  2: "bg-green-900/40 text-green-400",
+  3: "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40",
+};
+
+const SYNERGY_LABEL: Record<0 | 1 | 2 | 3, string> = {
+  0: "–",
+  1: "↑",
+  2: "↑↑",
+  3: "↑↑↑",
+};
+
+export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, onAdd }: Props) {
   const [query, setQuery] = useState("");
   const [colors, setColors] = useState<string[]>(commanderColorIdentity);
   const [commanderOnly, setCommanderOnly] = useState(false);
@@ -28,8 +45,8 @@ export function SearchPanel({ commanderColorIdentity, entries, onAdd }: Props) {
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const inDeckIds = new Set(entries.map((e) => e.cardId));
-
+  const inMainIds = new Set(entries.filter((e) => e.slot === "main").map((e) => e.cardId));
+  const inMaybeIds = new Set(entries.filter((e) => e.slot === "maybe").map((e) => e.cardId));
 
   useEffect(() => {
     clearTimeout(debounceRef.current ?? undefined);
@@ -95,10 +112,18 @@ export function SearchPanel({ commanderColorIdentity, entries, onAdd }: Props) {
           <div className="p-4 text-xs text-muted-foreground">No results</div>
         )}
         {results.map((card) => {
-          const alreadyIn = !isBasicLand(card.typeLine) && inDeckIds.has(card.cardId);
+          const isBasic = isBasicLand(card.typeLine);
+          const inMain = inMainIds.has(card.cardId);
+          const inMaybe = inMaybeIds.has(card.cardId);
+          const alreadyInMain = !isBasic && inMain;
+          const alreadyInMaybe = !isBasic && inMaybe;
           const colorIllegal =
             commanderColorIdentity.length > 0 &&
             !isColorSubset(card.colorIdentity, commanderColorIdentity);
+
+          const synergy = commanderThemes.size > 0
+            ? scoreCardSynergy(card.oracleText, card.keywords, commanderThemes)
+            : null;
 
           return (
             <div
@@ -120,17 +145,51 @@ export function SearchPanel({ commanderColorIdentity, entries, onAdd }: Props) {
                   {card.typeLine}
                 </div>
               </div>
+
+              {/* Synergy badge */}
+              {synergy && synergy.score > 0 && (
+                <div
+                  title={synergy.matchedThemes.map((t) => THEME_LABELS[t]).join(", ")}
+                  className={`flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${SYNERGY_STYLE[synergy.score]}`}
+                >
+                  {SYNERGY_LABEL[synergy.score]}
+                </div>
+              )}
+
+              {/* Add to main */}
               <button
-                onClick={() => !alreadyIn && onAdd(card)}
-                disabled={alreadyIn}
-                title={alreadyIn ? "Already in deck" : colorIllegal ? "Color identity violation" : "Add to deck"}
+                onClick={() => !alreadyInMain && onAdd(card, "main")}
+                disabled={alreadyInMain}
+                title={
+                  alreadyInMain ? "Already in deck" :
+                  colorIllegal ? "Color identity violation" :
+                  inMain ? "Add another" : "Add to deck"
+                }
                 className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                  alreadyIn
+                  alreadyInMain
                     ? "bg-muted text-muted-foreground cursor-default"
                     : "bg-primary/20 hover:bg-primary text-primary hover:text-primary-foreground"
                 }`}
               >
-                {alreadyIn ? "✓" : "+"}
+                {alreadyInMain ? "✓" : "+"}
+              </button>
+
+              {/* Add to maybeboard */}
+              <button
+                onClick={() => !alreadyInMaybe && onAdd(card, "maybe")}
+                disabled={alreadyInMaybe || alreadyInMain}
+                title={
+                  alreadyInMain ? "Already in main deck" :
+                  alreadyInMaybe ? "Already in maybeboard" :
+                  "Add to maybeboard"
+                }
+                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors ${
+                  alreadyInMaybe || alreadyInMain
+                    ? "border-border text-muted-foreground cursor-default opacity-40"
+                    : "border-border text-muted-foreground hover:border-amber-500 hover:text-amber-400"
+                }`}
+              >
+                ?
               </button>
             </div>
           );

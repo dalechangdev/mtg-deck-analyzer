@@ -43,6 +43,7 @@ export async function GET(req: Request) {
       typeLine: card.typeLine,
       oracleText: card.oracleText,
       colorIdentity: card.colorIdentity,
+      keywords: card.keywords,
       canBeCommander: card.canBeCommander,
       imageUrl,
     };
