@@ -40,6 +40,7 @@ export async function GET(req: Request) {
       cardId: card.id,
       name: card.name,
       manaCost: card.manaCost,
+      cmc: card.cmc,
       typeLine: card.typeLine,
       oracleText: card.oracleText,
       colorIdentity: card.colorIdentity,

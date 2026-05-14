@@ -2,6 +2,7 @@ export type CardData = {
   cardId: string;
   name: string;
   manaCost: string | null;
+  cmc: number;
   typeLine: string;
   oracleText: string | null;
   colorIdentity: string[];

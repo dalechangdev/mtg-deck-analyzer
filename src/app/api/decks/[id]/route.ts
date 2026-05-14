@@ -10,6 +10,7 @@ function toEntry(dc: {
     id: string;
     name: string;
     manaCost: string | null;
+    cmc: number;
     typeLine: string;
     oracleText: string | null;
     colorIdentity: string[];
@@ -31,6 +32,7 @@ function toEntry(dc: {
     cardId: dc.card.id,
     name: dc.card.name,
     manaCost: dc.card.manaCost,
+    cmc: dc.card.cmc,
     typeLine: dc.card.typeLine,
     oracleText: dc.card.oracleText,
     colorIdentity: dc.card.colorIdentity,

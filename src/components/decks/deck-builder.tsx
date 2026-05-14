@@ -7,6 +7,7 @@ import { DeckPanel } from "./deck-panel";
 import { Input } from "@/components/ui/input";
 import { validateDeck, isBasicLand } from "@/lib/commander";
 import { extractThemes } from "@/lib/synergy";
+import { ManaCurve } from "./mana-curve";
 import type { CardData, DeckEntry } from "@/lib/commander";
 import type { SynergyTheme } from "@/lib/synergy";
 
@@ -308,6 +309,7 @@ export function DeckBuilder({
       {/* Strategy panel */}
       {showStrategy && (
         <div className="px-4 py-3 border-b border-border bg-muted/20 flex-shrink-0 space-y-3">
+          <ManaCurve entries={entries} />
           <div>
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
               Objectives

@@ -38,6 +38,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       cardId: dc.card.id,
       name: dc.card.name,
       manaCost: dc.card.manaCost,
+      cmc: dc.card.cmc,
       typeLine: dc.card.typeLine,
       oracleText: dc.card.oracleText,
       colorIdentity: dc.card.colorIdentity,
