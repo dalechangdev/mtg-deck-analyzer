@@ -53,7 +53,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       initialName={deck.name}
       initialEntries={entries}
       initialDescription={deck.description ?? ""}
-      initialThemes={deck.themes}
+      initialThemes={deck.themes ?? []}
       initialMaybeboardName={deck.maybeboardName ?? ""}
     />
   );

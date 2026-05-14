@@ -31,7 +31,7 @@ export function DeckBuilder({
   const [name, setName] = useState(initialName);
   const [entries, setEntries] = useState<DeckEntry[]>(initialEntries);
   const [description, setDescription] = useState(initialDescription);
-  const [themes, setThemes] = useState<string[]>(initialThemes);
+  const [themes, setThemes] = useState<string[]>(initialThemes ?? []);
   const [maybeboardName, setMaybeboardName] = useState(initialMaybeboardName);
   const [themeInput, setThemeInput] = useState("");
   const [showStrategy, setShowStrategy] = useState(false);

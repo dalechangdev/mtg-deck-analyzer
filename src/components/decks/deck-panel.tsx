@@ -23,9 +23,11 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
     return acc;
   }, {} as Record<string, DeckEntry[]>);
 
+  const hasMaybe = maybeCards.length > 0;
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Validation bar */}
+      {/* Validation bar — spans full width */}
       {(validation.colorViolations.length > 0 || validation.duplicates.length > 0) && (
         <div className="px-3 py-2 border-b border-border flex-shrink-0 space-y-1">
           {validation.colorViolations.length > 0 && (
@@ -43,59 +45,67 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Commander section */}
-        {commander ? (
-          <section className="border-b border-border">
-            <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30">
-              Commander
-            </div>
-            <CardRow
-              entry={commander}
-              onRemove={onRemove}
-              isViolation={false}
-              showCommanderToggle={false}
-              onSetCommander={onSetCommander}
-              onMoveCard={onMoveCard}
-            />
-          </section>
-        ) : (
-          <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border">
-            No commander set — right-click a card to set it.
-          </div>
-        )}
+      {/* Two-column area */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
 
-        {/* Main deck categories */}
-        {CATEGORY_ORDER.map((cat) => {
-          const cards = grouped[cat];
-          if (!cards || cards.length === 0) return null;
-          return (
-            <section key={cat} className="border-b border-border">
-              <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30 sticky top-0">
-                {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
-              </div>
-              {cards.map((entry) => (
+        {/* ── Main deck column ── */}
+        <div className={`flex flex-col overflow-hidden min-w-0 ${hasMaybe ? "flex-1 border-r border-border" : "flex-1"}`}>
+          <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30 border-b border-border flex-shrink-0">
+            Main Deck ({validation.cardCount})
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {commander ? (
+              <section className="border-b border-border">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20">
+                  Commander
+                </div>
                 <CardRow
-                  key={entry.deckCardId}
-                  entry={entry}
+                  entry={commander}
                   onRemove={onRemove}
-                  isViolation={
-                    validation.colorViolations.includes(entry.cardId) ||
-                    validation.duplicates.includes(entry.cardId)
-                  }
-                  showCommanderToggle={entry.canBeCommander && !commander}
+                  isViolation={false}
+                  showCommanderToggle={false}
                   onSetCommander={onSetCommander}
                   onMoveCard={onMoveCard}
                 />
-              ))}
-            </section>
-          );
-        })}
+              </section>
+            ) : (
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border">
+                No commander set — right-click a card to set it.
+              </div>
+            )}
 
-        {/* Maybeboard */}
-        {maybeCards.length > 0 && (
-          <section className="border-b border-border">
-            <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-950/20 sticky top-0">
+            {CATEGORY_ORDER.map((cat) => {
+              const cards = grouped[cat];
+              if (!cards || cards.length === 0) return null;
+              return (
+                <section key={cat} className="border-b border-border">
+                  <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0">
+                    {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
+                  </div>
+                  {cards.map((entry) => (
+                    <CardRow
+                      key={entry.deckCardId}
+                      entry={entry}
+                      onRemove={onRemove}
+                      isViolation={
+                        validation.colorViolations.includes(entry.cardId) ||
+                        validation.duplicates.includes(entry.cardId)
+                      }
+                      showCommanderToggle={entry.canBeCommander && !commander}
+                      onSetCommander={onSetCommander}
+                      onMoveCard={onMoveCard}
+                    />
+                  ))}
+                </section>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Maybeboard column ── */}
+        {hasMaybe && (
+          <div className="w-72 flex-shrink-0 flex flex-col overflow-hidden bg-amber-950/5">
+            <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-950/20 border-b border-amber-900/30 flex-shrink-0">
               <input
                 value={maybeboardName}
                 onChange={(e) => onMaybeboardNameChange(e.target.value)}
@@ -106,20 +116,23 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
                 ({maybeCards.reduce((sum, e) => sum + e.quantity, 0)})
               </span>
             </div>
-            {maybeCards.map((entry) => (
-              <CardRow
-                key={entry.deckCardId}
-                entry={entry}
-                onRemove={onRemove}
-                isViolation={false}
-                showCommanderToggle={false}
-                onSetCommander={onSetCommander}
-                onMoveCard={onMoveCard}
-                isMaybe
-              />
-            ))}
-          </section>
+            <div className="flex-1 overflow-y-auto">
+              {maybeCards.map((entry) => (
+                <CardRow
+                  key={entry.deckCardId}
+                  entry={entry}
+                  onRemove={onRemove}
+                  isViolation={false}
+                  showCommanderToggle={false}
+                  onSetCommander={onSetCommander}
+                  onMoveCard={onMoveCard}
+                  isMaybe
+                />
+              ))}
+            </div>
+          </div>
         )}
+
       </div>
     </div>
   );
