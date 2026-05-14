@@ -14,7 +14,7 @@ export type DeckEntry = CardData & {
   deckCardId: string;
   isCommander: boolean;
   quantity: number;
-  slot: "main" | "maybe";
+  slot: "main" | "maybe" | "wishlist";
 };
 
 export type DeckValidation = {

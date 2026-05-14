@@ -7,16 +7,19 @@ interface Props {
   entries: DeckEntry[];
   onRemove: (deckCardId: string) => void;
   onSetCommander: (deckCardId: string) => void;
-  onMoveCard: (deckCardId: string, slot: "main" | "maybe") => void;
+  onMoveCard: (deckCardId: string, slot: "main" | "maybe" | "wishlist") => void;
   maybeboardName: string;
   onMaybeboardNameChange: (val: string) => void;
+  wishlistName: string;
+  onWishlistNameChange: (val: string) => void;
 }
 
-export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybeboardName, onMaybeboardNameChange }: Props) {
+export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
   const validation = validateDeck(entries);
   const commander = entries.find((e) => e.isCommander);
   const mainCards = entries.filter((e) => !e.isCommander && e.slot === "main");
   const maybeCards = entries.filter((e) => e.slot === "maybe");
+  const wishlistCards = entries.filter((e) => e.slot === "wishlist");
 
   const grouped = CATEGORY_ORDER.reduce<Record<string, DeckEntry[]>>((acc, cat) => {
     acc[cat] = mainCards.filter((e) => getCardCategory(e.typeLine) === cat);
@@ -24,6 +27,8 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
   }, {} as Record<string, DeckEntry[]>);
 
   const hasMaybe = maybeCards.length > 0;
+  const hasWishlist = wishlistCards.length > 0;
+  const hasSideColumn = hasMaybe || hasWishlist;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -49,7 +54,7 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
       <div className="flex-1 flex overflow-hidden min-h-0">
 
         {/* ── Main deck column ── */}
-        <div className={`flex flex-col overflow-hidden min-w-0 ${hasMaybe ? "flex-1 border-r border-border" : "flex-1"}`}>
+        <div className={`flex flex-col overflow-hidden min-w-0 ${hasSideColumn ? "flex-1 border-r border-border" : "flex-1"}`}>
           <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30 border-b border-border flex-shrink-0">
             Main Deck ({validation.cardCount})
           </div>
@@ -102,34 +107,68 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
           </div>
         </div>
 
-        {/* ── Maybeboard column ── */}
-        {hasMaybe && (
-          <div className="w-72 flex-shrink-0 flex flex-col overflow-hidden bg-amber-950/5">
-            <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-950/20 border-b border-amber-900/30 flex-shrink-0">
-              <input
-                value={maybeboardName}
-                onChange={(e) => onMaybeboardNameChange(e.target.value)}
-                placeholder="Maybeboard"
-                className="flex-1 text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider bg-transparent focus:outline-none placeholder:text-amber-500/40 min-w-0"
-              />
-              <span className="text-[11px] text-amber-500/60 flex-shrink-0">
-                ({maybeCards.reduce((sum, e) => sum + e.quantity, 0)})
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {maybeCards.map((entry) => (
-                <CardRow
-                  key={entry.deckCardId}
-                  entry={entry}
-                  onRemove={onRemove}
-                  isViolation={false}
-                  showCommanderToggle={false}
-                  onSetCommander={onSetCommander}
-                  onMoveCard={onMoveCard}
-                  isMaybe
+        {/* ── Side column: maybeboard (top half) + wishlist (bottom half) ── */}
+        {hasSideColumn && (
+          <div className="w-72 flex-shrink-0 flex flex-col overflow-hidden">
+
+            {/* Maybeboard — top half */}
+            <div className={`flex flex-col overflow-hidden bg-amber-950/5 ${hasMaybe && hasWishlist ? "flex-1 border-b border-amber-900/30" : hasMaybe ? "flex-1" : "hidden"}`}>
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-950/20 border-b border-amber-900/30 flex-shrink-0">
+                <input
+                  value={maybeboardName}
+                  onChange={(e) => onMaybeboardNameChange(e.target.value)}
+                  placeholder="Maybeboard"
+                  className="flex-1 text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider bg-transparent focus:outline-none placeholder:text-amber-500/40 min-w-0"
                 />
-              ))}
+                <span className="text-[11px] text-amber-500/60 flex-shrink-0">
+                  ({maybeCards.reduce((sum, e) => sum + e.quantity, 0)})
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {maybeCards.map((entry) => (
+                  <CardRow
+                    key={entry.deckCardId}
+                    entry={entry}
+                    onRemove={onRemove}
+                    isViolation={false}
+                    showCommanderToggle={false}
+                    onSetCommander={onSetCommander}
+                    onMoveCard={onMoveCard}
+                    isMaybe
+                  />
+                ))}
+              </div>
             </div>
+
+            {/* Wishlist — bottom half */}
+            <div className={`flex flex-col overflow-hidden bg-purple-950/5 ${hasWishlist ? "flex-1" : "hidden"}`}>
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-purple-950/20 border-b border-purple-900/30 flex-shrink-0">
+                <input
+                  value={wishlistName}
+                  onChange={(e) => onWishlistNameChange(e.target.value)}
+                  placeholder="Wishlist"
+                  className="flex-1 text-[11px] font-semibold text-purple-400/80 uppercase tracking-wider bg-transparent focus:outline-none placeholder:text-purple-400/40 min-w-0"
+                />
+                <span className="text-[11px] text-purple-400/60 flex-shrink-0">
+                  ({wishlistCards.reduce((sum, e) => sum + e.quantity, 0)})
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {wishlistCards.map((entry) => (
+                  <CardRow
+                    key={entry.deckCardId}
+                    entry={entry}
+                    onRemove={onRemove}
+                    isViolation={false}
+                    showCommanderToggle={false}
+                    onSetCommander={onSetCommander}
+                    onMoveCard={onMoveCard}
+                    isWishlist
+                  />
+                ))}
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -146,23 +185,25 @@ function CardRow({
   onSetCommander,
   onMoveCard,
   isMaybe = false,
+  isWishlist = false,
 }: {
   entry: DeckEntry;
   onRemove: (id: string) => void;
   isViolation: boolean;
   showCommanderToggle: boolean;
   onSetCommander: (id: string) => void;
-  onMoveCard: (id: string, slot: "main" | "maybe") => void;
+  onMoveCard: (id: string, slot: "main" | "maybe" | "wishlist") => void;
   isMaybe?: boolean;
+  isWishlist?: boolean;
 }) {
+  const isSide = isMaybe || isWishlist;
+  const textColor = isViolation ? "text-red-400" : isMaybe ? "text-amber-400/80" : isWishlist ? "text-purple-400/80" : "";
+  const rowBg = isViolation ? "bg-red-950/20" : isMaybe ? "bg-amber-950/10" : isWishlist ? "bg-purple-950/10" : "";
+
   return (
-    <div
-      className={`group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 ${
-        isViolation ? "bg-red-950/20" : isMaybe ? "bg-amber-950/10" : ""
-      }`}
-    >
+    <div className={`group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 ${rowBg}`}>
       <div className="flex-1 min-w-0">
-        <span className={`text-xs truncate block ${isViolation ? "text-red-400" : isMaybe ? "text-amber-400/80" : ""}`}>
+        <span className={`text-xs truncate block ${textColor}`}>
           {isViolation && <span className="mr-1">⚠</span>}
           {entry.quantity > 1 && (
             <span className="text-muted-foreground mr-1">{entry.quantity}×</span>
@@ -183,7 +224,7 @@ function CardRow({
             ★
           </button>
         )}
-        {isMaybe ? (
+        {isSide ? (
           <button
             onClick={() => onMoveCard(entry.deckCardId, "main")}
             title="Move to main deck"

@@ -17,6 +17,7 @@ interface Props {
   initialDescription: string;
   initialThemes: string[];
   initialMaybeboardName: string;
+  initialWishlistName: string;
 }
 
 export function DeckBuilder({
@@ -26,6 +27,7 @@ export function DeckBuilder({
   initialDescription,
   initialThemes,
   initialMaybeboardName,
+  initialWishlistName,
 }: Props) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -33,12 +35,14 @@ export function DeckBuilder({
   const [description, setDescription] = useState(initialDescription);
   const [themes, setThemes] = useState<string[]>(initialThemes ?? []);
   const [maybeboardName, setMaybeboardName] = useState(initialMaybeboardName);
+  const [wishlistName, setWishlistName] = useState(initialWishlistName);
   const [themeInput, setThemeInput] = useState("");
   const [showStrategy, setShowStrategy] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const nameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const descDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const maybeNameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wishlistNameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const commander = entries.find((e) => e.isCommander);
   const validation = validateDeck(entries);
@@ -94,6 +98,19 @@ export function DeckBuilder({
     }, 800);
   }
 
+  // --- Wishlist name save (debounced) ---
+  function handleWishlistNameChange(val: string) {
+    setWishlistName(val);
+    clearTimeout(wishlistNameDebounceRef.current ?? undefined);
+    wishlistNameDebounceRef.current = setTimeout(() => {
+      fetch(`/api/decks/${deckId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wishlistName: val || null }),
+      });
+    }, 800);
+  }
+
   // --- Themes ---
   function addTheme(theme: string) {
     const trimmed = theme.trim();
@@ -119,7 +136,7 @@ export function DeckBuilder({
 
   // --- Add card ---
   const addCard = useCallback(
-    async (card: CardData, slot: "main" | "maybe" = "main") => {
+    async (card: CardData, slot: "main" | "maybe" | "wishlist" = "main") => {
       const existing = entries.find((e) => e.cardId === card.cardId);
       if (isBasicLand(card.typeLine) && existing) {
         setEntries((prev) =>
@@ -185,7 +202,7 @@ export function DeckBuilder({
 
   // --- Move card between slots ---
   const moveCard = useCallback(
-    async (deckCardId: string, slot: "main" | "maybe") => {
+    async (deckCardId: string, slot: "main" | "maybe" | "wishlist") => {
       setEntries((prev) =>
         prev.map((e) => (e.deckCardId === deckCardId ? { ...e, slot } : e))
       );
@@ -361,6 +378,8 @@ export function DeckBuilder({
             Deck ({entries.filter((e) => e.slot === "main").reduce((s, e) => s + e.quantity, 0)} main
             {entries.some((e) => e.slot === "maybe") &&
               ` · ${entries.filter((e) => e.slot === "maybe").reduce((s, e) => s + e.quantity, 0)} maybe`}
+            {entries.some((e) => e.slot === "wishlist") &&
+              ` · ${entries.filter((e) => e.slot === "wishlist").reduce((s, e) => s + e.quantity, 0)} wishlist`}
             )
           </div>
           <DeckPanel
@@ -370,6 +389,8 @@ export function DeckBuilder({
             onMoveCard={moveCard}
             maybeboardName={maybeboardName}
             onMaybeboardNameChange={handleMaybeboardNameChange}
+            wishlistName={wishlistName}
+            onWishlistNameChange={handleWishlistNameChange}
           />
         </div>
       </div>

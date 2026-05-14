@@ -7,8 +7,8 @@ export async function PATCH(
 ) {
   const { deckCardId } = await params;
   const { slot } = await req.json();
-  if (slot !== "main" && slot !== "maybe") {
-    return NextResponse.json({ error: "slot must be 'main' or 'maybe'" }, { status: 400 });
+  if (slot !== "main" && slot !== "maybe" && slot !== "wishlist") {
+    return NextResponse.json({ error: "slot must be 'main', 'maybe', or 'wishlist'" }, { status: 400 });
   }
   const updated = await prisma.deckCard.update({
     where: { id: deckCardId },

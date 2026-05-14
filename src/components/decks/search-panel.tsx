@@ -11,7 +11,7 @@ interface Props {
   commanderColorIdentity: string[];
   commanderThemes: Set<SynergyTheme>;
   entries: DeckEntry[];
-  onAdd: (card: CardData, slot?: "main" | "maybe") => void;
+  onAdd: (card: CardData, slot?: "main" | "maybe" | "wishlist") => void;
 }
 
 const COLOR_LABELS: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
@@ -47,6 +47,7 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
 
   const inMainIds = new Set(entries.filter((e) => e.slot === "main").map((e) => e.cardId));
   const inMaybeIds = new Set(entries.filter((e) => e.slot === "maybe").map((e) => e.cardId));
+  const inWishlistIds = new Set(entries.filter((e) => e.slot === "wishlist").map((e) => e.cardId));
 
   useEffect(() => {
     clearTimeout(debounceRef.current ?? undefined);
@@ -115,8 +116,10 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
           const isBasic = isBasicLand(card.typeLine);
           const inMain = inMainIds.has(card.cardId);
           const inMaybe = inMaybeIds.has(card.cardId);
+          const inWishlist = inWishlistIds.has(card.cardId);
           const alreadyInMain = !isBasic && inMain;
           const alreadyInMaybe = !isBasic && inMaybe;
+          const alreadyInWishlist = !isBasic && inWishlist;
           const colorIllegal =
             commanderColorIdentity.length > 0 &&
             !isColorSubset(card.colorIdentity, commanderColorIdentity);
@@ -190,6 +193,24 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
                 }`}
               >
                 ?
+              </button>
+
+              {/* Add to wishlist */}
+              <button
+                onClick={() => !alreadyInWishlist && onAdd(card, "wishlist")}
+                disabled={alreadyInWishlist || alreadyInMain}
+                title={
+                  alreadyInMain ? "Already in main deck" :
+                  alreadyInWishlist ? "Already in wishlist" :
+                  "Add to wishlist"
+                }
+                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors ${
+                  alreadyInWishlist || alreadyInMain
+                    ? "border-border text-muted-foreground cursor-default opacity-40"
+                    : "border-border text-muted-foreground hover:border-purple-500 hover:text-purple-400"
+                }`}
+              >
+                ★
               </button>
             </div>
           );

@@ -34,7 +34,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       deckCardId: dc.id,
       isCommander: dc.isCommander,
       quantity: dc.quantity,
-      slot: (dc.slot ?? "main") as "main" | "maybe",
+      slot: (dc.slot ?? "main") as "main" | "maybe" | "wishlist",
       cardId: dc.card.id,
       name: dc.card.name,
       manaCost: dc.card.manaCost,
@@ -55,6 +55,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       initialDescription={deck.description ?? ""}
       initialThemes={deck.themes ?? []}
       initialMaybeboardName={deck.maybeboardName ?? ""}
+      initialWishlistName={deck.wishlistName ?? ""}
     />
   );
 }
