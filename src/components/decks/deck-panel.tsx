@@ -22,7 +22,9 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
   const wishlistCards = entries.filter((e) => e.slot === "wishlist");
 
   const grouped = CATEGORY_ORDER.reduce<Record<string, DeckEntry[]>>((acc, cat) => {
-    acc[cat] = mainCards.filter((e) => getCardCategory(e.typeLine) === cat);
+    acc[cat] = mainCards
+      .filter((e) => getCardCategory(e.typeLine) === cat)
+      .sort((a, b) => (a.cmc ?? 0) - (b.cmc ?? 0) || a.name.localeCompare(b.name));
     return acc;
   }, {} as Record<string, DeckEntry[]>);
 
