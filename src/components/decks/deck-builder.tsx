@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SearchPanel } from "./search-panel";
 import { DeckPanel } from "./deck-panel";
 import { Input } from "@/components/ui/input";
-import { validateDeck, isBasicLand } from "@/lib/commander";
+import { validateDeck, isBasicLand, isManaRamp } from "@/lib/commander";
 import { extractThemes } from "@/lib/synergy";
 import { ManaCurve } from "./mana-curve";
 import { CurveProbability } from "./curve-probability";
@@ -53,6 +53,14 @@ export function DeckBuilder({
     validation.commanderSet &&
     validation.colorViolations.length === 0 &&
     validation.duplicates.length === 0;
+
+  const rampCount = useMemo(
+    () =>
+      entries
+        .filter((e) => e.slot === "main" && !e.isCommander && isManaRamp(e))
+        .reduce((sum, e) => sum + e.quantity, 0),
+    [entries]
+  );
 
   const commanderThemes = useMemo<Set<SynergyTheme>>(() => {
     if (!commander) return new Set();
@@ -312,6 +320,15 @@ export function DeckBuilder({
         <div className="px-4 py-3 border-b border-border bg-muted/20 flex-shrink-0 space-y-3">
           <ManaCurve entries={entries} />
           <CurveProbability entries={entries} />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Mana Ramp
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              <span className="text-foreground font-medium">{rampCount}</span>{" "}
+              card{rampCount !== 1 ? "s" : ""}
+            </span>
+          </div>
           <div>
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
               Objectives

@@ -196,7 +196,6 @@ function CardRow({
   isMaybe?: boolean;
   isWishlist?: boolean;
 }) {
-  const isSide = isMaybe || isWishlist;
   const textColor = isViolation ? "text-red-400" : isMaybe ? "text-amber-400/80" : isWishlist ? "text-purple-400/80" : "";
   const rowBg = isViolation ? "bg-red-950/20" : isMaybe ? "bg-amber-950/10" : isWishlist ? "bg-purple-950/10" : "";
 
@@ -224,7 +223,24 @@ function CardRow({
             ★
           </button>
         )}
-        {isSide ? (
+        {isWishlist ? (
+          <>
+            <button
+              onClick={() => onMoveCard(entry.deckCardId, "maybe")}
+              title="Move to maybeboard"
+              className="text-[10px] px-1.5 py-0.5 rounded border border-amber-600/50 text-amber-400 hover:bg-amber-950/40"
+            >
+              → maybe
+            </button>
+            <button
+              onClick={() => onMoveCard(entry.deckCardId, "main")}
+              title="Move to main deck"
+              className="text-[10px] px-1.5 py-0.5 rounded border border-green-600/50 text-green-400 hover:bg-green-950/40"
+            >
+              → main
+            </button>
+          </>
+        ) : isMaybe ? (
           <button
             onClick={() => onMoveCard(entry.deckCardId, "main")}
             title="Move to main deck"

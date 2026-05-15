@@ -90,3 +90,24 @@ export function getCardCategory(typeLine: string): CardCategory {
 }
 
 export { CATEGORY_ORDER };
+
+export function isManaRamp(entry: DeckEntry): boolean {
+  const text = (entry.oracleText ?? "").toLowerCase();
+  const type = entry.typeLine.toLowerCase();
+
+  if (type.includes("land")) return false;
+
+  // Tap-to-add mana (mana rocks, mana dorks)
+  if (text.includes("{t}: add")) return true;
+
+  // Land search spells (Rampant Growth, Cultivate, etc.)
+  if (text.includes("search your library for") && text.includes("land card")) return true;
+
+  // Put land onto battlefield directly (Harrow, Crop Rotation, etc.)
+  if (text.includes("land") && text.includes("onto the battlefield") && !text.includes("opponent")) return true;
+
+  // Extra land drops (Exploration, Azusa, etc.)
+  if (text.includes("you may play an additional land")) return true;
+
+  return false;
+}
