@@ -17,6 +17,9 @@ export default function Home() {
         <Link href="/library" className={cn(buttonVariants({ variant: "outline" }))}>
           My Library
         </Link>
+        <Link href="/packs" className={cn(buttonVariants({ variant: "outline" }))}>
+          Open Packs
+        </Link>
       </div>
     </div>
   );

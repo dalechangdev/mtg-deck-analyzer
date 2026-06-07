@@ -119,8 +119,14 @@ export function LibraryManager({ initialEntries }: Props) {
           {totalCopies !== 1 ? "ies" : "y"}
         </span>
         <button
-          onClick={() => router.push("/decks")}
+          onClick={() => router.push("/packs")}
           className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+        >
+          Open packs →
+        </button>
+        <button
+          onClick={() => router.push("/decks")}
+          className="text-xs text-muted-foreground hover:text-foreground"
         >
           Decks →
         </button>
