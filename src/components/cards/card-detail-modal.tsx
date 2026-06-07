@@ -61,6 +61,29 @@ function ptLine(power: string | null, toughness: string | null, loyalty: string 
 export function CardDetailModal({ card, onClose }: { card: CardDetail; onClose: () => void }) {
   const hasMultipleFaces = card.faces.length > 1;
   const [faceIndex, setFaceIndex] = useState(0);
+  const [adding, setAdding] = useState(false);
+  const [ownedQty, setOwnedQty] = useState<number | null>(null);
+  const [addError, setAddError] = useState(false);
+
+  const addToLibrary = async () => {
+    if (adding) return;
+    setAdding(true);
+    setAddError(false);
+    try {
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: card.id }),
+      });
+      if (!res.ok) throw new Error("request failed");
+      const { quantity } = await res.json();
+      setOwnedQty(quantity);
+    } catch {
+      setAddError(true);
+    } finally {
+      setAdding(false);
+    }
+  };
 
   // Close on Escape and lock background scroll while open.
   useEffect(() => {
@@ -188,6 +211,19 @@ export function CardDetailModal({ card, onClose }: { card: CardDetail; onClose: 
             )}
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
+                onClick={addToLibrary}
+                disabled={adding}
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {adding ? "Adding…" : ownedQty != null ? "Add another copy" : "+ Add to Library"}
+              </button>
+              {ownedQty != null && (
+                <span className="font-medium text-emerald-400">
+                  ✓ {ownedQty} in library
+                </span>
+              )}
+              {addError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
               {card.canBeCommander && <span className="font-medium text-amber-400">⭐ Can be your Commander</span>}
               {card.scryfallUri && (
                 <a
