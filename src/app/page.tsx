@@ -14,6 +14,9 @@ export default function Home() {
         <Link href="/decks" className={cn(buttonVariants({ variant: "outline" }))}>
           My Decks
         </Link>
+        <Link href="/library" className={cn(buttonVariants({ variant: "outline" }))}>
+          My Library
+        </Link>
       </div>
     </div>
   );

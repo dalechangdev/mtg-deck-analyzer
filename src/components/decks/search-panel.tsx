@@ -149,6 +149,16 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
                 </div>
               </div>
 
+              {/* Owned badge */}
+              {(card.ownedQuantity ?? 0) > 0 && (
+                <span
+                  title="In your library"
+                  className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400"
+                >
+                  Owned
+                </span>
+              )}
+
               {/* Synergy badge */}
               {synergy && synergy.score > 0 && (
                 <div

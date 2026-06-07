@@ -26,6 +26,7 @@ export async function GET(req: Request) {
     include: {
       printings: { take: 1, orderBy: { setCode: "desc" } },
       faces: { take: 1, orderBy: { faceIndex: "asc" } },
+      libraryEntry: true,
     },
     orderBy: { name: "asc" },
     take: limit,
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
       keywords: card.keywords,
       canBeCommander: card.canBeCommander,
       imageUrl,
+      ownedQuantity: card.libraryEntry?.quantity ?? 0,
     };
   });
 

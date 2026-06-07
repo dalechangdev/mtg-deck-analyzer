@@ -62,6 +62,18 @@ export function DeckBuilder({
     [entries]
   );
 
+  // Ownership tally over the main deck — drives the "what would it cost to build" summary
+  const ownership = useMemo(() => {
+    const mainEntries = entries.filter((e) => e.slot === "main");
+    const needed: DeckEntry[] = [];
+    let owned = 0;
+    for (const e of mainEntries) {
+      if ((e.ownedQuantity ?? 0) >= e.quantity) owned++;
+      else needed.push(e);
+    }
+    return { total: mainEntries.length, owned, needed };
+  }, [entries]);
+
   const commanderThemes = useMemo<Set<SynergyTheme>>(() => {
     if (!commander) return new Set();
     return extractThemes(commander.oracleText, commander.keywords);
@@ -288,6 +300,21 @@ export function DeckBuilder({
             Strategy
           </button>
 
+          {ownership.total > 0 && (
+            <span
+              title={`You own ${ownership.owned} of ${ownership.total} main-deck cards`}
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                ownership.needed.length === 0
+                  ? "bg-emerald-900/40 text-emerald-400"
+                  : "bg-muted/60 text-muted-foreground"
+              }`}
+            >
+              {ownership.needed.length === 0
+                ? "All owned"
+                : `Owned ${ownership.owned} · Need ${ownership.needed.length}`}
+            </span>
+          )}
+
           <span
             className={`text-sm font-mono font-medium ${
               validation.cardCount === 100 ? "text-green-400" : "text-muted-foreground"
@@ -329,6 +356,39 @@ export function DeckBuilder({
               card{rampCount !== 1 ? "s" : ""}
             </span>
           </div>
+          {ownership.total > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Ownership
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  <span className="text-emerald-400 font-medium">{ownership.owned}</span> owned ·{" "}
+                  <span className="text-foreground font-medium">{ownership.needed.length}</span> needed
+                </span>
+              </div>
+              {ownership.needed.length === 0 ? (
+                <p className="text-[11px] text-emerald-400">
+                  You own every card in the main deck — free to build.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {ownership.needed
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((e) => (
+                      <span
+                        key={e.deckCardId}
+                        className="text-[11px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground"
+                      >
+                        {e.name}
+                      </span>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
               Objectives

@@ -25,6 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/decks" className="hover:text-foreground transition-colors">
               Decks
             </Link>
+            <Link href="/library" className="hover:text-foreground transition-colors">
+              Library
+            </Link>
           </nav>
         </header>
         <main className="flex-1">{children}</main>

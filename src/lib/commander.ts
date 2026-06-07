@@ -9,6 +9,7 @@ export type CardData = {
   keywords: string[];
   canBeCommander: boolean;
   imageUrl: string | null;
+  ownedQuantity?: number; // copies in the Library; undefined/0 = not owned
 };
 
 export type DeckEntry = CardData & {

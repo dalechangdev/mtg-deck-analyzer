@@ -24,9 +24,10 @@ model Card {
   isCommanderLegal Boolean  @default(false)
   canBeCommander   Boolean  @default(false) // legendary creature or designated planeswalker
 
-  printings CardPrinting[]
-  faces     CardFace[]
-  deckCards DeckCard[]
+  printings    CardPrinting[]
+  faces        CardFace[]
+  deckCards    DeckCard[]
+  libraryEntry LibraryCard?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -94,4 +95,17 @@ model DeckCard {
 
   @@unique([deckId, cardId])
   @@index([deckId])
+}
+
+// A card the user physically owns — single global collection (no User model, local app)
+model LibraryCard {
+  id       String @id @default(cuid())
+  cardId   String @unique
+  card     Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  quantity Int    @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId])
 }

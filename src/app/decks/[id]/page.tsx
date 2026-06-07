@@ -15,6 +15,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
             include: {
               printings: { take: 1, orderBy: { setCode: "desc" } },
               faces: { take: 1, orderBy: { faceIndex: "asc" } },
+              libraryEntry: true,
             },
           },
         },
@@ -45,6 +46,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       keywords: dc.card.keywords,
       canBeCommander: dc.card.canBeCommander,
       imageUrl,
+      ownedQuantity: dc.card.libraryEntry?.quantity ?? 0,
     };
   });
 
