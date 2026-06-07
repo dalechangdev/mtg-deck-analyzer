@@ -29,7 +29,7 @@ export default async function CardsPage({ searchParams }: PageProps) {
       where,
       include: {
         printings: { take: 1, orderBy: { setCode: "desc" } },
-        faces: { take: 1, orderBy: { faceIndex: "asc" } },
+        faces: { orderBy: { faceIndex: "asc" } },
       },
       orderBy: { name: "asc" },
       take: PAGE_SIZE,

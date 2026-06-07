@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CardThumbnail } from "./card-thumbnail";
+import type { CardDetail } from "./card-detail-modal";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Prisma } from "@/generated/prisma/client";
@@ -11,13 +12,53 @@ type CardWithRelations = Prisma.CardGetPayload<{
   };
 }>;
 
-function getImageUrl(card: CardWithRelations): string | null {
+type ImageUris = { small?: string; normal?: string; large?: string; png?: string };
+
+// normal-size image for the grid thumbnail
+function getThumbUrl(card: CardWithRelations): string | null {
+  const uris = card.printings[0]?.imageUris as ImageUris | null;
+  return uris?.normal ?? uris?.small ?? card.faces[0]?.imageUri ?? null;
+}
+
+// large-size image for the detail modal
+function getLargeUrl(card: CardWithRelations): string | null {
+  const uris = card.printings[0]?.imageUris as ImageUris | null;
+  return uris?.large ?? uris?.png ?? uris?.normal ?? uris?.small ?? card.faces[0]?.imageUri ?? null;
+}
+
+function toCardDetail(card: CardWithRelations): CardDetail {
   const printing = card.printings[0];
-  if (printing?.imageUris) {
-    const uris = printing.imageUris as { normal?: string; small?: string };
-    return uris.normal ?? uris.small ?? null;
-  }
-  return card.faces[0]?.imageUri ?? null;
+  return {
+    id: card.id,
+    name: card.name,
+    manaCost: card.manaCost,
+    cmc: card.cmc,
+    typeLine: card.typeLine,
+    oracleText: card.oracleText,
+    colorIdentity: card.colorIdentity,
+    keywords: card.keywords,
+    power: card.power,
+    toughness: card.toughness,
+    loyalty: card.loyalty,
+    canBeCommander: card.canBeCommander,
+    imageUrl: getThumbUrl(card),
+    largeImageUrl: getLargeUrl(card),
+    setName: printing?.setName ?? null,
+    setCode: printing?.setCode ?? null,
+    rarity: printing?.rarity ?? null,
+    collectorNumber: printing?.collectorNumber ?? null,
+    scryfallUri: printing?.scryfallUri ?? null,
+    faces: card.faces.map((f) => ({
+      name: f.name,
+      manaCost: f.manaCost,
+      typeLine: f.typeLine,
+      oracleText: f.oracleText,
+      power: f.power,
+      toughness: f.toughness,
+      loyalty: f.loyalty,
+      imageUrl: f.imageUri,
+    })),
+  };
 }
 
 interface Props {
@@ -41,19 +82,7 @@ export function CardGrid({ cards, page, totalPages, searchParams }: Props) {
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
         {cards.map((card) => (
-          <CardThumbnail
-            key={card.id}
-            card={{
-              id: card.id,
-              name: card.name,
-              manaCost: card.manaCost,
-              typeLine: card.typeLine,
-              oracleText: card.oracleText,
-              colorIdentity: card.colorIdentity,
-              canBeCommander: card.canBeCommander,
-              imageUrl: getImageUrl(card),
-            }}
-          />
+          <CardThumbnail key={card.id} card={toCardDetail(card)} />
         ))}
       </div>
 
