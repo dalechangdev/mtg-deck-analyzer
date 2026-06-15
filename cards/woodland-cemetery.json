@@ -1,0 +1,26 @@
+{
+    "name": "Path of Ancestry",
+    "type": "Land",
+    "landMetadata": {
+        "isBasic": false,
+        "associatedManaColors": ["B", "G"]
+    },
+    "abilities": [
+        {
+            "description": "This land enters tapped unless you control a Swamp or a Forest."
+        },
+        {
+            "toActivate": {
+                "activationCost": "0",
+                "effects": [
+                    "Add {B} or {G}."
+                ]
+            }
+        }
+    ],
+    "printings": [
+        {
+            "code": "R0424"
+        }
+    ]
+}

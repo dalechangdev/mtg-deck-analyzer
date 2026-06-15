@@ -1,0 +1,29 @@
+{
+    "name": "Zulaport Cutthroat",
+    "type": "Creature",
+    "creatureMetadata": {
+        "cost": "{1}{B}",
+        "power": "1",
+        "toughness": "1",
+        "subtypes": [
+            "Human",
+            "Rogue",
+            "Ally"
+        ]
+    },
+    "abilities": [
+        {
+            "abilityType": "passive",
+            "activationTrigger": "When this crea",
+            "effects": [
+                "Add {G}."
+            ],
+            "fullText": "When this creature or another creature you control dies, each opponent loses 1 life and you gain 1 life."
+        }
+    ],
+    "printings": [
+        {
+            "code": "U0233"
+        }
+    ]
+}

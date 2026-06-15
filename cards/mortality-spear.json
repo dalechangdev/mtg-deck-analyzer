@@ -1,0 +1,16 @@
+{
+    "name": "Mortality Spear",
+    "type": "Instant",
+    "instantMetadata": {
+        "cost": "{2}{B}{G}",
+        "abilities": [
+            {
+                "abilityType": "tap",
+                "activationCost": "0",
+                "effects": [
+                    "Add {B}."
+                ]
+            }
+        ]
+    }
+}

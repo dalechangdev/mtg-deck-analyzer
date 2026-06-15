@@ -1,0 +1,24 @@
+{
+    "name": "Swamp",
+    "type": "Land",
+    "landMetadata": {
+        "isBasic": true,
+        "associatedManaColors": ["B"]
+    },
+    "abilities": [
+        {
+            "toActivate": {
+                "isTap": true,
+                "activationCost": "0",
+                "effects": [
+                    "Add {B}."
+                ]
+            }
+        }
+    ],
+    "printings": [
+        {
+            "code": "L0276"
+        }
+    ]
+}

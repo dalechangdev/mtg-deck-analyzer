@@ -1,0 +1,27 @@
+{
+    "name": "Elvish Mystic",
+    "type": "Creature",
+    "creatureMetadata": {
+        "cost": "{1}{G}",
+        "power": "1",
+        "toughness": "1",
+        "subtypes": [
+            "Elf",
+            "Druid"
+        ]
+    },
+    "abilities": [
+        {
+            "abilityType": "tap",
+            "activationCost": "0",
+            "effects": [
+                "Add {G}."
+            ]
+        }
+    ],
+    "printings": [
+        {
+            "code": "C0266"
+        }
+    ]
+}
