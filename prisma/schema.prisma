@@ -28,6 +28,7 @@ model Card {
   faces        CardFace[]
   deckCards    DeckCard[]
   libraryEntry LibraryCard?
+  annotations  CardAnnotation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,6 +79,7 @@ model Deck {
   maybeboardName String?
   wishlistName   String?
   cards          DeckCard[]
+  annotations    CardAnnotation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,6 +97,21 @@ model DeckCard {
 
   @@unique([deckId, cardId])
   @@index([deckId])
+}
+
+// Deck-specific notes on a card — survives card removal from the deck
+model CardAnnotation {
+  id        String   @id @default(cuid())
+  deckId    String
+  cardId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([deckId, cardId])
 }
 
 // A card the user physically owns — single global collection (no User model, local app)

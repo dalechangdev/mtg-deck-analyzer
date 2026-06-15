@@ -8,13 +8,14 @@ interface Props {
   onRemove: (deckCardId: string) => void;
   onSetCommander: (deckCardId: string) => void;
   onMoveCard: (deckCardId: string, slot: "main" | "maybe" | "wishlist") => void;
+  onAnnotate: (cardId: string, cardName: string) => void;
   maybeboardName: string;
   onMaybeboardNameChange: (val: string) => void;
   wishlistName: string;
   onWishlistNameChange: (val: string) => void;
 }
 
-export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
+export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnnotate, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
   const validation = validateDeck(entries);
   const commander = entries.find((e) => e.isCommander);
   const mainCards = entries.filter((e) => !e.isCommander && e.slot === "main");
@@ -73,6 +74,7 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
                   showCommanderToggle={false}
                   onSetCommander={onSetCommander}
                   onMoveCard={onMoveCard}
+                  onAnnotate={onAnnotate}
                 />
               </section>
             ) : (
@@ -101,6 +103,7 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
                       showCommanderToggle={entry.canBeCommander && !commander}
                       onSetCommander={onSetCommander}
                       onMoveCard={onMoveCard}
+                      onAnnotate={onAnnotate}
                     />
                   ))}
                 </section>
@@ -136,6 +139,7 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
                     showCommanderToggle={false}
                     onSetCommander={onSetCommander}
                     onMoveCard={onMoveCard}
+                    onAnnotate={onAnnotate}
                     isMaybe
                   />
                 ))}
@@ -165,6 +169,7 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, maybe
                     showCommanderToggle={false}
                     onSetCommander={onSetCommander}
                     onMoveCard={onMoveCard}
+                    onAnnotate={onAnnotate}
                     isWishlist
                   />
                 ))}
@@ -186,6 +191,7 @@ function CardRow({
   showCommanderToggle,
   onSetCommander,
   onMoveCard,
+  onAnnotate,
   isMaybe = false,
   isWishlist = false,
 }: {
@@ -195,6 +201,7 @@ function CardRow({
   showCommanderToggle: boolean;
   onSetCommander: (id: string) => void;
   onMoveCard: (id: string, slot: "main" | "maybe" | "wishlist") => void;
+  onAnnotate: (cardId: string, cardName: string) => void;
   isMaybe?: boolean;
   isWishlist?: boolean;
 }) {
@@ -202,7 +209,10 @@ function CardRow({
   const rowBg = isViolation ? "bg-red-950/20" : isMaybe ? "bg-amber-950/10" : isWishlist ? "bg-purple-950/10" : "";
 
   return (
-    <div className={`group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 ${rowBg}`}>
+    <div
+      className={`group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 cursor-pointer ${rowBg}`}
+      onClick={() => onAnnotate(entry.cardId, entry.name)}
+    >
       <div className="flex-1 min-w-0">
         <span className={`text-xs truncate block ${textColor}`}>
           {isViolation && <span className="mr-1">⚠</span>}
@@ -215,7 +225,10 @@ function CardRow({
           <span className="text-[11px] text-muted-foreground font-mono">{entry.manaCost}</span>
         )}
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div
+        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
         {showCommanderToggle && (
           <button
             onClick={() => onSetCommander(entry.deckCardId)}

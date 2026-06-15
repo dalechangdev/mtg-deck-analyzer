@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { SearchPanel } from "./search-panel";
 import { DeckPanel } from "./deck-panel";
+import { CardAnnotationModal } from "./card-annotation-modal";
 import { Input } from "@/components/ui/input";
 import { validateDeck, isBasicLand, isManaRamp } from "@/lib/commander";
 import { extractThemes } from "@/lib/synergy";
@@ -39,6 +40,7 @@ export function DeckBuilder({
   const [maybeboardName, setMaybeboardName] = useState(initialMaybeboardName);
   const [wishlistName, setWishlistName] = useState(initialWishlistName);
   const [themeInput, setThemeInput] = useState("");
+  const [annotatingCard, setAnnotatingCard] = useState<{ cardId: string; cardName: string } | null>(null);
   const [showStrategy, setShowStrategy] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const nameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -266,6 +268,14 @@ export function DeckBuilder({
 
   return (
     <div className="flex flex-col h-[calc(100vh-49px)]">
+      {annotatingCard && (
+        <CardAnnotationModal
+          deckId={deckId}
+          cardId={annotatingCard.cardId}
+          cardName={annotatingCard.cardName}
+          onClose={() => setAnnotatingCard(null)}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
         <Input
@@ -468,6 +478,7 @@ export function DeckBuilder({
             onRemove={removeCard}
             onSetCommander={setCommander}
             onMoveCard={moveCard}
+            onAnnotate={(cardId, cardName) => setAnnotatingCard({ cardId, cardName })}
             maybeboardName={maybeboardName}
             onMaybeboardNameChange={handleMaybeboardNameChange}
             wishlistName={wishlistName}
