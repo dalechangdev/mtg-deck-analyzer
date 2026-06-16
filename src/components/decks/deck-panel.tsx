@@ -1,7 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { CATEGORY_ORDER, getCardCategory, validateDeck } from "@/lib/commander";
 import type { DeckEntry } from "@/lib/commander";
+
+const CMC_BUCKETS = [0, 1, 2, 3, 4, 5] as const;
+const CMC_LABEL = (n: number) => (n >= 6 ? "6+" : String(n));
+const CMC_MAX = 6;
 
 interface Props {
   entries: DeckEntry[];
@@ -16,6 +21,8 @@ interface Props {
 }
 
 export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnnotate, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
+  const [groupBy, setGroupBy] = useState<"type" | "cmc">("type");
+
   const validation = validateDeck(entries);
   const commander = entries.find((e) => e.isCommander);
   const mainCards = entries.filter((e) => !e.isCommander && e.slot === "main");
@@ -28,6 +35,13 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnn
       .sort((a, b) => (a.cmc ?? 0) - (b.cmc ?? 0) || a.name.localeCompare(b.name));
     return acc;
   }, {} as Record<string, DeckEntry[]>);
+
+  const groupedByCmc = [...CMC_BUCKETS, CMC_MAX].reduce<Record<number, DeckEntry[]>>((acc, n) => {
+    acc[n] = mainCards
+      .filter((e) => (n === CMC_MAX ? (e.cmc ?? 0) >= CMC_MAX : (e.cmc ?? 0) === n))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return acc;
+  }, {} as Record<number, DeckEntry[]>);
 
   const hasMaybe = maybeCards.length > 0;
   const hasWishlist = wishlistCards.length > 0;
@@ -58,8 +72,24 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnn
 
         {/* ── Main deck column ── */}
         <div className={`flex flex-col overflow-hidden min-w-0 ${hasSideColumn ? "flex-1 border-r border-border" : "flex-1"}`}>
-          <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30 border-b border-border flex-shrink-0">
-            Main Deck ({validation.cardCount})
+          <div className="px-3 py-1.5 bg-muted/30 border-b border-border flex-shrink-0 flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex-1">
+              Main Deck ({validation.cardCount})
+            </span>
+            <div className="flex text-[10px] rounded overflow-hidden border border-border">
+              <button
+                onClick={() => setGroupBy("type")}
+                className={`px-2 py-0.5 ${groupBy === "type" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Type
+              </button>
+              <button
+                onClick={() => setGroupBy("cmc")}
+                className={`px-2 py-0.5 border-l border-border ${groupBy === "cmc" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                CMC
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             {commander ? (
@@ -83,32 +113,59 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnn
               </div>
             )}
 
-            {CATEGORY_ORDER.map((cat) => {
-              const cards = grouped[cat];
-              if (!cards || cards.length === 0) return null;
-              return (
-                <section key={cat} className="border-b border-border">
-                  <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0">
-                    {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
-                  </div>
-                  {cards.map((entry) => (
-                    <CardRow
-                      key={entry.deckCardId}
-                      entry={entry}
-                      onRemove={onRemove}
-                      isViolation={
-                        validation.colorViolations.includes(entry.cardId) ||
-                        validation.duplicates.includes(entry.cardId)
-                      }
-                      showCommanderToggle={entry.canBeCommander && !commander}
-                      onSetCommander={onSetCommander}
-                      onMoveCard={onMoveCard}
-                      onAnnotate={onAnnotate}
-                    />
-                  ))}
-                </section>
-              );
-            })}
+            {groupBy === "type"
+              ? CATEGORY_ORDER.map((cat) => {
+                  const cards = grouped[cat];
+                  if (!cards || cards.length === 0) return null;
+                  return (
+                    <section key={cat} className="border-b border-border">
+                      <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0">
+                        {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
+                      </div>
+                      {cards.map((entry) => (
+                        <CardRow
+                          key={entry.deckCardId}
+                          entry={entry}
+                          onRemove={onRemove}
+                          isViolation={
+                            validation.colorViolations.includes(entry.cardId) ||
+                            validation.duplicates.includes(entry.cardId)
+                          }
+                          showCommanderToggle={entry.canBeCommander && !commander}
+                          onSetCommander={onSetCommander}
+                          onMoveCard={onMoveCard}
+                          onAnnotate={onAnnotate}
+                        />
+                      ))}
+                    </section>
+                  );
+                })
+              : [...CMC_BUCKETS, CMC_MAX].map((n) => {
+                  const cards = groupedByCmc[n];
+                  if (!cards || cards.length === 0) return null;
+                  return (
+                    <section key={n} className="border-b border-border">
+                      <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0">
+                        CMC {CMC_LABEL(n)} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
+                      </div>
+                      {cards.map((entry) => (
+                        <CardRow
+                          key={entry.deckCardId}
+                          entry={entry}
+                          onRemove={onRemove}
+                          isViolation={
+                            validation.colorViolations.includes(entry.cardId) ||
+                            validation.duplicates.includes(entry.cardId)
+                          }
+                          showCommanderToggle={entry.canBeCommander && !commander}
+                          onSetCommander={onSetCommander}
+                          onMoveCard={onMoveCard}
+                          onAnnotate={onAnnotate}
+                        />
+                      ))}
+                    </section>
+                  );
+                })}
           </div>
         </div>
 
