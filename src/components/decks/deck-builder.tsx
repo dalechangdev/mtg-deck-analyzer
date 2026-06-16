@@ -474,6 +474,7 @@ export function DeckBuilder({
             )
           </div>
           <DeckPanel
+            deckId={deckId}
             entries={entries}
             onRemove={removeCard}
             onSetCommander={setCommander}

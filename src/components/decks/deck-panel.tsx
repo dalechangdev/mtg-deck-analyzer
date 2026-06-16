@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { CATEGORY_ORDER, getCardCategory, validateDeck } from "@/lib/commander";
 import type { DeckEntry } from "@/lib/commander";
+import { CmcCompareModal } from "./cmc-compare-modal";
 
 const CMC_BUCKETS = [0, 1, 2, 3, 4, 5] as const;
 const CMC_LABEL = (n: number) => (n >= 6 ? "6+" : String(n));
 const CMC_MAX = 6;
 
 interface Props {
+  deckId: string;
   entries: DeckEntry[];
   onRemove: (deckCardId: string) => void;
   onSetCommander: (deckCardId: string) => void;
@@ -20,8 +22,9 @@ interface Props {
   onWishlistNameChange: (val: string) => void;
 }
 
-export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnnotate, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
+export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCard, onAnnotate, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
   const [groupBy, setGroupBy] = useState<"type" | "cmc">("type");
+  const [comparingCmc, setComparingCmc] = useState<{ label: string; cards: DeckEntry[] } | null>(null);
 
   const validation = validateDeck(entries);
   const commander = entries.find((e) => e.isCommander);
@@ -52,6 +55,14 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnn
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {comparingCmc && (
+        <CmcCompareModal
+          deckId={deckId}
+          cmcLabel={comparingCmc.label}
+          cards={comparingCmc.cards}
+          onClose={() => setComparingCmc(null)}
+        />
+      )}
       {/* Validation bar — spans full width */}
       {(validation.colorViolations.length > 0 || validation.duplicates.length > 0) && (
         <div className="px-3 py-2 border-b border-border flex-shrink-0 space-y-1">
@@ -147,10 +158,15 @@ export function DeckPanel({ entries, onRemove, onSetCommander, onMoveCard, onAnn
                   {[...CMC_BUCKETS, CMC_MAX].map((n) => {
                     const cards = groupedByCmc[n];
                     if (!cards || cards.length === 0) return null;
+                    const label = CMC_LABEL(n);
                     return (
                       <section key={n} className="border-b border-border">
-                        <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0">
-                          CMC {CMC_LABEL(n)} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
+                        <div
+                          className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0 cursor-pointer hover:bg-muted/40 hover:text-foreground transition-colors"
+                          onClick={() => setComparingCmc({ label, cards })}
+                          title="Click to compare cards at this CMC"
+                        >
+                          CMC {label} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
                         </div>
                         {cards.map((entry) => (
                           <CardRow
