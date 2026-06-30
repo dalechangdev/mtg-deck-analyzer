@@ -13,10 +13,11 @@ interface Props {
   deckId: string;
   cardId: string;
   cardName: string;
+  imageUrl: string | null;
   onClose: () => void;
 }
 
-export function CardAnnotationModal({ deckId, cardId, cardName, onClose }: Props) {
+export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClose }: Props) {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [newContent, setNewContent] = useState("");
@@ -107,6 +108,18 @@ export function CardAnnotationModal({ deckId, cardId, cardName, onClose }: Props
             ✕
           </button>
         </div>
+
+        {/* Card image */}
+        {imageUrl && (
+          <div className="flex justify-center px-4 py-3 border-b border-border flex-shrink-0 bg-muted/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={cardName}
+              className="rounded-xl w-40 aspect-[63/88] object-cover shadow-md"
+            />
+          </div>
+        )}
 
         {/* Annotation list */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">

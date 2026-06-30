@@ -40,7 +40,7 @@ export function DeckBuilder({
   const [maybeboardName, setMaybeboardName] = useState(initialMaybeboardName);
   const [wishlistName, setWishlistName] = useState(initialWishlistName);
   const [themeInput, setThemeInput] = useState("");
-  const [annotatingCard, setAnnotatingCard] = useState<{ cardId: string; cardName: string } | null>(null);
+  const [annotatingCard, setAnnotatingCard] = useState<{ cardId: string; cardName: string; imageUrl: string | null } | null>(null);
   const [showStrategy, setShowStrategy] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const nameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -273,6 +273,7 @@ export function DeckBuilder({
           deckId={deckId}
           cardId={annotatingCard.cardId}
           cardName={annotatingCard.cardName}
+          imageUrl={annotatingCard.imageUrl}
           onClose={() => setAnnotatingCard(null)}
         />
       )}
@@ -479,7 +480,7 @@ export function DeckBuilder({
             onRemove={removeCard}
             onSetCommander={setCommander}
             onMoveCard={moveCard}
-            onAnnotate={(cardId, cardName) => setAnnotatingCard({ cardId, cardName })}
+            onAnnotate={(cardId, cardName, imageUrl) => setAnnotatingCard({ cardId, cardName, imageUrl })}
             maybeboardName={maybeboardName}
             onMaybeboardNameChange={handleMaybeboardNameChange}
             wishlistName={wishlistName}

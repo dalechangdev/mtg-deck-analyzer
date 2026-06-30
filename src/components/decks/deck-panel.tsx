@@ -15,7 +15,7 @@ interface Props {
   onRemove: (deckCardId: string) => void;
   onSetCommander: (deckCardId: string) => void;
   onMoveCard: (deckCardId: string, slot: "main" | "maybe" | "wishlist") => void;
-  onAnnotate: (cardId: string, cardName: string) => void;
+  onAnnotate: (cardId: string, cardName: string, imageUrl: string | null) => void;
   maybeboardName: string;
   onMaybeboardNameChange: (val: string) => void;
   wishlistName: string;
@@ -301,7 +301,7 @@ function CardRow({
   showCommanderToggle: boolean;
   onSetCommander: (id: string) => void;
   onMoveCard: (id: string, slot: "main" | "maybe" | "wishlist") => void;
-  onAnnotate: (cardId: string, cardName: string) => void;
+  onAnnotate: (cardId: string, cardName: string, imageUrl: string | null) => void;
   isMaybe?: boolean;
   isWishlist?: boolean;
 }) {
@@ -311,7 +311,7 @@ function CardRow({
   return (
     <div
       className={`group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 cursor-pointer ${rowBg}`}
-      onClick={() => onAnnotate(entry.cardId, entry.name)}
+      onClick={() => onAnnotate(entry.cardId, entry.name, entry.imageUrl)}
     >
       <div className="flex-1 min-w-0">
         <span className={`text-xs truncate block ${textColor}`}>
