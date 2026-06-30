@@ -131,89 +131,96 @@ export function BuilderView({ deckId, deckName, maybeboardName, initialEntries, 
         </Link>
       </div>
 
-      {/* Three-column body */}
+      {/* Body: main content + right card column */}
       <div className="flex-1 flex overflow-hidden min-h-0">
 
-        {/* ── Main Deck ── */}
-        <div className="flex-1 flex flex-col overflow-hidden border-r border-border min-w-0">
-          <div className="px-3 py-1.5 bg-muted/30 border-b border-border flex-shrink-0">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Main Deck ({mainCount})
-            </span>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {commander && (
-              <section className="border-b border-border">
-                <SectionHeader label="Commander" count={1} />
-                <MainRow entry={commander} onRemove={removeCard} onMove={moveCard} isCommander />
-              </section>
-            )}
-            {CATEGORY_ORDER.map((cat) => {
-              const cards = grouped[cat];
-              if (!cards?.length) return null;
-              return (
-                <section key={cat} className="border-b border-border">
-                  <SectionHeader label={cat} count={cards.reduce((s, e) => s + e.quantity, 0)} />
-                  {cards.map((entry) => (
-                    <MainRow key={entry.deckCardId} entry={entry} onRemove={removeCard} onMove={moveCard} />
-                  ))}
+        {/* Main content area */}
+        <div className="flex-1 min-w-0" />
+
+        {/* ── Right column: three stacked card lists ── */}
+        <div className="w-72 flex-shrink-0 flex flex-col border-l border-border overflow-hidden">
+
+          {/* Main Deck — 1/3 */}
+          <div className="flex-1 flex flex-col overflow-hidden border-b border-border">
+            <div className="px-3 py-1.5 bg-muted/30 border-b border-border flex-shrink-0">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Main Deck ({mainCount})
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {commander && (
+                <section className="border-b border-border">
+                  <SectionHeader label="Commander" count={1} />
+                  <MainRow entry={commander} onRemove={removeCard} onMove={moveCard} isCommander />
                 </section>
-              );
-            })}
-            {mainCards.length === 0 && !commander && (
-              <p className="px-3 py-4 text-xs text-muted-foreground">No cards in main deck.</p>
-            )}
+              )}
+              {CATEGORY_ORDER.map((cat) => {
+                const cards = grouped[cat];
+                if (!cards?.length) return null;
+                return (
+                  <section key={cat} className="border-b border-border">
+                    <SectionHeader label={cat} count={cards.reduce((s, e) => s + e.quantity, 0)} />
+                    {cards.map((entry) => (
+                      <MainRow key={entry.deckCardId} entry={entry} onRemove={removeCard} onMove={moveCard} />
+                    ))}
+                  </section>
+                );
+              })}
+              {mainCards.length === 0 && !commander && (
+                <p className="px-3 py-4 text-xs text-muted-foreground">No cards in main deck.</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* ── Maybeboard ── */}
-        <div className="w-64 flex-shrink-0 flex flex-col overflow-hidden border-r border-border">
-          <div className="px-3 py-1.5 bg-amber-950/20 border-b border-amber-900/30 flex-shrink-0">
-            <span className="text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider">
-              {maybeboardName || "Maybeboard"} ({maybeCards.length})
-            </span>
+          {/* Maybeboard — 1/3 */}
+          <div className="flex-1 flex flex-col overflow-hidden border-b border-border">
+            <div className="px-3 py-1.5 bg-amber-950/20 border-b border-amber-900/30 flex-shrink-0">
+              <span className="text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider">
+                {maybeboardName || "Maybeboard"} ({maybeCards.length})
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {maybeCards.map((entry) => (
+                <MaybeRow key={entry.deckCardId} entry={entry} onRemove={removeCard} onMove={moveCard} />
+              ))}
+              {maybeCards.length === 0 && (
+                <p className="px-3 py-4 text-xs text-muted-foreground">No maybeboard cards.</p>
+              )}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {maybeCards.map((entry) => (
-              <MaybeRow key={entry.deckCardId} entry={entry} onRemove={removeCard} onMove={moveCard} />
-            ))}
-            {maybeCards.length === 0 && (
-              <p className="px-3 py-4 text-xs text-muted-foreground">No maybeboard cards.</p>
-            )}
-          </div>
-        </div>
 
-        {/* ── Library ── */}
-        <div className="w-72 flex-shrink-0 flex flex-col overflow-hidden">
-          <div className="px-3 py-1.5 bg-muted/30 border-b border-border flex-shrink-0 space-y-1.5">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-              Library ({filteredLibrary.length}{libFilter ? ` of ${libraryCards.length}` : ""})
-            </span>
-            <input
-              value={libFilter}
-              onChange={(e) => setLibFilter(e.target.value)}
-              placeholder="Filter cards…"
-              className="w-full text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
-            />
+          {/* Library — 1/3 */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-3 py-1.5 bg-muted/30 border-b border-border flex-shrink-0 space-y-1.5">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                Library ({filteredLibrary.length}{libFilter ? ` of ${libraryCards.length}` : ""})
+              </span>
+              <input
+                value={libFilter}
+                onChange={(e) => setLibFilter(e.target.value)}
+                placeholder="Filter cards…"
+                className="w-full text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {filteredLibrary.map((card) => {
+                const inDeck = inDeckByCardId.get(card.cardId);
+                return (
+                  <LibraryRow
+                    key={card.cardId}
+                    card={card}
+                    inDeck={inDeck}
+                    onAdd={addFromLibrary}
+                  />
+                );
+              })}
+              {filteredLibrary.length === 0 && (
+                <p className="px-3 py-4 text-xs text-muted-foreground">No matching cards.</p>
+              )}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {filteredLibrary.map((card) => {
-              const inDeck = inDeckByCardId.get(card.cardId);
-              return (
-                <LibraryRow
-                  key={card.cardId}
-                  card={card}
-                  inDeck={inDeck}
-                  onAdd={addFromLibrary}
-                />
-              );
-            })}
-            {filteredLibrary.length === 0 && (
-              <p className="px-3 py-4 text-xs text-muted-foreground">No matching cards.</p>
-            )}
-          </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );
