@@ -29,12 +29,20 @@ model Card {
   deckCards    DeckCard[]
   libraryEntry LibraryCard?
   annotations  CardAnnotation[]
+  themes       CardTheme[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([name])
   @@index([colorIdentity])
+}
+
+model CardTheme {
+  id          String  @id // slug, e.g. "sacrifice", "token-generation"
+  name        String  @unique
+  description String?
+  cards       Card[]
 }
 
 // Double-faced cards, adventure cards, split cards, etc.
