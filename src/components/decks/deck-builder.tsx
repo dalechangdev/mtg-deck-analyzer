@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { SearchPanel } from "./search-panel";
 import { DeckPanel } from "./deck-panel";
 import { CardAnnotationModal } from "./card-annotation-modal";
@@ -310,6 +311,13 @@ export function DeckBuilder({
           >
             Strategy
           </button>
+
+          <Link
+            href={`/decks/${deckId}/builder`}
+            className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Deck Builder
+          </Link>
 
           {ownership.total > 0 && (
             <span
