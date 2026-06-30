@@ -92,6 +92,120 @@ export function getCardCategory(typeLine: string): CardCategory {
 
 export { CATEGORY_ORDER };
 
+export type BoardClearScope =
+  | "creatures"
+  | "artifacts"
+  | "enchantments"
+  | "planeswalkers"
+  | "lands"
+  | "tokens"
+  | "nonland-permanents"
+  | "all-permanents"
+  | "colored-permanents";
+
+export type BoardClearMethod =
+  | "destroy"
+  | "exile"
+  | "bounce"
+  | "damage"
+  | "minus-counters"
+  | "sacrifice";
+
+export type BoardClearReach = "all" | "opponents" | "selective";
+
+export type BoardClearConditionality = "unconditional" | "x-cost" | "triggered";
+
+export type BoardClearProfile = {
+  scope: BoardClearScope[];
+  method: BoardClearMethod;
+  reach: BoardClearReach;
+  conditionality: BoardClearConditionality;
+  bypassesIndestructible: boolean;
+};
+
+function detectBoardClearScope(text: string): BoardClearScope[] {
+  // Broad/composite scopes take precedence
+  if (/\ball permanents?\b/.test(text) && !/nonland permanent/.test(text)) return ["all-permanents"];
+  if (/nonland permanents?/.test(text)) return ["nonland-permanents"];
+  if (/colored permanents?/.test(text)) return ["colored-permanents"];
+
+  const scopes: BoardClearScope[] = [];
+  if (/(?:all|each) (?:other |nontoken |attacking |blocking )?creatures?/.test(text) ||
+      /creatures? gets? -/.test(text) ||
+      /\d+ damage to each creature/.test(text)) {
+    scopes.push("creatures");
+  }
+  if (/(?:all|each) (?:other |nontoken )?artifacts?/.test(text)) scopes.push("artifacts");
+  if (/(?:all|each) (?:other |nontoken )?enchantments?/.test(text)) scopes.push("enchantments");
+  if (/(?:all|each) (?:other |nontoken )?planeswalkers?/.test(text)) scopes.push("planeswalkers");
+  if (/(?:destroy|exile) all lands?/.test(text)) scopes.push("lands");
+  if (/(?:all|each) (?:creature )?tokens?/.test(text)) scopes.push("tokens");
+
+  return scopes.length > 0 ? scopes : ["creatures"];
+}
+
+export function getBoardClearProfile(entry: DeckEntry): BoardClearProfile | null {
+  const text = (entry.oracleText ?? "").toLowerCase();
+  const manaCost = (entry.manaCost ?? "").toLowerCase();
+  const typeLine = entry.typeLine.toLowerCase();
+
+  let method: BoardClearMethod | null = null;
+
+  // Order matters: most specific patterns first
+  if (
+    /return all (?:nonland |non)?(?:creatures?|permanents?)/.test(text) ||
+    // Cyclonic Rift: overload + "return target nonland permanent"
+    (text.includes("overload") && /return (?:target )?nonland permanent/.test(text))
+  ) {
+    method = "bounce";
+  } else if (/deals? \d+ damage to each creature/.test(text)) {
+    method = "damage";
+  } else if (/(?:all|each) creatures? gets? -\d/.test(text)) {
+    method = "minus-counters";
+  } else if (/exile all (?!cards)/.test(text) || /exile each (?!player|opponent)/.test(text)) {
+    method = "exile";
+  } else if (/destroy all (?!copies)/.test(text) || /destroy each (?!player|opponent)/.test(text)) {
+    method = "destroy";
+  } else if (/each player sacrifices all/.test(text)) {
+    method = "sacrifice";
+  }
+
+  if (!method) return null;
+
+  const scope = detectBoardClearScope(text);
+
+  let reach: BoardClearReach = "all";
+  if (text.includes("you don't control")) {
+    reach = "opponents";
+  } else if (/choose (?:one or more|two or more|one, two)/.test(text)) {
+    reach = "selective";
+  }
+
+  let conditionality: BoardClearConditionality = "unconditional";
+  if (manaCost.includes("{x}") || (text.includes("pay x life") && text.includes("-x/-x"))) {
+    conditionality = "x-cost";
+  } else if (
+    !typeLine.includes("instant") &&
+    !typeLine.includes("sorcery") &&
+    /when(?:ever)?\b/.test(text)
+  ) {
+    // Board wipe as a triggered ability (e.g. Sunblast Angel ETB)
+    conditionality = "triggered";
+  }
+
+  const bypassesIndestructible =
+    method === "exile" ||
+    method === "bounce" ||
+    method === "minus-counters" ||
+    method === "sacrifice";
+
+  return { scope, method, reach, conditionality, bypassesIndestructible };
+}
+
+export function isBoardClear(entry: DeckEntry): boolean {
+  return getBoardClearProfile(entry) !== null;
+}
+
 export function isManaRamp(entry: DeckEntry): boolean {
   const text = (entry.oracleText ?? "").toLowerCase();
   const type = entry.typeLine.toLowerCase();

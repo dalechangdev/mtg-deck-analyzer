@@ -14,6 +14,7 @@ import { validateDeck, isBasicLand, isManaRamp } from "@/lib/commander";
 import { extractThemes } from "@/lib/synergy";
 import { ManaCurve } from "./mana-curve";
 import { CurveProbability } from "./curve-probability";
+import { BoardClearCount } from "./board-clear-count";
 import type { CardData, DeckEntry } from "@/lib/commander";
 import type { SynergyTheme } from "@/lib/synergy";
 
@@ -384,6 +385,7 @@ export function DeckBuilder({
               card{rampCount !== 1 ? "s" : ""}
             </span>
           </div>
+          <BoardClearCount entries={entries} />
           {ownership.total > 0 && (
             <div>
               <div className="flex items-center justify-between mb-1">
