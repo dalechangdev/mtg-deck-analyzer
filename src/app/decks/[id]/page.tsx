@@ -6,23 +6,27 @@ import type { DeckEntry } from "@/lib/commander";
 export default async function DeckPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const deck = await prisma.deck.findUnique({
-    where: { id },
-    include: {
-      cards: {
-        include: {
-          card: {
-            include: {
-              printings: { take: 1, orderBy: { setCode: "desc" } },
-              faces: { take: 1, orderBy: { faceIndex: "asc" } },
-              libraryEntry: true,
+  const [deck, allThemes] = await Promise.all([
+    prisma.deck.findUnique({
+      where: { id },
+      include: {
+        themes: true,
+        cards: {
+          include: {
+            card: {
+              include: {
+                printings: { take: 1, orderBy: { setCode: "desc" } },
+                faces: { take: 1, orderBy: { faceIndex: "asc" } },
+                libraryEntry: true,
+              },
             },
           },
+          orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
         },
-        orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
       },
-    },
-  });
+    }),
+    prisma.deckTheme.findMany({ orderBy: { name: "asc" } }),
+  ]);
 
   if (!deck) notFound();
 
@@ -56,7 +60,8 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       initialName={deck.name}
       initialEntries={entries}
       initialDescription={deck.description ?? ""}
-      initialThemes={deck.themes ?? []}
+      initialThemeIds={deck.themes.map((t) => t.id)}
+      allThemes={allThemes}
       initialMaybeboardName={deck.maybeboardName ?? ""}
       initialWishlistName={deck.wishlistName ?? ""}
     />

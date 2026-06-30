@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { SearchPanel } from "./search-panel";
 import { DeckPanel } from "./deck-panel";
 import { CardAnnotationModal } from "./card-annotation-modal";
+import { DeckThemeSelect } from "./deck-theme-select";
+import { Toaster } from "@/components/ui/toaster";
+import { toastManager } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import { validateDeck, isBasicLand, isManaRamp } from "@/lib/commander";
 import { extractThemes } from "@/lib/synergy";
@@ -18,7 +21,8 @@ interface Props {
   initialName: string;
   initialEntries: DeckEntry[];
   initialDescription: string;
-  initialThemes: string[];
+  initialThemeIds: string[];
+  allThemes: { id: string; name: string }[];
   initialMaybeboardName: string;
   initialWishlistName: string;
 }
@@ -28,7 +32,8 @@ export function DeckBuilder({
   initialName,
   initialEntries,
   initialDescription,
-  initialThemes,
+  initialThemeIds,
+  allThemes,
   initialMaybeboardName,
   initialWishlistName,
 }: Props) {
@@ -36,10 +41,9 @@ export function DeckBuilder({
   const [name, setName] = useState(initialName);
   const [entries, setEntries] = useState<DeckEntry[]>(initialEntries);
   const [description, setDescription] = useState(initialDescription);
-  const [themes, setThemes] = useState<string[]>(initialThemes ?? []);
+  const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>(initialThemeIds ?? []);
   const [maybeboardName, setMaybeboardName] = useState(initialMaybeboardName);
   const [wishlistName, setWishlistName] = useState(initialWishlistName);
-  const [themeInput, setThemeInput] = useState("");
   const [annotatingCard, setAnnotatingCard] = useState<{ cardId: string; cardName: string; imageUrl: string | null } | null>(null);
   const [showStrategy, setShowStrategy] = useState(false);
   const [savingName, setSavingName] = useState(false);
@@ -136,26 +140,21 @@ export function DeckBuilder({
   }
 
   // --- Themes ---
-  function addTheme(theme: string) {
-    const trimmed = theme.trim();
-    if (!trimmed || themes.includes(trimmed)) return;
-    const next = [...themes, trimmed];
-    setThemes(next);
-    fetch(`/api/decks/${deckId}`, {
+  async function toggleTheme(id: string, selected: boolean) {
+    const prev = selectedThemeIds;
+    const next = selected
+      ? [...prev, id]
+      : prev.filter((t) => t !== id);
+    setSelectedThemeIds(next);
+    const res = await fetch(`/api/decks/${deckId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ themes: next }),
+      body: JSON.stringify({ themeIds: next }),
     });
-  }
-
-  function removeTheme(theme: string) {
-    const next = themes.filter((t) => t !== theme);
-    setThemes(next);
-    fetch(`/api/decks/${deckId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ themes: next }),
-    });
+    if (!res.ok) {
+      setSelectedThemeIds(prev);
+      toastManager.add({ title: "Failed to update themes", description: "Your change was not saved.", timeout: 4000 });
+    }
   }
 
   // --- Add card ---
@@ -268,6 +267,7 @@ export function DeckBuilder({
 
   return (
     <div className="flex flex-col h-[calc(100vh-49px)]">
+      <Toaster />
       {annotatingCard && (
         <CardAnnotationModal
           deckId={deckId}
@@ -278,7 +278,7 @@ export function DeckBuilder({
         />
       )}
       {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
+      <div className="flex items-center gap-4 px-4 py-2 border-border flex-shrink-0">
         <Input
           value={name}
           onChange={(e) => handleNameChange(e.target.value)}
@@ -353,6 +353,15 @@ export function DeckBuilder({
         </div>
       </div>
 
+      {/* Themes row */}
+      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border flex-shrink-0">
+        <DeckThemeSelect
+          allThemes={allThemes}
+          selectedIds={selectedThemeIds}
+          onToggle={toggleTheme}
+        />
+      </div>
+
       {/* Strategy panel */}
       {showStrategy && (
         <div className="px-4 py-3 border-b border-border bg-muted/20 flex-shrink-0 space-y-3">
@@ -411,42 +420,6 @@ export function DeckBuilder({
               rows={3}
               className="w-full text-xs bg-background border border-border rounded px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-ring text-foreground placeholder:text-muted-foreground"
             />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-              Themes
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-1.5">
-              {themes.map((t) => (
-                <span
-                  key={t}
-                  className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30"
-                >
-                  {t}
-                  <button
-                    onClick={() => removeTheme(t)}
-                    className="text-primary/60 hover:text-primary leading-none"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={themeInput}
-                onChange={(e) => setThemeInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === ",") {
-                    e.preventDefault();
-                    addTheme(themeInput);
-                    setThemeInput("");
-                  }
-                }}
-                placeholder="Add theme (Enter to confirm)…"
-                className="flex-1 text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
           </div>
         </div>
       )}
