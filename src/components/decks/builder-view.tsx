@@ -13,12 +13,13 @@ export type LibraryCard = CardData & {
 interface Props {
   deckId: string;
   deckName: string;
+  themes: { id: string; name: string }[];
   maybeboardName: string;
   initialEntries: DeckEntry[];
   libraryCards: LibraryCard[];
 }
 
-export function BuilderView({ deckId, deckName, maybeboardName, initialEntries, libraryCards }: Props) {
+export function BuilderView({ deckId, deckName, themes, maybeboardName, initialEntries, libraryCards }: Props) {
   const [entries, setEntries] = useState<DeckEntry[]>(initialEntries);
   const [libFilter, setLibFilter] = useState("");
 
@@ -113,22 +114,34 @@ export function BuilderView({ deckId, deckName, maybeboardName, initialEntries, 
   return (
     <div className="flex flex-col h-[calc(100vh-49px)]">
       {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
-        <span className="text-sm font-medium">{deckName}</span>
-        {commander && (
-          <span className="text-xs text-muted-foreground">
-            {commander.name}
+      <div className="px-4 py-2 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium">{deckName}</span>
+          {commander && (
+            <span className="text-xs text-muted-foreground">{commander.name}</span>
+          )}
+          <span className="text-xs font-mono text-muted-foreground ml-auto">
+            {mainCount} / 100
           </span>
+          <Link
+            href={`/decks/${deckId}`}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            ← Full builder
+          </Link>
+        </div>
+        {themes.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {themes.map((t) => (
+              <span
+                key={t.id}
+                className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground"
+              >
+                {t.name}
+              </span>
+            ))}
+          </div>
         )}
-        <span className="text-xs font-mono text-muted-foreground ml-auto">
-          {mainCount} / 100
-        </span>
-        <Link
-          href={`/decks/${deckId}`}
-          className="text-xs text-muted-foreground hover:text-foreground"
-        >
-          ← Full builder
-        </Link>
       </div>
 
       {/* Body: main content + right card column */}

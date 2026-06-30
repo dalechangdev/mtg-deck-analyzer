@@ -16,6 +16,7 @@ export default async function DeckBuilderPage({ params }: { params: Promise<{ id
     prisma.deck.findUnique({
       where: { id },
       include: {
+        themes: true,
         cards: {
           include: {
             card: {
@@ -80,6 +81,7 @@ export default async function DeckBuilderPage({ params }: { params: Promise<{ id
     <BuilderView
       deckId={id}
       deckName={deck.name}
+      themes={deck.themes}
       maybeboardName={deck.maybeboardName ?? "Maybeboard"}
       initialEntries={entries}
       libraryCards={library}
