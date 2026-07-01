@@ -320,6 +320,13 @@ export function DeckBuilder({
             Deck Builder
           </Link>
 
+          <Link
+            href={`/decks/${deckId}/builder/sacrifice`}
+            className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Sacrifice
+          </Link>
+
           {ownership.total > 0 && (
             <span
               title={`You own ${ownership.owned} of ${ownership.total} main-deck cards`}
