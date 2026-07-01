@@ -5,8 +5,18 @@ import Link from "next/link";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
 import type { DeckEntry } from "@/lib/commander";
+import type { LibraryCard } from "@/components/decks/builder-view";
 
 type SacrificeRole = "sacrifice-outlet" | "sacrifice-payoff";
+type CardSource = "main" | "maybe" | "library";
+
+type DisplayEntry = {
+  key: string;
+  cardId: string;
+  name: string;
+  manaCost: string | null;
+  source: CardSource;
+};
 
 const ROLE_LABEL: Record<SacrificeRole, string> = {
   "sacrifice-outlet": "Outlet",
@@ -26,73 +36,99 @@ const ROLE_STYLE: Record<SacrificeRole, { header: string; badge: string; addBtn:
   },
 };
 
+const SOURCE_BADGE: Record<CardSource, string | null> = {
+  main: null,
+  maybe: "text-amber-400/80 bg-amber-950/20",
+  library: "text-sky-400/80 bg-sky-950/20",
+};
+
 interface Props {
   deckId: string;
   deckName: string;
   entries: DeckEntry[];
+  libraryCards: LibraryCard[];
   cardDetails: Record<string, CardDetail>;
   initialRoles: Record<string, SacrificeRole[]>;
 }
 
-export function SacrificeView({ deckId, deckName, entries, cardDetails, initialRoles }: Props) {
+export function SacrificeView({
+  deckId,
+  deckName,
+  entries,
+  libraryCards,
+  cardDetails,
+  initialRoles,
+}: Props) {
   const [roles, setRoles] = useState<Record<string, SacrificeRole[]>>(initialRoles);
   const [selectedCard, setSelectedCard] = useState<CardDetail | null>(null);
 
-  const mainEntries = useMemo(
-    () => entries.filter((e) => e.slot === "main" && !e.isCommander),
-    [entries]
-  );
+  const deckCardIds = useMemo(() => new Set(entries.map((e) => e.cardId)), [entries]);
+
+  const allEntries = useMemo<DisplayEntry[]>(() => {
+    const deck = entries
+      .filter((e) => e.slot !== "wishlist" && !e.isCommander)
+      .map((e) => ({
+        key: e.deckCardId,
+        cardId: e.cardId,
+        name: e.name,
+        manaCost: e.manaCost,
+        source: e.slot as "main" | "maybe",
+      }));
+
+    const lib = libraryCards
+      .filter((lc) => !deckCardIds.has(lc.cardId))
+      .map((lc) => ({
+        key: lc.libraryCardId,
+        cardId: lc.cardId,
+        name: lc.name,
+        manaCost: lc.manaCost,
+        source: "library" as const,
+      }));
+
+    return [...deck, ...lib];
+  }, [entries, libraryCards, deckCardIds]);
 
   const byRole = useMemo(() => {
-    const outlets: DeckEntry[] = [];
-    const payoffs: DeckEntry[] = [];
-    for (const e of mainEntries) {
-      const r = roles[e.cardId] ?? [];
-      if (r.includes("sacrifice-outlet")) outlets.push(e);
-      if (r.includes("sacrifice-payoff")) payoffs.push(e);
+    const outlets: DisplayEntry[] = [];
+    const payoffs: DisplayEntry[] = [];
+    for (const item of allEntries) {
+      const r = roles[item.cardId] ?? [];
+      if (r.includes("sacrifice-outlet")) outlets.push(item);
+      if (r.includes("sacrifice-payoff")) payoffs.push(item);
     }
     return { outlets, payoffs };
-  }, [mainEntries, roles]);
+  }, [allEntries, roles]);
 
   const untagged = useMemo(
-    () =>
-      mainEntries.filter((e) => {
-        const r = roles[e.cardId] ?? [];
-        return r.length === 0;
-      }),
-    [mainEntries, roles]
+    () => allEntries.filter((item) => (roles[item.cardId] ?? []).length === 0),
+    [allEntries, roles]
   );
 
-  const toggle = useCallback(
-    async (cardId: string, role: SacrificeRole, add: boolean) => {
-      // Optimistic update
+  const toggle = useCallback(async (cardId: string, role: SacrificeRole, add: boolean) => {
+    setRoles((prev) => {
+      const current = prev[cardId] ?? [];
+      return {
+        ...prev,
+        [cardId]: add
+          ? [...new Set([...current, role])]
+          : current.filter((r) => r !== role),
+      };
+    });
+
+    const method = add ? "PUT" : "DELETE";
+    const res = await fetch(`/api/cards/${cardId}/themes/${role}`, { method });
+    if (!res.ok) {
       setRoles((prev) => {
         const current = prev[cardId] ?? [];
         return {
           ...prev,
           [cardId]: add
-            ? [...new Set([...current, role])]
-            : current.filter((r) => r !== role),
+            ? current.filter((r) => r !== role)
+            : [...new Set([...current, role])],
         };
       });
-
-      const method = add ? "PUT" : "DELETE";
-      const res = await fetch(`/api/cards/${cardId}/themes/${role}`, { method });
-      if (!res.ok) {
-        // Roll back on failure
-        setRoles((prev) => {
-          const current = prev[cardId] ?? [];
-          return {
-            ...prev,
-            [cardId]: add
-              ? current.filter((r) => r !== role)
-              : [...new Set([...current, role])],
-          };
-        });
-      }
-    },
-    []
-  );
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-[calc(100vh-49px)]">
@@ -112,7 +148,7 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
                     className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
                       tagged
                         ? `${style.badge} border-transparent`
-                        : `border-border text-muted-foreground hover:text-foreground`
+                        : "border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {tagged ? `✓ ${ROLE_LABEL[role]}` : `+ ${ROLE_LABEL[role]}`}
@@ -123,15 +159,18 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
           }
         />
       )}
+
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
         <span className="text-sm font-medium">{deckName}</span>
         <span className="text-xs text-muted-foreground">Sacrifice Engine</span>
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[11px] text-muted-foreground">
-            <span className="text-red-400 font-medium">{byRole.outlets.length}</span> outlet{byRole.outlets.length !== 1 ? "s" : ""}
+            <span className="text-red-400 font-medium">{byRole.outlets.length}</span>{" "}
+            outlet{byRole.outlets.length !== 1 ? "s" : ""}
             <span className="mx-1.5 opacity-40">·</span>
-            <span className="text-purple-400 font-medium">{byRole.payoffs.length}</span> payoff{byRole.payoffs.length !== 1 ? "s" : ""}
+            <span className="text-purple-400 font-medium">{byRole.payoffs.length}</span>{" "}
+            payoff{byRole.payoffs.length !== 1 ? "s" : ""}
           </span>
           <Link
             href={`/decks/${deckId}`}
@@ -152,7 +191,7 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
             const style = ROLE_STYLE[role];
             return (
               <div key={role} className="flex flex-col">
-                <div className="px-3 py-1.5 bg-muted/20 border-b border-border flex-shrink-0">
+                <div className="px-3 py-1.5 bg-muted/20 border-b border-border">
                   <span className={`text-[11px] font-semibold uppercase tracking-wider ${style.header}`}>
                     {ROLE_LABEL[role]}s ({cards.length})
                   </span>
@@ -161,15 +200,19 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
                   <p className="px-3 py-4 text-xs text-muted-foreground">None tagged yet.</p>
                 ) : (
                   <ul>
-                    {cards.map((e) => (
+                    {cards.map((item) => (
                       <li
-                        key={e.deckCardId}
+                        key={item.key}
                         className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 cursor-pointer"
-                        onClick={() => setSelectedCard(cardDetails[e.cardId] ?? null)}
+                        onClick={() => setSelectedCard(cardDetails[item.cardId] ?? null)}
                       >
-                        <span className="flex-1 text-xs truncate">{e.name}</span>
-                        {/* Show the other role badge if also tagged as it */}
-                        {(roles[e.cardId] ?? [])
+                        <span className="flex-1 text-xs truncate">{item.name}</span>
+                        {SOURCE_BADGE[item.source] && (
+                          <span className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 ${SOURCE_BADGE[item.source]}`}>
+                            {item.source}
+                          </span>
+                        )}
+                        {(roles[item.cardId] ?? [])
                           .filter((r) => r !== role)
                           .map((r) => (
                             <span key={r} className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 ${ROLE_STYLE[r].badge}`}>
@@ -177,7 +220,7 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
                             </span>
                           ))}
                         <button
-                          onClick={(ev) => { ev.stopPropagation(); toggle(e.cardId, role, false); }}
+                          onClick={(ev) => { ev.stopPropagation(); toggle(item.cardId, role, false); }}
                           title={`Remove ${ROLE_LABEL[role]} tag`}
                           className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs flex-shrink-0"
                         >
@@ -192,7 +235,7 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
           })}
         </div>
 
-        {/* Untagged cards */}
+        {/* Untagged */}
         {untagged.length > 0 && (
           <div>
             <div className="px-3 py-1.5 bg-muted/20 border-b border-border sticky top-0">
@@ -201,16 +244,23 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
               </span>
             </div>
             <ul>
-              {untagged.map((e) => (
+              {untagged.map((item) => (
                 <li
-                  key={e.deckCardId}
+                  key={item.key}
                   className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 border-b border-border/50 cursor-pointer"
-                  onClick={() => setSelectedCard(cardDetails[e.cardId] ?? null)}
+                  onClick={() => setSelectedCard(cardDetails[item.cardId] ?? null)}
                 >
                   <div className="flex-1 min-w-0">
-                    <span className="text-xs truncate block">{e.name}</span>
-                    {e.manaCost && (
-                      <span className="text-[11px] text-muted-foreground font-mono">{e.manaCost}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-xs truncate">{item.name}</span>
+                      {SOURCE_BADGE[item.source] && (
+                        <span className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 ${SOURCE_BADGE[item.source]}`}>
+                          {item.source}
+                        </span>
+                      )}
+                    </div>
+                    {item.manaCost && (
+                      <span className="text-[11px] text-muted-foreground font-mono">{item.manaCost}</span>
                     )}
                   </div>
                   <div
@@ -220,7 +270,7 @@ export function SacrificeView({ deckId, deckName, entries, cardDetails, initialR
                     {(["sacrifice-outlet", "sacrifice-payoff"] as SacrificeRole[]).map((role) => (
                       <button
                         key={role}
-                        onClick={() => toggle(e.cardId, role, true)}
+                        onClick={() => toggle(item.cardId, role, true)}
                         className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_STYLE[role].addBtn}`}
                       >
                         + {ROLE_LABEL[role]}
