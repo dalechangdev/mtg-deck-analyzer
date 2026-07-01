@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { CardDetailModal } from "@/components/cards/card-detail-modal";
+import type { CardDetail } from "@/components/cards/card-detail-modal";
 import type { DeckEntry } from "@/lib/commander";
 
 type SacrificeRole = "sacrifice-outlet" | "sacrifice-payoff";
@@ -28,11 +30,13 @@ interface Props {
   deckId: string;
   deckName: string;
   entries: DeckEntry[];
+  cardDetails: Record<string, CardDetail>;
   initialRoles: Record<string, SacrificeRole[]>;
 }
 
-export function SacrificeView({ deckId, deckName, entries, initialRoles }: Props) {
+export function SacrificeView({ deckId, deckName, entries, cardDetails, initialRoles }: Props) {
   const [roles, setRoles] = useState<Record<string, SacrificeRole[]>>(initialRoles);
+  const [selectedCard, setSelectedCard] = useState<CardDetail | null>(null);
 
   const mainEntries = useMemo(
     () => entries.filter((e) => e.slot === "main" && !e.isCommander),
@@ -92,6 +96,33 @@ export function SacrificeView({ deckId, deckName, entries, initialRoles }: Props
 
   return (
     <div className="flex flex-col h-[calc(100vh-49px)]">
+      {selectedCard && (
+        <CardDetailModal
+          card={selectedCard}
+          onClose={() => setSelectedCard(null)}
+          actions={
+            <div className="flex items-center gap-2">
+              {(["sacrifice-outlet", "sacrifice-payoff"] as SacrificeRole[]).map((role) => {
+                const tagged = (roles[selectedCard.id] ?? []).includes(role);
+                const style = ROLE_STYLE[role];
+                return (
+                  <button
+                    key={role}
+                    onClick={() => toggle(selectedCard.id, role, !tagged)}
+                    className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
+                      tagged
+                        ? `${style.badge} border-transparent`
+                        : `border-border text-muted-foreground hover:text-foreground`
+                    }`}
+                  >
+                    {tagged ? `✓ ${ROLE_LABEL[role]}` : `+ ${ROLE_LABEL[role]}`}
+                  </button>
+                );
+              })}
+            </div>
+          }
+        />
+      )}
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
         <span className="text-sm font-medium">{deckName}</span>
@@ -133,7 +164,8 @@ export function SacrificeView({ deckId, deckName, entries, initialRoles }: Props
                     {cards.map((e) => (
                       <li
                         key={e.deckCardId}
-                        className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40"
+                        className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 cursor-pointer"
+                        onClick={() => setSelectedCard(cardDetails[e.cardId] ?? null)}
                       >
                         <span className="flex-1 text-xs truncate">{e.name}</span>
                         {/* Show the other role badge if also tagged as it */}
@@ -145,7 +177,7 @@ export function SacrificeView({ deckId, deckName, entries, initialRoles }: Props
                             </span>
                           ))}
                         <button
-                          onClick={() => toggle(e.cardId, role, false)}
+                          onClick={(ev) => { ev.stopPropagation(); toggle(e.cardId, role, false); }}
                           title={`Remove ${ROLE_LABEL[role]} tag`}
                           className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs flex-shrink-0"
                         >
@@ -172,7 +204,8 @@ export function SacrificeView({ deckId, deckName, entries, initialRoles }: Props
               {untagged.map((e) => (
                 <li
                   key={e.deckCardId}
-                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 border-b border-border/50"
+                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 border-b border-border/50 cursor-pointer"
+                  onClick={() => setSelectedCard(cardDetails[e.cardId] ?? null)}
                 >
                   <div className="flex-1 min-w-0">
                     <span className="text-xs truncate block">{e.name}</span>
@@ -180,7 +213,10 @@ export function SacrificeView({ deckId, deckName, entries, initialRoles }: Props
                       <span className="text-[11px] text-muted-foreground font-mono">{e.manaCost}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <div
+                    className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    onClick={(ev) => ev.stopPropagation()}
+                  >
                     {(["sacrifice-outlet", "sacrifice-payoff"] as SacrificeRole[]).map((role) => (
                       <button
                         key={role}

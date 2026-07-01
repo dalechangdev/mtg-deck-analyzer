@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 
 export interface CardFaceDetail {
@@ -58,7 +58,15 @@ function ptLine(power: string | null, toughness: string | null, loyalty: string 
   return null;
 }
 
-export function CardDetailModal({ card, onClose }: { card: CardDetail; onClose: () => void }) {
+export function CardDetailModal({
+  card,
+  onClose,
+  actions,
+}: {
+  card: CardDetail;
+  onClose: () => void;
+  actions?: React.ReactNode;
+}) {
   const hasMultipleFaces = card.faces.length > 1;
   const [faceIndex, setFaceIndex] = useState(0);
   const [adding, setAdding] = useState(false);
@@ -211,19 +219,23 @@ export function CardDetailModal({ card, onClose }: { card: CardDetail; onClose: 
             )}
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <button
-                onClick={addToLibrary}
-                disabled={adding}
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {adding ? "Adding…" : ownedQty != null ? "Add another copy" : "+ Add to Library"}
-              </button>
-              {ownedQty != null && (
-                <span className="font-medium text-emerald-400">
-                  ✓ {ownedQty} in library
-                </span>
+              {actions ?? (
+                <>
+                  <button
+                    onClick={addToLibrary}
+                    disabled={adding}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {adding ? "Adding…" : ownedQty != null ? "Add another copy" : "+ Add to Library"}
+                  </button>
+                  {ownedQty != null && (
+                    <span className="font-medium text-emerald-400">
+                      ✓ {ownedQty} in library
+                    </span>
+                  )}
+                  {addError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
+                </>
               )}
-              {addError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
               {card.canBeCommander && <span className="font-medium text-amber-400">⭐ Can be your Commander</span>}
               {card.scryfallUri && (
                 <a
