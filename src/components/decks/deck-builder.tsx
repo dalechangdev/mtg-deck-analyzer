@@ -56,6 +56,9 @@ export function DeckBuilder({
 
   const commander = entries.find((e) => e.isCommander);
   const validation = validateDeck(entries);
+  const hasSacrificeTheme = selectedThemeIds.some(
+    (id) => id === "sacrifice" || id === "aristocrats"
+  );
   const isValid =
     validation.cardCount === 100 &&
     validation.commanderSet &&
@@ -320,12 +323,14 @@ export function DeckBuilder({
             Deck Builder
           </Link>
 
-          <Link
-            href={`/decks/${deckId}/builder/sacrifice`}
-            className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Sacrifice
-          </Link>
+          {hasSacrificeTheme && (
+            <Link
+              href={`/decks/${deckId}/builder/sacrifice`}
+              className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Sacrifice
+            </Link>
+          )}
 
           {ownership.total > 0 && (
             <span
