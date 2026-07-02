@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { SacrificeView } from "@/components/decks/sacrifice-view";
+import { SacrificeThemeGate } from "@/components/decks/sacrifice-theme-gate";
 import type { DeckEntry } from "@/lib/commander";
 import { isColorSubset } from "@/lib/commander";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
@@ -53,45 +54,50 @@ export default async function SacrificePage({
 }) {
   const { id } = await params;
 
-  const [deck, libraryRows] = await Promise.all([
-    prisma.deck.findUnique({
-      where: { id },
-      include: {
-        cards: {
-          include: {
-            card: {
-              include: {
-                printings: { take: 1, orderBy: { setCode: "desc" } },
-                faces: { orderBy: { faceIndex: "asc" } },
-                themes: {
-                  where: { id: { in: SACRIFICE_ROLE_IDS } },
-                  select: { id: true },
-                },
+  const deck = await prisma.deck.findUnique({
+    where: { id },
+    include: {
+      themes: { select: { id: true } },
+      cards: {
+        include: {
+          card: {
+            include: {
+              printings: { take: 1, orderBy: { setCode: "desc" } },
+              faces: { orderBy: { faceIndex: "asc" } },
+              themes: {
+                where: { id: { in: SACRIFICE_ROLE_IDS } },
+                select: { id: true },
               },
             },
           },
-          orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
         },
+        orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
       },
-    }),
-    prisma.libraryCard.findMany({
-      include: {
-        card: {
-          include: {
-            printings: { take: 1, orderBy: { setCode: "desc" } },
-            faces: { orderBy: { faceIndex: "asc" } },
-            themes: {
-              where: { id: { in: SACRIFICE_ROLE_IDS } },
-              select: { id: true },
-            },
+    },
+  });
+
+  if (!deck) notFound();
+
+  const hasSacrificeTheme = deck.themes.some(
+    (t) => t.id === "sacrifice" || t.id === "aristocrats"
+  );
+  if (!hasSacrificeTheme) return <SacrificeThemeGate deckId={id} />;
+
+  const libraryRows = await prisma.libraryCard.findMany({
+    include: {
+      card: {
+        include: {
+          printings: { take: 1, orderBy: { setCode: "desc" } },
+          faces: { orderBy: { faceIndex: "asc" } },
+          themes: {
+            where: { id: { in: SACRIFICE_ROLE_IDS } },
+            select: { id: true },
           },
         },
       },
-      orderBy: { card: { name: "asc" } },
-    }),
-  ]);
-
-  if (!deck) notFound();
+    },
+    orderBy: { card: { name: "asc" } },
+  });
 
   const commander = deck.cards.find((dc) => dc.isCommander);
 
