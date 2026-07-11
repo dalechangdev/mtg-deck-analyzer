@@ -58,6 +58,13 @@ function ptLine(power: string | null, toughness: string | null, loyalty: string 
   return null;
 }
 
+interface ItacaPricing {
+  url: string;
+  inStock: boolean;
+  lowestPrice: number | null;
+  currency: string | null;
+}
+
 export function CardDetailModal({
   card,
   onClose,
@@ -72,6 +79,23 @@ export function CardDetailModal({
   const [adding, setAdding] = useState(false);
   const [ownedQty, setOwnedQty] = useState<number | null>(null);
   const [addError, setAddError] = useState(false);
+  const [pricing, setPricing] = useState<ItacaPricing | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPricing(undefined);
+    fetch(`/api/cards/${card.id}/price`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled) setPricing(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPricing(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [card.id]);
 
   const addToLibrary = async () => {
     if (adding) return;
@@ -245,6 +269,18 @@ export function CardDetailModal({
                   className="text-primary underline-offset-4 hover:underline"
                 >
                   View on Scryfall ↗
+                </a>
+              )}
+              {pricing && (
+                <a
+                  href={pricing.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {pricing.inStock && pricing.lowestPrice != null
+                    ? `Itaca.gg from €${pricing.lowestPrice.toFixed(2)} ↗`
+                    : "Itaca.gg (out of stock) ↗"}
                 </a>
               )}
             </div>
