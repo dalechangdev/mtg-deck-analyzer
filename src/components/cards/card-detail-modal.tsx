@@ -80,6 +80,9 @@ export function CardDetailModal({
   const [ownedQty, setOwnedQty] = useState<number | null>(null);
   const [addError, setAddError] = useState(false);
   const [pricing, setPricing] = useState<ItacaPricing | null | undefined>(undefined);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [interested, setInterested] = useState(false);
+  const [cartError, setCartError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +117,25 @@ export function CardDetailModal({
       setAddError(true);
     } finally {
       setAdding(false);
+    }
+  };
+
+  const addToCart = async () => {
+    if (addingToCart || interested) return;
+    setAddingToCart(true);
+    setCartError(false);
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: card.id }),
+      });
+      if (!res.ok) throw new Error("request failed");
+      setInterested(true);
+    } catch {
+      setCartError(true);
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -258,6 +280,15 @@ export function CardDetailModal({
                     </span>
                   )}
                   {addError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
+
+                  <button
+                    onClick={addToCart}
+                    disabled={addingToCart || interested}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {interested ? "✓ Interested" : addingToCart ? "Adding…" : "☆ Interested"}
+                  </button>
+                  {cartError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
                 </>
               )}
               {card.canBeCommander && <span className="font-medium text-amber-400">⭐ Can be your Commander</span>}

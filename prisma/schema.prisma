@@ -24,12 +24,13 @@ model Card {
   isCommanderLegal Boolean  @default(false)
   canBeCommander   Boolean  @default(false) // legendary creature or designated planeswalker
 
-  printings    CardPrinting[]
-  faces        CardFace[]
-  deckCards    DeckCard[]
-  libraryEntry LibraryCard?
-  annotations  CardAnnotation[]
-  themes       CardTheme[]
+  printings         CardPrinting[]
+  faces             CardFace[]
+  deckCards         DeckCard[]
+  libraryEntry      LibraryCard?
+  shoppingCartEntry ShoppingCartCard?
+  annotations       CardAnnotation[]
+  themes            CardTheme[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,7 +73,7 @@ model CardPrinting {
   setName         String
   rarity          String
   collectorNumber String
-  imageUris       Json?   // { small, normal, large, png, art_crop, border_crop }
+  imageUris       Json? // { small, normal, large, png, art_crop, border_crop }
   scryfallUri     String?
 
   @@index([cardId])
@@ -80,9 +81,9 @@ model CardPrinting {
 }
 
 model Deck {
-  id            String     @id @default(cuid())
-  name          String
-  description   String?
+  id             String           @id @default(cuid())
+  name           String
+  description    String?
   maybeboardName String?
   wishlistName   String?
   cards          DeckCard[]
@@ -122,8 +123,8 @@ model CardAnnotation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  deck Deck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   @@index([deckId, cardId])
 }
@@ -137,6 +138,17 @@ model LibraryCard {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([cardId])
+}
+
+// Cards marked "interested" from the browser — single global cart (no User model, local app)
+model ShoppingCartCard {
+  id     String @id @default(cuid())
+  cardId String @unique
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 
   @@index([cardId])
 }

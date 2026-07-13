@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Prisma } from "@/generated/prisma/client";
 
-type CardWithRelations = Prisma.CardGetPayload<{
+export type CardWithRelations = Prisma.CardGetPayload<{
   include: {
     printings: true;
     faces: true;
@@ -26,7 +26,7 @@ function getLargeUrl(card: CardWithRelations): string | null {
   return uris?.large ?? uris?.png ?? uris?.normal ?? uris?.small ?? card.faces[0]?.imageUri ?? null;
 }
 
-function toCardDetail(card: CardWithRelations): CardDetail {
+export function toCardDetail(card: CardWithRelations): CardDetail {
   const printing = card.printings[0];
   return {
     id: card.id,

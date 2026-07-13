@@ -31,6 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/packs" className="hover:text-foreground transition-colors">
               Packs
             </Link>
+            <Link href="/cart" className="hover:text-foreground transition-colors">
+              Cart
+            </Link>
           </nav>
         </header>
         <main className="flex-1">{children}</main>
