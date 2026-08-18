@@ -323,6 +323,13 @@ export function DeckBuilder({
             Deck Builder
           </Link>
 
+          <Link
+            href={`/decks/${deckId}/analysis`}
+            className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Analysis
+          </Link>
+
           {hasSacrificeTheme && (
             <Link
               href={`/decks/${deckId}/builder/sacrifice`}

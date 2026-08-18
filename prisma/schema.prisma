@@ -31,6 +31,7 @@ model Card {
   shoppingCartEntry ShoppingCartCard?
   annotations       CardAnnotation[]
   themes            CardTheme[]
+  roleAssignments   DeckCardRole[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,6 +90,8 @@ model Deck {
   cards          DeckCard[]
   annotations    CardAnnotation[]
   themes         DeckTheme[]
+  templates      DeckTemplate[]
+  cardRoles      DeckCardRole[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -150,5 +153,113 @@ model ShoppingCartCard {
 
   createdAt DateTime @default(now())
 
+  @@index([cardId])
+}
+
+// How a card automatically qualifies for a role.
+// CLASSIFIER    — a predicate registered in src/lib/deck-template.ts (e.g. "isManaRamp")
+// THEME         — the card carries the CardTheme with this id
+// TYPE_LINE     — case-insensitive substring of the type line (e.g. "Land")
+// ORACLE_REGEX  — regex tested against oracle text
+// MANUAL_ONLY   — never auto-matches; only DeckCardRole can fill it
+enum RoleMatcherKind {
+  CLASSIFIER
+  THEME
+  TYPE_LINE
+  ORACLE_REGEX
+  MANUAL_ONLY
+}
+
+enum RoleAssignment {
+  INCLUDED
+  EXCLUDED
+}
+
+// The vocabulary of roles a card can play in a deck. A card may fill several.
+model CardRole {
+  id          String  @id // slug, e.g. "ramp", "mass-disruption"
+  name        String  @unique
+  description String?
+  isBuiltIn   Boolean @default(false)
+
+  matchers        RoleMatcher[]
+  requirements    TemplateRequirement[]
+  deckAssignments DeckCardRole[]
+}
+
+// A card fills the role if ANY of its matchers hit.
+model RoleMatcher {
+  id     String          @id @default(cuid())
+  roleId String
+  role   CardRole        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  kind   RoleMatcherKind
+  value  String // predicate name | CardTheme id | type-line substring | regex source
+
+  @@index([roleId])
+}
+
+// A named deckbuilding ruleset, e.g. "Commander Baseline"
+model AnalysisTemplate {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  format      String  @default("commander")
+  deckSize    Int     @default(100)
+  isBuiltIn   Boolean @default(false) // reference templates — duplicate to edit
+
+  requirements TemplateRequirement[]
+  decks        DeckTemplate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One line item: "12 cards that provide card advantage".
+// Requirements overlap by design — targets may sum past deckSize.
+model TemplateRequirement {
+  id          String           @id @default(cuid())
+  templateId  String
+  template    AnalysisTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  roleId      String
+  role        CardRole         @relation(fields: [roleId], references: [id])
+  targetCount Int
+  minCount    Int? // 38 lands is really 36–40
+  maxCount    Int?
+  sortOrder   Int              @default(0)
+  note        String?
+
+  @@unique([templateId, roleId])
+  @@index([templateId])
+}
+
+model DeckTemplate {
+  deckId     String
+  templateId String
+  deck       Deck             @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  template   AnalysisTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  attachedAt DateTime         @default(now())
+
+  @@id([deckId, templateId])
+  @@index([templateId])
+}
+
+// Per-deck human override — beats auto-classification in both directions.
+// The only source for deck-relative roles like "identity".
+model DeckCardRole {
+  id         String         @id @default(cuid())
+  deckId     String
+  cardId     String
+  roleId     String
+  assignment RoleAssignment @default(INCLUDED)
+
+  deck Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  card Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  role CardRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([deckId, cardId, roleId])
+  @@index([deckId])
   @@index([cardId])
 }

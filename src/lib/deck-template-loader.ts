@@ -1,0 +1,138 @@
+import { prisma } from "@/lib/prisma";
+import {
+  evaluateTemplate,
+  toOverrides,
+  type AnalyzedCard,
+  type EvaluateOptions,
+  type MatcherKind,
+  type RoleOverrideRow,
+  type RoleOverrides,
+  type Template,
+  type TemplateAnalysis,
+} from "@/lib/deck-template";
+
+// Server-side glue: loads a deck + template out of Postgres and hands them to
+// the pure evaluator in deck-template.ts. Analyses are derived, never stored —
+// a card swap can't leave a stale scorecard behind.
+
+function toImageUrl(
+  printings: { imageUris: unknown }[],
+  faces: { imageUri: string | null }[]
+): string | null {
+  const imageUris = printings[0]?.imageUris as Record<string, string> | null;
+  return imageUris?.normal ?? imageUris?.small ?? faces[0]?.imageUri ?? null;
+}
+
+export const DEFAULT_TEMPLATE_ID = "commander-baseline";
+
+/**
+ * Which template should this deck be scored against? An explicit request wins,
+ * then whatever the deck has attached, then the built-in baseline.
+ */
+export async function resolveTemplateId(
+  deckId: string,
+  requested?: string | null
+): Promise<string> {
+  if (requested) return requested;
+
+  const attached = await prisma.deckTemplate.findFirst({
+    where: { deckId },
+    orderBy: { attachedAt: "asc" },
+    select: { templateId: true },
+  });
+
+  return attached?.templateId ?? DEFAULT_TEMPLATE_ID;
+}
+
+export async function loadTemplate(templateId: string): Promise<Template | null> {
+  const template = await prisma.analysisTemplate.findUnique({
+    where: { id: templateId },
+    include: {
+      requirements: {
+        orderBy: { sortOrder: "asc" },
+        include: { role: { include: { matchers: true } } },
+      },
+    },
+  });
+  if (!template) return null;
+
+  return {
+    id: template.id,
+    name: template.name,
+    deckSize: template.deckSize,
+    requirements: template.requirements.map((req) => ({
+      targetCount: req.targetCount,
+      minCount: req.minCount,
+      maxCount: req.maxCount,
+      note: req.note,
+      role: {
+        id: req.role.id,
+        name: req.role.name,
+        matchers: req.role.matchers.map((m) => ({
+          kind: m.kind as MatcherKind,
+          value: m.value,
+        })),
+      },
+    })),
+  };
+}
+
+export async function loadDeckCards(deckId: string): Promise<AnalyzedCard[]> {
+  const deckCards = await prisma.deckCard.findMany({
+    where: { deckId },
+    include: {
+      card: {
+        include: {
+          themes: { select: { id: true } },
+          printings: { take: 1, orderBy: { setCode: "desc" } },
+          faces: { take: 1, orderBy: { faceIndex: "asc" } },
+        },
+      },
+    },
+    orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
+  });
+
+  return deckCards.map((dc) => ({
+    deckCardId: dc.id,
+    isCommander: dc.isCommander,
+    quantity: dc.quantity,
+    slot: (dc.slot ?? "main") as "main" | "maybe" | "wishlist",
+    cardId: dc.card.id,
+    name: dc.card.name,
+    manaCost: dc.card.manaCost,
+    cmc: dc.card.cmc,
+    typeLine: dc.card.typeLine,
+    oracleText: dc.card.oracleText,
+    colorIdentity: dc.card.colorIdentity,
+    keywords: dc.card.keywords,
+    canBeCommander: dc.card.canBeCommander,
+    imageUrl: toImageUrl(dc.card.printings, dc.card.faces),
+    themeIds: dc.card.themes.map((t) => t.id),
+  }));
+}
+
+export async function loadRoleOverrideRows(deckId: string): Promise<RoleOverrideRow[]> {
+  return prisma.deckCardRole.findMany({
+    where: { deckId },
+    select: { cardId: true, roleId: true, assignment: true },
+  });
+}
+
+export async function loadRoleOverrides(deckId: string): Promise<RoleOverrides> {
+  return toOverrides(await loadRoleOverrideRows(deckId));
+}
+
+export async function analyzeDeck(
+  deckId: string,
+  templateId: string,
+  options: EvaluateOptions = {}
+): Promise<TemplateAnalysis | null> {
+  const [template, entries, overrides] = await Promise.all([
+    loadTemplate(templateId),
+    loadDeckCards(deckId),
+    loadRoleOverrides(deckId),
+  ]);
+  if (!template) return null;
+
+  return evaluateTemplate(entries, template, overrides, options);
+}
