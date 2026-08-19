@@ -79,7 +79,9 @@ export async function loadDeckCards(deckId: string): Promise<AnalyzedCard[]> {
         include: {
           themes: { select: { id: true } },
           printings: { take: 1, orderBy: { setCode: "desc" } },
-          faces: { take: 1, orderBy: { faceIndex: "asc" } },
+          // All faces, not just the first: the classifiers read face text for
+          // split, adventure, and modal double-faced cards.
+          faces: { orderBy: { faceIndex: "asc" } },
         },
       },
     },
@@ -101,6 +103,7 @@ export async function loadDeckCards(deckId: string): Promise<AnalyzedCard[]> {
     keywords: dc.card.keywords,
     canBeCommander: dc.card.canBeCommander,
     imageUrl: toImageUrl(dc.card.printings, dc.card.faces),
+    faces: dc.card.faces.map((f) => ({ typeLine: f.typeLine, oracleText: f.oracleText })),
     themeIds: dc.card.themes.map((t) => t.id),
   }));
 }

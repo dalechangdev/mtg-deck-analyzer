@@ -1,5 +1,11 @@
 import type { DeckEntry } from "@/lib/commander";
-import { isBoardClear, isManaRamp } from "@/lib/commander";
+import {
+  classifierText,
+  isBoardClear,
+  isCardAdvantage,
+  isManaRamp,
+  isTargetedDisruption,
+} from "@/lib/commander";
 
 // A deck card plus the global CardTheme tags it carries — THEME matchers need them.
 export type AnalyzedCard = DeckEntry & { themeIds: string[] };
@@ -57,6 +63,8 @@ export function toOverrides(rows: RoleOverrideRow[]): RoleOverrides {
 const CLASSIFIERS: Record<string, (card: AnalyzedCard) => boolean> = {
   isManaRamp,
   isBoardClear,
+  isCardAdvantage,
+  isTargetedDisruption,
 };
 
 const regexCache = new Map<string, RegExp | null>();
@@ -83,7 +91,9 @@ function matchesMatcher(card: AnalyzedCard, matcher: RoleMatcher): boolean {
     case "TYPE_LINE":
       return card.typeLine.toLowerCase().includes(matcher.value.toLowerCase());
     case "ORACLE_REGEX":
-      return compile(matcher.value)?.test(card.oracleText ?? "") ?? false;
+      // Same text the classifiers see, so a user-authored regex isn't blind to
+      // split/adventure/MDFC cards or fooled by keyword reminder text.
+      return compile(matcher.value)?.test(classifierText(card)) ?? false;
   }
 }
 
