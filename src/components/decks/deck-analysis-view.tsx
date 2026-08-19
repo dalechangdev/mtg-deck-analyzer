@@ -12,6 +12,10 @@ import {
   type Template,
 } from "@/lib/deck-template";
 import { toastManager } from "@/lib/toast";
+import {
+  CardDetailModal,
+  type CardDetail,
+} from "@/components/cards/card-detail-modal";
 
 type Assignment = "INCLUDED" | "EXCLUDED";
 
@@ -27,6 +31,7 @@ interface Props {
   template: Template;
   templates: { id: string; name: string; isBuiltIn: boolean }[];
   entries: AnalyzedCard[];
+  cardDetails: Record<string, CardDetail>;
   initialOverrides: RoleOverrideRow[];
 }
 
@@ -36,6 +41,7 @@ export function DeckAnalysisView({
   template,
   templates,
   entries,
+  cardDetails,
   initialOverrides,
 }: Props) {
   const router = useRouter();
@@ -47,6 +53,7 @@ export function DeckAnalysisView({
     )
   );
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   // The evaluator is pure, so overrides re-score instantly in the browser and
   // the write to Postgres happens in the background.
@@ -120,10 +127,63 @@ export function DeckAnalysisView({
     [template]
   );
 
+  const filledRolesByCard = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const req of analysis.requirements) {
+      for (const cardId of req.cardIds) {
+        const set = map.get(cardId) ?? new Set<string>();
+        set.add(req.roleId);
+        map.set(cardId, set);
+      }
+    }
+    return map;
+  }, [analysis]);
+
+  // Clicking a role in the modal flips it: an unfilled role gets assigned by
+  // hand, a filled one gets dropped — clearing the override first when the
+  // current state came from one, so automatic classification takes back over.
+  const toggleRole = useCallback(
+    (cardId: string, roleId: string, filled: boolean) => {
+      const current = overrides[overrideKey(cardId, roleId)];
+      if (filled) setOverride(cardId, roleId, current === "INCLUDED" ? null : "EXCLUDED");
+      else setOverride(cardId, roleId, current === "EXCLUDED" ? null : "INCLUDED");
+    },
+    [overrides, setOverride]
+  );
+
+  const selectedCard = selectedCardId ? cardDetails[selectedCardId] ?? null : null;
+
   const overlap = analysis.targetSum - analysis.deckSize;
 
   return (
     <div className="flex flex-col h-[calc(100vh-49px)]">
+      {selectedCard && (
+        <CardDetailModal
+          card={selectedCard}
+          onClose={() => setSelectedCardId(null)}
+          actions={
+            <div className="flex flex-wrap items-center gap-1.5">
+              {roles.map((role) => {
+                const filled = filledRolesByCard.get(selectedCard.id)?.has(role.id) ?? false;
+                return (
+                  <button
+                    key={role.id}
+                    onClick={() => toggleRole(selectedCard.id, role.id, filled)}
+                    className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
+                      filled
+                        ? "border-transparent bg-emerald-950/40 text-emerald-400"
+                        : "border-border text-muted-foreground hover:text-foreground hover:border-input"
+                    }`}
+                  >
+                    {filled ? `\u2713 ${role.name}` : `+ ${role.name}`}
+                  </button>
+                );
+              })}
+            </div>
+          }
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
         <span className="text-sm font-medium">{deckName}</span>
@@ -329,12 +389,17 @@ export function DeckAnalysisView({
                     key={cardId}
                     className="group flex items-center gap-2 px-4 py-1.5 hover:bg-muted/40 border-b border-border/50"
                   >
-                    <div className="flex-1 min-w-0">
+                    <button
+                      onClick={() => setSelectedCardId(cardId)}
+                      disabled={!cardDetails[cardId]}
+                      title="View card details"
+                      className="flex-1 min-w-0 text-left cursor-pointer disabled:cursor-default"
+                    >
                       <span className="text-xs truncate">{card.name}</span>
                       <span className="text-[11px] text-muted-foreground ml-2">
                         {card.typeLine}
                       </span>
-                    </div>
+                    </button>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                       {roles.map((role) => (
                         <button

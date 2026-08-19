@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
+  loadDeckCardDetails,
   loadDeckCards,
   loadRoleOverrideRows,
   loadTemplate,
@@ -29,9 +30,10 @@ export default async function DeckAnalysisPage({
     typeof requested === "string" ? requested : null
   );
 
-  const [template, entries, overrideRows, templates] = await Promise.all([
+  const [template, entries, cardDetails, overrideRows, templates] = await Promise.all([
     loadTemplate(templateId),
     loadDeckCards(id),
+    loadDeckCardDetails(id),
     loadRoleOverrideRows(id),
     prisma.analysisTemplate.findMany({
       orderBy: [{ isBuiltIn: "desc" }, { name: "asc" }],
@@ -49,6 +51,7 @@ export default async function DeckAnalysisPage({
       template={template}
       templates={templates}
       entries={entries}
+      cardDetails={cardDetails}
       initialOverrides={overrideRows}
     />
   );

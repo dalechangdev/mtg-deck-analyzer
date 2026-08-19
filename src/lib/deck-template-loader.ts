@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import type { CardDetail } from "@/components/cards/card-detail-modal";
+import { cardDetailInclude, toCardDetail, toImageUrl } from "@/lib/card-detail";
 import {
   evaluateTemplate,
   toOverrides,
@@ -14,14 +16,6 @@ import {
 // Server-side glue: loads a deck + template out of Postgres and hands them to
 // the pure evaluator in deck-template.ts. Analyses are derived, never stored —
 // a card swap can't leave a stale scorecard behind.
-
-function toImageUrl(
-  printings: { imageUris: unknown }[],
-  faces: { imageUri: string | null }[]
-): string | null {
-  const imageUris = printings[0]?.imageUris as Record<string, string> | null;
-  return imageUris?.normal ?? imageUris?.small ?? faces[0]?.imageUri ?? null;
-}
 
 export const DEFAULT_TEMPLATE_ID = "commander-baseline";
 
@@ -109,6 +103,23 @@ export async function loadDeckCards(deckId: string): Promise<AnalyzedCard[]> {
     imageUrl: toImageUrl(dc.card.printings, dc.card.faces),
     themeIds: dc.card.themes.map((t) => t.id),
   }));
+}
+
+/**
+ * Full card details for the deck, keyed by cardId — what the card modal needs
+ * on top of the trimmed `AnalyzedCard` rows the evaluator runs on.
+ */
+export async function loadDeckCardDetails(
+  deckId: string
+): Promise<Record<string, CardDetail>> {
+  const deckCards = await prisma.deckCard.findMany({
+    where: { deckId },
+    include: { card: { include: cardDetailInclude } },
+  });
+
+  return Object.fromEntries(
+    deckCards.map((dc) => [dc.card.id, toCardDetail(dc.card)])
+  );
 }
 
 export async function loadRoleOverrideRows(deckId: string): Promise<RoleOverrideRow[]> {
