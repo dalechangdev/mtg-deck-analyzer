@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-export type RequirementInput = {
-  roleId: string;
-  targetCount: number;
-  minCount?: number | null;
-  maxCount?: number | null;
-  note?: string | null;
-};
+import {
+  isUniqueViolation,
+  readJsonBody,
+  validateNewTemplate,
+} from "@/lib/template-input";
 
 export async function GET() {
   const templates = await prisma.analysisTemplate.findMany({
@@ -41,53 +38,37 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const body = await readJsonBody(req);
+  if (!body.ok) return NextResponse.json({ error: body.error }, { status: body.status });
 
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  const parsed = await validateNewTemplate(body.value);
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: parsed.status });
 
-  const requirements: RequirementInput[] = Array.isArray(body.requirements)
-    ? body.requirements
-    : [];
-  if (requirements.length === 0) {
-    return NextResponse.json({ error: "At least one requirement is required" }, { status: 400 });
-  }
+  const { name, description, format, deckSize, requirements } = parsed.value;
 
-  // Roles must exist — a requirement pointing at a missing role would fail the
-  // FK with an opaque error.
-  const roles = await prisma.cardRole.findMany({
-    where: { id: { in: requirements.map((r) => r.roleId) } },
-    select: { id: true },
-  });
-  const known = new Set(roles.map((r) => r.id));
-  const unknown = requirements.filter((r) => !known.has(r.roleId)).map((r) => r.roleId);
-  if (unknown.length > 0) {
-    return NextResponse.json({ error: `Unknown roles: ${unknown.join(", ")}` }, { status: 400 });
-  }
-
-  const existing = await prisma.analysisTemplate.findUnique({ where: { name } });
-  if (existing) {
-    return NextResponse.json({ error: "A template with that name already exists" }, { status: 409 });
-  }
-
-  const template = await prisma.analysisTemplate.create({
-    data: {
-      name,
-      description: typeof body.description === "string" ? body.description : null,
-      format: typeof body.format === "string" ? body.format : "commander",
-      deckSize: typeof body.deckSize === "number" ? body.deckSize : 100,
-      requirements: {
-        create: requirements.map((r, i) => ({
-          roleId: r.roleId,
-          targetCount: r.targetCount,
-          minCount: r.minCount ?? null,
-          maxCount: r.maxCount ?? null,
-          note: r.note ?? null,
-          sortOrder: i,
-        })),
+  try {
+    const template = await prisma.analysisTemplate.create({
+      data: {
+        name,
+        description: description ?? null,
+        ...(format !== undefined && { format }),
+        ...(deckSize !== undefined && { deckSize }),
+        // Requirements are stored in the order they arrive — the manager lists
+        // them the way the user arranged them.
+        requirements: {
+          create: requirements.map((r, i) => ({ ...r, sortOrder: i })),
+        },
       },
-    },
-  });
+    });
 
-  return NextResponse.json({ id: template.id }, { status: 201 });
+    return NextResponse.json({ id: template.id }, { status: 201 });
+  } catch (error) {
+    if (isUniqueViolation(error, "name")) {
+      return NextResponse.json(
+        { error: "A template with that name already exists" },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 }

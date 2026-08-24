@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { RequirementInput } from "@/app/api/templates/route";
+import {
+  isUniqueViolation,
+  readJsonBody,
+  validateTemplateUpdate,
+} from "@/lib/template-input";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -39,7 +43,6 @@ export async function GET(_req: Request, { params }: Ctx) {
 
 export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params;
-  const body = await req.json();
 
   const template = await prisma.analysisTemplate.findUnique({ where: { id } });
   if (!template) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -50,41 +53,38 @@ export async function PATCH(req: Request, { params }: Ctx) {
     );
   }
 
-  const data: {
-    name?: string;
-    description?: string | null;
-    format?: string;
-    deckSize?: number;
-  } = {};
-  if (typeof body.name === "string" && body.name.trim()) data.name = body.name.trim();
-  if ("description" in body) data.description = body.description ?? null;
-  if (typeof body.format === "string") data.format = body.format;
-  if (typeof body.deckSize === "number") data.deckSize = body.deckSize;
+  const body = await readJsonBody(req);
+  if (!body.ok) return NextResponse.json({ error: body.error }, { status: body.status });
 
-  const requirements: RequirementInput[] | null = Array.isArray(body.requirements)
-    ? body.requirements
-    : null;
+  const parsed = await validateTemplateUpdate(body.value, id);
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: parsed.status });
 
-  // Requirements are replaced wholesale — simpler than diffing, and the set is
-  // small. Wrapped so a bad requirement can't leave the template with none.
-  await prisma.$transaction(async (tx) => {
-    await tx.analysisTemplate.update({ where: { id }, data });
+  // Only the keys the request actually supplied are present, so an update that
+  // touches one field leaves the rest of the row alone.
+  const { requirements, ...data } = parsed.value;
 
-    if (requirements) {
-      await tx.templateRequirement.deleteMany({ where: { templateId: id } });
-      await tx.templateRequirement.createMany({
-        data: requirements.map((r, i) => ({
-          templateId: id,
-          roleId: r.roleId,
-          targetCount: r.targetCount,
-          minCount: r.minCount ?? null,
-          maxCount: r.maxCount ?? null,
-          note: r.note ?? null,
-          sortOrder: i,
-        })),
-      });
+  try {
+    // Requirements are replaced wholesale — simpler than diffing, and the set is
+    // small. Wrapped so a bad requirement can't leave the template with none.
+    await prisma.$transaction(async (tx) => {
+      await tx.analysisTemplate.update({ where: { id }, data });
+
+      if (requirements) {
+        await tx.templateRequirement.deleteMany({ where: { templateId: id } });
+        await tx.templateRequirement.createMany({
+          data: requirements.map((r, i) => ({ ...r, templateId: id, sortOrder: i })),
+        });
+      }
+    });
+  } catch (error) {
+    if (isUniqueViolation(error, "name")) {
+      return NextResponse.json(
+        { error: "A template with that name already exists" },
+        { status: 409 }
+      );
     }
-  });
+    throw error;
+  }
 
   return new NextResponse(null, { status: 204 });
 }

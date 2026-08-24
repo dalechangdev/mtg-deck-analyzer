@@ -33,13 +33,21 @@ type Draft = {
   requirements: Requirement[];
 };
 
-function toDraft(template: TemplateSummary, options: { copy?: boolean } = {}): Draft {
+function toDraft(template: TemplateSummary): Draft {
   return {
-    id: options.copy ? null : template.id,
-    name: options.copy ? `${template.name} (copy)` : template.name,
+    id: template.id,
+    name: template.name,
     description: template.description ?? "",
     deckSize: template.deckSize,
-    requirements: template.requirements.map((r) => ({ ...r })),
+    // Field by field: the detail endpoint also returns roleName/roleDescription,
+    // which have no business in a save body.
+    requirements: template.requirements.map((r) => ({
+      roleId: r.roleId,
+      targetCount: r.targetCount,
+      minCount: r.minCount,
+      maxCount: r.maxCount,
+      note: r.note,
+    })),
   };
 }
 
@@ -85,9 +93,45 @@ export function TemplateManager({ initialTemplates, roles }: Props) {
     });
   }, [roles]);
 
-  const startEdit = useCallback((template: TemplateSummary, copy: boolean) => {
-    setDraft(toDraft(template, { copy }));
+  const startEdit = useCallback((template: TemplateSummary) => {
+    setDraft(toDraft(template));
   }, []);
+
+  /**
+   * Duplicating is a server operation — it copies the format and picks a free
+   * "(copy N)" name, neither of which this component can do on its own. The
+   * copy is then read back and opened for editing, since wanting to change
+   * something is the reason to duplicate a template at all.
+   */
+  const duplicate = useCallback(
+    async (template: TemplateSummary) => {
+      setSaving(true);
+      const res = await fetch(`/api/templates/${template.id}/duplicate`, { method: "POST" });
+      setSaving(false);
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Duplicate failed" }));
+        toastManager.add({
+          title: "Could not duplicate template",
+          description: error.error,
+          timeout: 5000,
+        });
+        return;
+      }
+
+      const { id } = await res.json();
+      setSelectedId(id);
+
+      // Read the copy back rather than assuming what the server copied.
+      const copy = await fetch(`/api/templates/${id}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null);
+      if (copy) setDraft(toDraft(copy));
+
+      router.refresh();
+    },
+    [router]
+  );
 
   const updateRequirement = useCallback(
     (index: number, patch: Partial<Requirement>) => {
@@ -393,15 +437,16 @@ export function TemplateManager({ initialTemplates, roles }: Props) {
               )}
               <div className="ml-auto flex items-center gap-2">
                 <button
-                  onClick={() => startEdit(selected, true)}
-                  className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground"
+                  onClick={() => duplicate(selected)}
+                  disabled={saving}
+                  className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
                 >
                   Duplicate
                 </button>
                 {!selected.isBuiltIn && (
                   <>
                     <button
-                      onClick={() => startEdit(selected, false)}
+                      onClick={() => startEdit(selected)}
                       className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground"
                     >
                       Edit
