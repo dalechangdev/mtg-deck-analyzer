@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Modal, ModalBody, ModalHeader } from "@/components/ui/modal";
+import { Textarea } from "@/components/ui/textarea";
 
 type Annotation = {
   id: string;
@@ -25,18 +27,6 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [onClose]);
 
   useEffect(() => {
     fetch(`/api/decks/${deckId}/annotations?cardId=${encodeURIComponent(cardId)}`)
@@ -86,43 +76,23 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex flex-col max-h-[80vh] w-full max-w-md overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-          <div>
-            <h2 className="text-sm font-semibold">Notes</h2>
-            <p className="text-xs text-muted-foreground">{cardName}</p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            ✕
-          </button>
+    <Modal open onClose={onClose} size="sm" className="max-h-[80vh]">
+      <ModalHeader title="Notes" description={cardName} className="px-4" />
+
+      {/* Card image */}
+      {imageUrl && (
+        <div className="flex justify-center px-4 py-3 border-b border-border flex-shrink-0 bg-muted/10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt={cardName}
+            className="rounded-xl w-40 aspect-[63/88] object-cover shadow-md"
+          />
         </div>
+      )}
 
-        {/* Card image */}
-        {imageUrl && (
-          <div className="flex justify-center px-4 py-3 border-b border-border flex-shrink-0 bg-muted/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt={cardName}
-              className="rounded-xl w-40 aspect-[63/88] object-cover shadow-md"
-            />
-          </div>
-        )}
-
-        {/* Annotation list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+      {/* Annotation list */}
+      <ModalBody className="p-4 space-y-3">
           {loading ? (
             <p className="text-xs text-muted-foreground">Loading…</p>
           ) : annotations.length === 0 ? (
@@ -132,7 +102,7 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
               <div key={a.id} className="group rounded-lg border border-border bg-muted/20 p-3">
                 {editingId === a.id ? (
                   <div className="space-y-2">
-                    <textarea
+                    <Textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       onKeyDown={(e) => {
@@ -144,7 +114,7 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
                       }}
                       rows={3}
                       autoFocus
-                      className="w-full text-xs bg-background border border-border rounded px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-ring text-foreground"
+                      className="field-sizing-fixed min-h-0 resize-none bg-background text-body md:text-body"
                     />
                     <div className="flex gap-2">
                       <button
@@ -183,32 +153,31 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
               </div>
             ))
           )}
-        </div>
+      </ModalBody>
 
-        {/* New annotation input */}
-        <div className="px-4 py-3 border-t border-border flex-shrink-0 space-y-2">
-          <textarea
-            value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                addAnnotation();
-              }
-            }}
-            placeholder="Add a note… (⌘Enter to save)"
-            rows={3}
-            className="w-full text-xs bg-background border border-border rounded px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-ring text-foreground placeholder:text-muted-foreground"
-          />
-          <button
-            onClick={addAnnotation}
-            disabled={saving || !newContent.trim()}
-            className="w-full text-xs py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? "Saving…" : "Add Note"}
-          </button>
-        </div>
+      {/* New annotation input */}
+      <div className="px-4 py-3 border-t border-border flex-shrink-0 space-y-2">
+        <Textarea
+          value={newContent}
+          onChange={(e) => setNewContent(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              addAnnotation();
+            }
+          }}
+          placeholder="Add a note… (⌘Enter to save)"
+          rows={3}
+          className="field-sizing-fixed min-h-0 resize-none bg-background text-body md:text-body"
+        />
+        <button
+          onClick={addAnnotation}
+          disabled={saving || !newContent.trim()}
+          className="w-full text-xs py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? "Saving…" : "Add Note"}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

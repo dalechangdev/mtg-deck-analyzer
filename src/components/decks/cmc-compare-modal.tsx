@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Modal, ModalBody, ModalHeader } from "@/components/ui/modal";
+import { SectionLabel } from "@/components/ui/section-header";
 import type { DeckEntry } from "@/lib/commander";
 
 type Annotation = {
@@ -20,19 +22,6 @@ interface Props {
 export function CmcCompareModal({ deckId, cmcLabel, cards, onClose }: Props) {
   const [annotations, setAnnotations] = useState<CardAnnotations>({});
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [onClose]);
 
   useEffect(() => {
     const uniqueCards = cards.filter(
@@ -55,34 +44,15 @@ export function CmcCompareModal({ deckId, cmcLabel, cards, onClose }: Props) {
   const totalCards = cards.reduce((sum, c) => sum + c.quantity, 0);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex flex-col max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-shrink-0">
-          <div>
-            <h2 className="text-sm font-semibold">CMC {cmcLabel}</h2>
-            <p className="text-xs text-muted-foreground">
-              {totalCards} card{totalCards !== 1 ? "s" : ""}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            ✕
-          </button>
-        </div>
+    <Modal open onClose={onClose} size="md">
+      <ModalHeader
+        title={`CMC ${cmcLabel}`}
+        description={`${totalCards} card${totalCards !== 1 ? "s" : ""}`}
+      />
 
-        {/* Card list */}
-        <div className="flex-1 overflow-y-auto min-h-0 divide-y divide-border">
-          {cards.map((entry) => {
+      {/* Card list */}
+      <ModalBody className="divide-y divide-border">
+        {cards.map((entry) => {
             const cardAnnotations = annotations[entry.cardId] ?? [];
             return (
               <div key={entry.deckCardId} className="px-5 py-4 space-y-2">
@@ -118,11 +88,11 @@ export function CmcCompareModal({ deckId, cmcLabel, cards, onClose }: Props) {
                 {/* Annotations */}
                 {!loading && cardAnnotations.length > 0 && (
                   <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-primary/30">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <SectionLabel size="micro" className="block">
                       Notes
-                    </p>
+                    </SectionLabel>
                     {cardAnnotations.map((a) => (
-                      <p key={a.id} className="text-xs text-foreground/70 whitespace-pre-wrap">
+                      <p key={a.id} className="text-body text-foreground/70 whitespace-pre-wrap">
                         {a.content}
                       </p>
                     ))}
@@ -131,8 +101,7 @@ export function CmcCompareModal({ deckId, cmcLabel, cards, onClose }: Props) {
               </div>
             );
           })}
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   );
 }
