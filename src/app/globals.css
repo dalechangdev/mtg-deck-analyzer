@@ -4,12 +4,40 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ═══════════════════════════════════════════════════════════════════════
+   SCALES — literal values. Edit here to retune the whole app.
+   These are theme-independent (identical in light and dark).
+   ═══════════════════════════════════════════════════════════════════════ */
+@theme {
+  /* ── Type scale ───────────────────────────────────────────────────────
+     Named by role, not by size, so you can re-tune density in one place.
+     `micro` and `label` intentionally carry no line-height: they replace
+     bare `text-[10px]`/`text-[11px]`, which inherited it. Add a
+     `--text-micro--line-height` pair when you want to control it.        */
+  --text-micro: 0.625rem;                       /* 10px — dense metadata  */
+  --text-label: 0.6875rem;                      /* 11px — section labels  */
+  --text-body: 0.75rem;                         /* 12px — default UI text */
+  --text-body--line-height: calc(1 / 0.75);
+  --text-ui: 0.875rem;                          /* 14px — comfortable UI  */
+  --text-ui--line-height: calc(1.25 / 0.875);
+  --text-lead: 1rem;                            /* 16px — emphasis        */
+  --text-lead--line-height: calc(1.5 / 1);
+  --text-title: 1.25rem;                        /* 20px — page titles     */
+  --text-title--line-height: calc(1.75 / 1.25);
+  --text-display: 2.25rem;                      /* 36px — hero            */
+  --text-display--line-height: calc(2.5 / 2.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THEME MAP — wires the raw variables below into Tailwind utilities.
+   Don't put values here; edit the :root / .dark blocks instead.
+   ═══════════════════════════════════════════════════════════════════════ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-geist-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +67,29 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* ── Status ramps ─────────────────────────────────────────────────────
+     Each ramp is a trio:
+       text-{name}           the vivid accent, for text and icons
+       bg-{name}-surface     the tinted panel background
+       border-{name}-border  the matching hairline
+     Replaces ~180 hardcoded palette utilities during Phase 4.            */
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-danger-border: var(--danger-border);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-warning-border: var(--warning-border);
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-success-border: var(--success-border);
+  --color-info: var(--info);
+  --color-info-surface: var(--info-surface);
+  --color-info-border: var(--info-border);
+  --color-highlight: var(--highlight);
+  --color-highlight-surface: var(--highlight-surface);
+  --color-highlight-border: var(--highlight-border);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,7 +99,18 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   LIGHT THEME
+   ═══════════════════════════════════════════════════════════════════════ */
 :root {
+  /* ── Layout ───────────────────────────────────────────────────────────
+     Not Tailwind theme keys — plain vars, used via h-[var(--header-height)]
+     and h-[calc(100vh-var(--header-height))]. Same in both themes.       */
+  --header-height: 3.0625rem;                   /* 49px, incl. 1px border */
+  --gutter-x: 1.5rem;                           /* page shell padding     */
+  --gutter-y: 1.5rem;
+  --panel-width: 16rem;                         /* side panels            */
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -81,8 +143,28 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Status — light. Accents at ~600, surfaces at ~50, borders at ~200. */
+  --danger: oklch(57.7% 0.245 27.325);
+  --danger-surface: oklch(97.1% 0.013 17.38);
+  --danger-border: oklch(88.5% 0.062 18.334);
+  --warning: oklch(66.6% 0.179 58.318);
+  --warning-surface: oklch(98.7% 0.022 95.277);
+  --warning-border: oklch(92.4% 0.12 95.746);
+  --success: oklch(62.7% 0.194 149.214);
+  --success-surface: oklch(98.2% 0.018 155.826);
+  --success-border: oklch(92.5% 0.084 155.995);
+  --info: oklch(58.8% 0.158 241.966);
+  --info-surface: oklch(97.7% 0.013 236.62);
+  --info-border: oklch(90.1% 0.058 230.902);
+  --highlight: oklch(55.8% 0.288 302.321);
+  --highlight-surface: oklch(97.7% 0.014 308.299);
+  --highlight-border: oklch(90.2% 0.063 306.703);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   DARK THEME
+   ═══════════════════════════════════════════════════════════════════════ */
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -115,6 +197,24 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Status — dark. These reproduce the values the components already use:
+     accents at ~400, surfaces at ~950/30%, borders at ~600/50%.          */
+  --danger: oklch(70.4% 0.191 22.216);
+  --danger-surface: oklch(25.8% 0.092 26.042 / 30%);
+  --danger-border: oklch(57.7% 0.245 27.325 / 50%);
+  --warning: oklch(82.8% 0.189 84.429);
+  --warning-surface: oklch(27.9% 0.077 45.635 / 30%);
+  --warning-border: oklch(66.6% 0.179 58.318 / 50%);
+  --success: oklch(79.2% 0.209 151.711);
+  --success-surface: oklch(26.6% 0.065 152.934 / 30%);
+  --success-border: oklch(62.7% 0.194 149.214 / 50%);
+  --info: oklch(74.6% 0.16 232.661);
+  --info-surface: oklch(29.3% 0.066 243.157 / 30%);
+  --info-border: oklch(58.8% 0.158 241.966 / 50%);
+  --highlight: oklch(71.4% 0.203 305.504);
+  --highlight-surface: oklch(29.1% 0.149 302.717 / 30%);
+  --highlight-border: oklch(55.8% 0.288 302.321 / 50%);
 }
 
 @layer base {
