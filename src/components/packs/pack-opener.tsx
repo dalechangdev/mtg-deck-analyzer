@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { FullHeightView } from "@/components/ui/shell";
-import { SectionHeader } from "@/components/ui/section-header";
+import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type SetOption = {
   code: string;
@@ -107,17 +108,25 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
         <h1 className="text-sm font-medium">Open Booster Packs</h1>
-        <select
-          value={setCode}
-          onChange={(e) => setSetCode(e.target.value)}
-          className="h-7 rounded border border-border bg-background px-2 text-xs max-w-xs"
-        >
-          {initialSets.map((s) => (
-            <option key={s.code} value={s.code}>
-              {s.name} {s.releasedAt ? `(${s.releasedAt.slice(0, 4)})` : ""}
-            </option>
-          ))}
-        </select>
+        <Select value={setCode} onValueChange={(value) => setSetCode(value as string)}>
+          <SelectTrigger size="sm" className="max-w-xs text-body">
+            {/* Without a formatter this renders the raw value (the set code). */}
+            <SelectValue>
+              {(value) => {
+                const set = initialSets.find((s) => s.code === value);
+                if (!set) return value;
+                return `${set.name}${set.releasedAt ? ` (${set.releasedAt.slice(0, 4)})` : ""}`;
+              }}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {initialSets.map((s) => (
+              <SelectItem key={s.code} value={s.code}>
+                {s.name} {s.releasedAt ? `(${s.releasedAt.slice(0, 4)})` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <button
           onClick={() => router.push("/library")}
           className="ml-auto text-xs text-muted-foreground hover:text-foreground"
@@ -141,9 +150,7 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
 
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              This Pack
-            </span>
+            <SectionLabel size="body">This Pack</SectionLabel>
             <span className="text-xs text-muted-foreground">
               {totalCopies} card{totalCopies !== 1 ? "s" : ""}
             </span>

@@ -4,6 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toastManager } from "@/lib/toast";
 import { FullHeightView } from "@/components/ui/shell";
+import { SectionLabel } from "@/components/ui/section-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Requirement = {
   roleId: string;
@@ -220,9 +222,7 @@ export function TemplateManager({ initialTemplates, roles }: Props) {
       {/* Template list */}
       <div className="w-64 border-r border-border flex flex-col flex-shrink-0">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Templates
-          </span>
+          <SectionLabel size="body">Templates</SectionLabel>
           <button
             onClick={startNew}
             className="ml-auto text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground"
@@ -295,9 +295,7 @@ export function TemplateManager({ initialTemplates, roles }: Props) {
             />
 
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Requirements
-              </span>
+              <SectionLabel>Requirements</SectionLabel>
               <span className="text-[11px] text-muted-foreground">
                 targets sum to <span className="font-mono">{targetSum}</span>
                 {targetSum > deckSize && (
@@ -312,17 +310,25 @@ export function TemplateManager({ initialTemplates, roles }: Props) {
             <ul className="space-y-1.5">
               {draft.requirements.map((req, i) => (
                 <li key={i} className="flex items-center gap-2">
-                  <select
+                  <Select
                     value={req.roleId}
-                    onChange={(e) => updateRequirement(i, { roleId: e.target.value })}
-                    className="text-xs bg-transparent border border-border rounded px-2 py-1 flex-1"
+                    onValueChange={(value) =>
+                      updateRequirement(i, { roleId: value as string })
+                    }
                   >
-                    {roles.map((role) => (
-                      <option key={role.id} value={role.id} className="bg-background">
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger size="sm" className="flex-1 text-body">
+                      <SelectValue>
+                        {(value) => rolesById.get(value as string)?.name ?? value}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
                   <label className="text-[11px] text-muted-foreground flex items-center gap-1">
                     target

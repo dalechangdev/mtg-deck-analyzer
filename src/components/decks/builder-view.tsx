@@ -189,10 +189,10 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
 
           {/* Maybeboard — 1/3 */}
           <div className="flex-1 flex flex-col overflow-hidden border-b border-border">
-            <div className="px-3 py-1.5 bg-amber-950/20 border-b border-amber-900/30 flex-shrink-0">
-              <span className="text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider">
+            <div className="px-3 py-1.5 bg-warning-surface border-b border-warning-line flex-shrink-0">
+              <SectionLabel tone="inherit" className="text-warning/80">
                 {maybeboardName || "Maybeboard"} ({maybeCards.length})
-              </span>
+              </SectionLabel>
             </div>
             <div className="flex-1 overflow-y-auto">
               {maybeCards.map((entry) => (

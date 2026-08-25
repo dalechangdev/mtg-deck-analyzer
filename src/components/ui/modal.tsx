@@ -29,6 +29,28 @@ const MODAL_SIZES = {
   lg: "max-w-3xl",
 } as const
 
+/**
+ * Every call site renders this component conditionally ({x && <Modal/>}), so
+ * closing unmounts it in the same tick that Base UI begins its exit
+ * transition — before the transition ends and its scroll-lock cleanup runs.
+ * The result is a stray `overflow: hidden` left on <body>.
+ *
+ * Counting mounted modals lets the last one out release the lock itself.
+ */
+let openModalCount = 0
+
+function useScrollLockRelease() {
+  React.useEffect(() => {
+    openModalCount += 1
+    return () => {
+      openModalCount -= 1
+      if (openModalCount === 0) {
+        document.body.style.overflow = ""
+      }
+    }
+  }, [])
+}
+
 interface ModalProps extends DialogPrimitive.Popup.Props {
   open: boolean
   onClose: () => void
@@ -43,6 +65,8 @@ function Modal({
   children,
   ...props
 }: ModalProps) {
+  useScrollLockRelease()
+
   return (
     <Dialog
       open={open}

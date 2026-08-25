@@ -19,6 +19,7 @@ import type { CardData, DeckEntry } from "@/lib/commander";
 import type { SynergyTheme } from "@/lib/synergy";
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Props {
   deckId: string;
@@ -441,15 +442,13 @@ export function DeckBuilder({
           )}
 
           <div>
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-              Objectives
-            </div>
-            <textarea
+            <SectionLabel className="block mb-1">Objectives</SectionLabel>
+            <Textarea
               value={description}
               onChange={(e) => handleDescriptionChange(e.target.value)}
               placeholder="Describe your deck's win conditions and play style…"
               rows={3}
-              className="w-full text-xs bg-background border border-border rounded px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+              className="field-sizing-fixed min-h-0 resize-none bg-background text-body md:text-body"
             />
           </div>
         </div>

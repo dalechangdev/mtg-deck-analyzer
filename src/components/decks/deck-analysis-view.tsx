@@ -18,6 +18,7 @@ import {
 } from "@/components/cards/card-detail-modal";
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionLabel } from "@/components/ui/section-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Assignment = "INCLUDED" | "EXCLUDED";
 
@@ -191,18 +192,28 @@ export function DeckAnalysisView({
         <span className="text-sm font-medium">{deckName}</span>
         <span className="text-xs text-muted-foreground">Template Analysis</span>
 
-        <select
+        <Select
           value={template.id}
-          onChange={(e) => switchTemplate(e.target.value)}
-          className="text-xs bg-transparent border border-border rounded px-2 py-0.5 text-muted-foreground hover:text-foreground"
+          onValueChange={(value) => switchTemplate(value as string)}
         >
-          {templates.map((t) => (
-            <option key={t.id} value={t.id} className="bg-background">
-              {t.name}
-              {t.isBuiltIn ? " (built-in)" : ""}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger size="sm" className="text-body text-muted-foreground">
+            <SelectValue>
+              {(value) => {
+                const t = templates.find((t) => t.id === value);
+                if (!t) return value;
+                return `${t.name}${t.isBuiltIn ? " (built-in)" : ""}`;
+              }}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {templates.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.name}
+                {t.isBuiltIn ? " (built-in)" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <div className="ml-auto flex items-center gap-3">
           <Link
@@ -343,9 +354,9 @@ export function DeckAnalysisView({
 
                     {excluded.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-border/50">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <SectionLabel size="micro" className="font-normal">
                           Excluded by hand
-                        </span>
+                        </SectionLabel>
                         <ul className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 mt-1">
                           {excluded.map((card) => (
                             <li

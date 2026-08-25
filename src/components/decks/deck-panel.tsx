@@ -4,7 +4,13 @@ import { useState } from "react";
 import { CATEGORY_ORDER, getCardCategory, validateDeck } from "@/lib/commander";
 import type { DeckEntry } from "@/lib/commander";
 import { CmcCompareModal } from "./cmc-compare-modal";
-import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
+import {
+  SectionHeader,
+  SectionLabel,
+  sectionLabelVariants,
+} from "@/components/ui/section-header";
+import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const CMC_BUCKETS = [0, 1, 2, 3, 4, 5] as const;
 const CMC_LABEL = (n: number) => (n >= 6 ? "6+" : String(n));
@@ -91,20 +97,26 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
             <SectionLabel className="flex-1">
               Main Deck ({validation.cardCount})
             </SectionLabel>
-            <div className="flex text-[10px] rounded overflow-hidden border border-border">
-              <button
-                onClick={() => setGroupBy("type")}
-                className={`px-2 py-0.5 ${groupBy === "type" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
+            <ToggleGroup
+              value={[groupBy]}
+              onValueChange={(value) => {
+                // Base UI allows an empty selection; keep the last choice.
+                const next = value[0] as "type" | "cmc" | undefined;
+                if (next) setGroupBy(next);
+              }}
+              multiple={false}
+              variant="outline"
+              size="sm"
+              spacing={0}
+              className="flex-shrink-0"
+            >
+              <ToggleGroupItem value="type" className="h-6 min-w-0 px-2 text-micro">
                 Type
-              </button>
-              <button
-                onClick={() => setGroupBy("cmc")}
-                className={`px-2 py-0.5 border-l border-border ${groupBy === "cmc" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
+              </ToggleGroupItem>
+              <ToggleGroupItem value="cmc" className="h-6 min-w-0 px-2 text-micro">
                 CMC
-              </button>
-            </div>
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
           <div className="flex-1 overflow-y-auto">
             {commander ? (
@@ -162,13 +174,14 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                     const label = CMC_LABEL(n);
                     return (
                       <section key={n} className="border-b border-border">
-                        <div
-                          className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0 cursor-pointer hover:bg-muted/40 hover:text-foreground transition-colors"
+                        <SectionHeader
+                          sticky
+                          className="cursor-pointer hover:bg-muted/40 hover:text-foreground transition-colors"
                           onClick={() => setComparingCmc({ label, cards })}
                           title="Click to compare cards at this CMC"
                         >
                           CMC {label} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
-                        </div>
+                        </SectionHeader>
                         {cards.map((entry) => (
                           <CardRow
                             key={entry.deckCardId}
@@ -219,14 +232,17 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
 
             {/* Maybeboard — top half */}
             <div className={`flex flex-col overflow-hidden bg-amber-950/5 ${hasMaybe && hasWishlist ? "flex-1 border-b border-amber-900/30" : hasMaybe ? "flex-1" : "hidden"}`}>
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-950/20 border-b border-amber-900/30 flex-shrink-0">
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-warning-surface border-b border-warning-line flex-shrink-0">
                 <input
                   value={maybeboardName}
                   onChange={(e) => onMaybeboardNameChange(e.target.value)}
                   placeholder="Maybeboard"
-                  className="flex-1 text-[11px] font-semibold text-amber-500/80 uppercase tracking-wider bg-transparent focus:outline-none placeholder:text-amber-500/40 min-w-0"
+                  className={cn(
+                    sectionLabelVariants({ tone: "inherit" }),
+                    "flex-1 min-w-0 bg-transparent text-warning/80 placeholder:text-warning/40 focus:outline-none"
+                  )}
                 />
-                <span className="text-[11px] text-amber-500/60 flex-shrink-0">
+                <span className="text-label text-warning/60 flex-shrink-0">
                   ({maybeCards.reduce((sum, e) => sum + e.quantity, 0)})
                 </span>
               </div>
@@ -249,14 +265,17 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
 
             {/* Wishlist — bottom half */}
             <div className={`flex flex-col overflow-hidden bg-purple-950/5 ${hasWishlist ? "flex-1" : "hidden"}`}>
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-purple-950/20 border-b border-purple-900/30 flex-shrink-0">
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-highlight-surface border-b border-highlight-line flex-shrink-0">
                 <input
                   value={wishlistName}
                   onChange={(e) => onWishlistNameChange(e.target.value)}
                   placeholder="Wishlist"
-                  className="flex-1 text-[11px] font-semibold text-purple-400/80 uppercase tracking-wider bg-transparent focus:outline-none placeholder:text-purple-400/40 min-w-0"
+                  className={cn(
+                    sectionLabelVariants({ tone: "inherit" }),
+                    "flex-1 min-w-0 bg-transparent text-highlight/80 placeholder:text-highlight/40 focus:outline-none"
+                  )}
                 />
-                <span className="text-[11px] text-purple-400/60 flex-shrink-0">
+                <span className="text-label text-highlight/60 flex-shrink-0">
                   ({wishlistCards.reduce((sum, e) => sum + e.quantity, 0)})
                 </span>
               </div>

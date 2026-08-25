@@ -2,6 +2,7 @@
 import { Popover } from "@base-ui/react/popover";
 import { Checkbox } from "@base-ui/react/checkbox";
 import { ChevronDown, Check } from "lucide-react";
+import { SectionLabel } from "@/components/ui/section-header";
 
 const CATEGORIES: { label: string; ids: string[] }[] = [
   {
@@ -61,9 +62,9 @@ export function DeckThemeSelect({ allThemes, selectedIds, onToggle }: Props) {
                 if (catThemes.length === 0) return null;
                 return (
                   <div key={cat.label} className="mb-3 last:mb-0">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-1">
+                    <SectionLabel size="micro" className="block mb-1.5 px-1">
                       {cat.label}
-                    </div>
+                    </SectionLabel>
                     <div className="space-y-px">
                       {catThemes.map((theme) => {
                         const checked = selectedIds.includes(theme.id);

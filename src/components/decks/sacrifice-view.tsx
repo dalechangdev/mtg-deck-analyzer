@@ -194,9 +194,9 @@ export function SacrificeView({
             return (
               <div key={role} className="flex flex-col">
                 <div className="px-3 py-1.5 bg-muted/20 border-b border-border">
-                  <span className={`text-[11px] font-semibold uppercase tracking-wider ${style.header}`}>
+                  <SectionLabel tone="inherit" className={style.header}>
                     {ROLE_LABEL[role]}s ({cards.length})
-                  </span>
+                  </SectionLabel>
                 </div>
                 {cards.length === 0 ? (
                   <p className="px-3 py-4 text-xs text-muted-foreground">None tagged yet.</p>
