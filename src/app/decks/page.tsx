@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PageShell } from "@/components/ui/shell";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function DecksPage() {
   });
 
   return (
-    <div className="px-6 py-6 space-y-6">
+    <PageShell className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Decks</h1>
         <Link href="/decks/new" className={cn(buttonVariants({ size: "sm" }))}>
@@ -82,6 +83,6 @@ export default async function DecksPage() {
           })}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

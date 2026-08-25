@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CATEGORY_ORDER, getCardCategory, validateDeck } from "@/lib/commander";
 import type { DeckEntry } from "@/lib/commander";
 import { CmcCompareModal } from "./cmc-compare-modal";
+import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
 
 const CMC_BUCKETS = [0, 1, 2, 3, 4, 5] as const;
 const CMC_LABEL = (n: number) => (n >= 6 ? "6+" : String(n));
@@ -87,9 +88,9 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
         {/* ── Main deck column ── */}
         <div className={`flex flex-col overflow-hidden min-w-0 ${hasSideColumn ? "flex-1 border-r border-border" : "flex-1"}`}>
           <div className="px-3 py-1.5 bg-muted/30 border-b border-border flex-shrink-0 flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex-1">
+            <SectionLabel className="flex-1">
               Main Deck ({validation.cardCount})
-            </span>
+            </SectionLabel>
             <div className="flex text-[10px] rounded overflow-hidden border border-border">
               <button
                 onClick={() => setGroupBy("type")}
@@ -108,9 +109,9 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
           <div className="flex-1 overflow-y-auto">
             {commander ? (
               <section className="border-b border-border">
-                <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20">
+                <SectionHeader>
                   Commander
-                </div>
+                </SectionHeader>
                 <CardRow
                   entry={commander}
                   onRemove={onRemove}
@@ -133,9 +134,9 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                   if (!cards || cards.length === 0) return null;
                   return (
                     <section key={cat} className="border-b border-border">
-                      <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0">
+                      <SectionHeader sticky>
                         {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
-                      </div>
+                      </SectionHeader>
                       {cards.map((entry) => (
                         <CardRow
                           key={entry.deckCardId}
@@ -188,9 +189,9 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                   })}
                   {landMainCards.length > 0 && (
                     <section className="border-b border-border">
-                      <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/20 sticky top-0">
+                      <SectionHeader sticky>
                         Lands ({landMainCards.reduce((sum, e) => sum + e.quantity, 0)})
-                      </div>
+                      </SectionHeader>
                       {landMainCards.map((entry) => (
                         <CardRow
                           key={entry.deckCardId}

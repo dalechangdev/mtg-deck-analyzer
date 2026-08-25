@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CardThumbnail } from "@/components/cards/card-thumbnail";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
+import { PageShell } from "@/components/ui/shell";
 
 export interface CartEntry {
   cartItemId: string;
@@ -18,7 +19,7 @@ export function ShoppingCartManager({ initialEntries }: { initialEntries: CartEn
   };
 
   return (
-    <div className="px-6 py-6 space-y-4">
+    <PageShell>
       <h1 className="text-xl font-semibold">Shopping Cart</h1>
 
       <p className="text-sm text-muted-foreground">
@@ -43,6 +44,6 @@ export function ShoppingCartManager({ initialEntries }: { initialEntries: CartEn
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

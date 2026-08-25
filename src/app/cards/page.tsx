@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { CardSearchForm } from "@/components/cards/card-search-form";
 import { CardGrid } from "@/components/cards/card-grid";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageShell } from "@/components/ui/shell";
 
 const PAGE_SIZE = 40;
 
@@ -41,7 +42,7 @@ export default async function CardsPage({ searchParams }: PageProps) {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div className="px-6 py-6 space-y-4">
+    <PageShell>
       <h1 className="text-xl font-semibold">Cards</h1>
 
       <Suspense>
@@ -68,13 +69,13 @@ export default async function CardsPage({ searchParams }: PageProps) {
           searchParams={{ q: q || undefined, colors: colors.join(",") || undefined, commander: params.commander }}
         />
       )}
-    </div>
+    </PageShell>
   );
 }
 
 export function CardBrowserSkeleton() {
   return (
-    <div className="px-6 py-6 space-y-4">
+    <PageShell>
       <Skeleton className="h-6 w-24" />
       <Skeleton className="h-10 w-80" />
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 mt-4">
@@ -82,6 +83,6 @@ export function CardBrowserSkeleton() {
           <Skeleton key={i} className="rounded-xl aspect-[63/88] w-full" />
         ))}
       </div>
-    </div>
+    </PageShell>
   );
 }

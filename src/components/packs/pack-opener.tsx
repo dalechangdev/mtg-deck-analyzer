@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
+import { FullHeightView } from "@/components/ui/shell";
+import { SectionHeader } from "@/components/ui/section-header";
 
 type SetOption = {
   code: string;
@@ -101,7 +103,7 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
   }, [packList, committing, router]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-49px)]">
+    <FullHeightView>
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
         <h1 className="text-sm font-medium">Open Booster Packs</h1>
@@ -127,9 +129,9 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
       {/* Two-panel layout */}
       <div className="flex-1 flex overflow-hidden">
         <div className="w-80 flex-shrink-0 border-r border-border overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <SectionHeader variant="panel">
             {selectedSet ? `Cards in ${selectedSet.name}` : "Pick a set"}
-          </div>
+          </SectionHeader>
           {setCode ? (
             <SearchPanel key={setCode} setCode={setCode} onAdd={addToPack} />
           ) : (
@@ -221,7 +223,7 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
           </div>
         </div>
       </div>
-    </div>
+    </FullHeightView>
   );
 }
 

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { DialogTitle } from "@/components/ui/dialog";
+import { Modal, ModalCloseButton } from "@/components/ui/modal";
 
 export interface CardFaceDetail {
   name: string;
@@ -157,21 +159,16 @@ export function CardDetailModal({
   const image = activeFace?.imageUrl ?? card.largeImageUrl ?? card.imageUrl;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      className="max-h-[90vh] sm:flex-row"
     >
-      <div
-        className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl sm:flex-row"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/70 text-muted-foreground hover:bg-background hover:text-foreground"
-        >
-          ✕
-        </button>
+      {/* No visible header bar, so the accessible name comes from here. */}
+      <DialogTitle className="sr-only">{card.name}</DialogTitle>
+
+      <ModalCloseButton className="absolute right-3 top-3 z-10 bg-background/70 hover:bg-background" />
 
         {/* Image */}
         <div className="flex flex-shrink-0 flex-col items-center gap-2 bg-muted/30 p-4 sm:w-[300px]">
@@ -317,8 +314,7 @@ export function CardDetailModal({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

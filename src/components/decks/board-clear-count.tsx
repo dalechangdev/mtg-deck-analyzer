@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { getBoardClearProfile } from "@/lib/commander";
 import type { DeckEntry, BoardClearMethod, BoardClearScope, BoardClearProfile } from "@/lib/commander";
+import { SectionLabel } from "@/components/ui/section-header";
 
 const METHOD_BADGE: Record<BoardClearMethod, { label: string; cls: string }> = {
   destroy:          { label: "destroy",    cls: "text-red-400 bg-red-950/30" },
@@ -58,9 +59,9 @@ export function BoardClearCount({ entries }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <SectionLabel>
           Board Clears
-        </span>
+        </SectionLabel>
         <button
           onClick={() => setExpanded((v) => !v)}
           className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"

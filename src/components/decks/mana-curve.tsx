@@ -10,6 +10,7 @@ import {
   LabelList,
 } from "recharts";
 import type { DeckEntry } from "@/lib/commander";
+import { SectionLabel } from "@/components/ui/section-header";
 
 const MAX_SHOWN_CMC = 7;
 const BAR_COLOR = "#60a5fa";
@@ -108,9 +109,9 @@ export function ManaCurve({ entries }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <SectionLabel>
           Mana Curve
-        </span>
+        </SectionLabel>
         <span className="text-[11px] text-muted-foreground">
           avg CMC <span className="text-foreground font-medium">{avgCmc.toFixed(2)}</span>
           <span className="mx-1.5 opacity-40">·</span>

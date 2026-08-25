@@ -1,10 +1,11 @@
 import { NewDeckForm } from "@/components/decks/new-deck-form";
+import { PageShell } from "@/components/ui/shell";
 
 export default function NewDeckPage() {
   return (
-    <div className="px-6 py-6 max-w-lg">
+    <PageShell className="max-w-lg space-y-0">
       <h1 className="text-xl font-semibold mb-6">New Deck</h1>
       <NewDeckForm />
-    </div>
+    </PageShell>
   );
 }

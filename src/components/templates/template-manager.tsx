@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toastManager } from "@/lib/toast";
+import { FullHeightView } from "@/components/ui/shell";
 
 type Requirement = {
   roleId: string;
@@ -215,7 +216,7 @@ export function TemplateManager({ initialTemplates, roles }: Props) {
   );
 
   return (
-    <div className="flex h-[calc(100vh-49px)]">
+    <FullHeightView className="flex-row">
       {/* Template list */}
       <div className="w-64 border-r border-border flex flex-col flex-shrink-0">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
@@ -507,6 +508,6 @@ export function TemplateManager({ initialTemplates, roles }: Props) {
           </div>
         ) : null}
       </div>
-    </div>
+    </FullHeightView>
   );
 }

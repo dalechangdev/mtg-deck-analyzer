@@ -1,8 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageShell } from "@/components/ui/shell";
 
 export default function Loading() {
   return (
-    <div className="px-6 py-6 space-y-4">
+    <PageShell>
       <Skeleton className="h-6 w-24" />
       <Skeleton className="h-10 w-80" />
       <Skeleton className="h-4 w-32" />
@@ -11,6 +12,6 @@ export default function Loading() {
           <Skeleton key={i} className="rounded-xl aspect-[63/88] w-full" />
         ))}
       </div>
-    </div>
+    </PageShell>
   );
 }

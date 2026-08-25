@@ -6,6 +6,8 @@ import { CardDetailModal } from "@/components/cards/card-detail-modal";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
 import type { DeckEntry } from "@/lib/commander";
 import type { LibraryCard } from "@/components/decks/builder-view";
+import { FullHeightView } from "@/components/ui/shell";
+import { SectionLabel } from "@/components/ui/section-header";
 
 type SacrificeRole = "sacrifice-outlet" | "sacrifice-payoff";
 type CardSource = "main" | "maybe" | "library";
@@ -131,7 +133,7 @@ export function SacrificeView({
   }, []);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-49px)]">
+    <FullHeightView>
       {selectedCard && (
         <CardDetailModal
           card={selectedCard}
@@ -239,9 +241,9 @@ export function SacrificeView({
         {untagged.length > 0 && (
           <div>
             <div className="px-3 py-1.5 bg-muted/20 border-b border-border sticky top-0">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <SectionLabel>
                 Untagged ({untagged.length})
-              </span>
+              </SectionLabel>
             </div>
             <ul>
               {untagged.map((item) => (
@@ -284,6 +286,6 @@ export function SacrificeView({
         )}
 
       </div>
-    </div>
+    </FullHeightView>
   );
 }

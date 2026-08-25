@@ -17,6 +17,8 @@ import { CurveProbability } from "./curve-probability";
 import { BoardClearCount } from "./board-clear-count";
 import type { CardData, DeckEntry } from "@/lib/commander";
 import type { SynergyTheme } from "@/lib/synergy";
+import { FullHeightView } from "@/components/ui/shell";
+import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
 
 interface Props {
   deckId: string;
@@ -271,7 +273,7 @@ export function DeckBuilder({
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-49px)]">
+    <FullHeightView>
       <Toaster />
       {annotatingCard && (
         <CardAnnotationModal
@@ -396,9 +398,9 @@ export function DeckBuilder({
           <ManaCurve entries={entries} />
           <CurveProbability entries={entries} />
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <SectionLabel>
               Mana Ramp
-            </span>
+            </SectionLabel>
             <span className="text-[11px] text-muted-foreground">
               <span className="text-foreground font-medium">{rampCount}</span>{" "}
               card{rampCount !== 1 ? "s" : ""}
@@ -408,9 +410,9 @@ export function DeckBuilder({
           {ownership.total > 0 && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <SectionLabel>
                   Ownership
-                </span>
+                </SectionLabel>
                 <span className="text-[11px] text-muted-foreground">
                   <span className="text-emerald-400 font-medium">{ownership.owned}</span> owned ·{" "}
                   <span className="text-foreground font-medium">{ownership.needed.length}</span> needed
@@ -456,9 +458,9 @@ export function DeckBuilder({
       {/* Two-panel layout */}
       <div className="flex-1 flex overflow-hidden">
         <div className="w-72 flex-shrink-0 border-r border-border overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <SectionHeader variant="panel">
             Add Cards
-          </div>
+          </SectionHeader>
           <SearchPanel
             commanderColorIdentity={commander?.colorIdentity ?? []}
             commanderThemes={commanderThemes}
@@ -468,14 +470,14 @@ export function DeckBuilder({
         </div>
 
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <SectionHeader variant="panel">
             Deck ({entries.filter((e) => e.slot === "main").reduce((s, e) => s + e.quantity, 0)} main
             {entries.some((e) => e.slot === "maybe") &&
               ` · ${entries.filter((e) => e.slot === "maybe").reduce((s, e) => s + e.quantity, 0)} maybe`}
             {entries.some((e) => e.slot === "wishlist") &&
               ` · ${entries.filter((e) => e.slot === "wishlist").reduce((s, e) => s + e.quantity, 0)} wishlist`}
             )
-          </div>
+          </SectionHeader>
           <DeckPanel
             deckId={deckId}
             entries={entries}
@@ -490,6 +492,6 @@ export function DeckBuilder({
           />
         </div>
       </div>
-    </div>
+    </FullHeightView>
   );
 }

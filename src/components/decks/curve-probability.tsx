@@ -11,6 +11,7 @@ import {
   LabelList,
 } from "recharts";
 import type { DeckEntry } from "@/lib/commander";
+import { SectionLabel } from "@/components/ui/section-header";
 
 // ── Hypergeometric core ───────────────────────────────────────────────────────
 
@@ -190,9 +191,9 @@ export function CurveProbability({ entries }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <SectionLabel>
           On-Curve Probability
-        </span>
+        </SectionLabel>
         <span className="text-[11px] text-muted-foreground">exact · hypergeometric</span>
       </div>
 
