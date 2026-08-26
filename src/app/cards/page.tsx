@@ -43,7 +43,7 @@ export default async function CardsPage({ searchParams }: PageProps) {
 
   return (
     <PageShell>
-      <h1 className="text-xl font-semibold">Cards</h1>
+      <h1 className="text-title font-semibold">Cards</h1>
 
       <Suspense>
         <CardSearchForm
@@ -53,7 +53,7 @@ export default async function CardsPage({ searchParams }: PageProps) {
         />
       </Suspense>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-ui text-muted-foreground">
         {total === 0
           ? cards.length === 0 && !q && colors.length === 0
             ? "No cards in database. Run npm run sync:cards to import."

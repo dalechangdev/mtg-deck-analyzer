@@ -97,7 +97,7 @@ export function CardGrid({ cards, page, totalPages, searchParams }: Props) {
               Previous
             </span>
           )}
-          <span className="text-sm text-muted-foreground">
+          <span className="text-ui text-muted-foreground">
             {page} / {totalPages}
           </span>
           {page < totalPages ? (

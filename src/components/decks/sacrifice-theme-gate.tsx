@@ -22,10 +22,10 @@ export function SacrificeThemeGate({ deckId }: Props) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
-      <p className="text-lg font-semibold text-red-400">
+      <p className="text-lg font-semibold text-danger">
         Only sacrifice decks can access this page.
       </p>
-      <p className="text-sm text-zinc-400">
+      <p className="text-ui text-muted-foreground">
         Redirecting to the deck builder in {seconds} second{seconds !== 1 ? "s" : ""}...
       </p>
     </div>

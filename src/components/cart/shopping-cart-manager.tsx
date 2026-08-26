@@ -20,9 +20,9 @@ export function ShoppingCartManager({ initialEntries }: { initialEntries: CartEn
 
   return (
     <PageShell>
-      <h1 className="text-xl font-semibold">Shopping Cart</h1>
+      <h1 className="text-title font-semibold">Shopping Cart</h1>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-ui text-muted-foreground">
         {entries.length === 0
           ? "No cards yet — mark cards “Interested” from the Cards browser to add them here."
           : `${entries.length} card${entries.length !== 1 ? "s" : ""}`}

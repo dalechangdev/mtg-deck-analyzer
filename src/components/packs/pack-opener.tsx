@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { rarityStyle } from "@/lib/mtg-styles";
+import { Button } from "@/components/ui/button";
 
 type SetOption = {
   code: string;
@@ -28,17 +30,8 @@ type SetCard = {
 
 type PackItem = SetCard & { quantity: number };
 
-const RARITY_STYLE: Record<string, string> = {
-  common: "bg-zinc-700 text-zinc-100",
-  uncommon: "bg-slate-400 text-slate-900",
-  rare: "bg-amber-400 text-amber-950",
-  mythic: "bg-orange-600 text-white",
-  special: "bg-purple-600 text-white",
-  bonus: "bg-purple-600 text-white",
-};
-
 function rarityBadge(rarity: string) {
-  return RARITY_STYLE[rarity] ?? "bg-zinc-700 text-zinc-100";
+  return rarityStyle(rarity);
 }
 
 function rarityLetter(rarity: string) {
@@ -107,7 +100,7 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
     <FullHeightView>
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
-        <h1 className="text-sm font-medium">Open Booster Packs</h1>
+        <h1 className="text-ui font-medium">Open Booster Packs</h1>
         <Select value={setCode} onValueChange={(value) => setSetCode(value as string)}>
           <SelectTrigger size="sm" className="max-w-xs text-body">
             {/* Without a formatter this renders the raw value (the set code). */}
@@ -129,7 +122,7 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
         </Select>
         <button
           onClick={() => router.push("/library")}
-          className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+          className="ml-auto text-body text-muted-foreground hover:text-foreground"
         >
           Library →
         </button>
@@ -144,34 +137,34 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
           {setCode ? (
             <SearchPanel key={setCode} setCode={setCode} onAdd={addToPack} />
           ) : (
-            <div className="p-4 text-xs text-muted-foreground">No booster sets available.</div>
+            <div className="p-4 text-body text-muted-foreground">No booster sets available.</div>
           )}
         </div>
 
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
             <SectionLabel size="body">This Pack</SectionLabel>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-body text-muted-foreground">
               {totalCopies} card{totalCopies !== 1 ? "s" : ""}
             </span>
-            <button
+            <Button
               onClick={commit}
               disabled={packList.length === 0 || committing}
-              className="ml-auto h-7 rounded bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+              size="sm" className="ml-auto"
             >
               {committing ? "Adding…" : `Add ${totalCopies} to Library`}
-            </button>
+            </Button>
           </div>
 
           {flash && (
-            <div className="px-3 py-2 text-xs text-emerald-400 border-b border-border bg-emerald-500/5">
+            <div className="px-3 py-2 text-body text-success border-b border-border bg-success/5">
               {flash}
             </div>
           )}
 
           <div className="flex-1 overflow-y-auto">
             {packList.length === 0 ? (
-              <div className="p-4 text-xs text-muted-foreground">
+              <div className="p-4 text-body text-muted-foreground">
                 Pick the cards you pulled from the list on the left. They&apos;ll collect here, then
                 add the whole pack to your library at once.
               </div>
@@ -183,46 +176,46 @@ export function PackOpener({ initialSets }: { initialSets: SetOption[] }) {
                 >
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.imageUrl} alt={item.name} className="w-8 rounded flex-shrink-0" loading="lazy" />
+                    <img src={item.imageUrl} alt={item.name} className="w-8 rounded-md flex-shrink-0" loading="lazy" />
                   ) : (
-                    <div className="w-8 h-11 rounded bg-muted flex-shrink-0" />
+                    <div className="w-8 h-11 rounded-md bg-muted flex-shrink-0" />
                   )}
                   <span
-                    className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-bold flex items-center justify-center ${rarityBadge(item.rarity)}`}
+                    className={`flex-shrink-0 w-4 h-4 rounded-sm text-micro font-bold flex items-center justify-center ${rarityBadge(item.rarity)}`}
                     title={item.rarity}
                   >
                     {rarityLetter(item.rarity)}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-xs truncate block">{item.name}</span>
-                    <span className="text-[11px] text-muted-foreground font-mono">
+                    <span className="text-body truncate block">{item.name}</span>
+                    <span className="text-label text-muted-foreground font-mono">
                       #{item.collectorNumber}
                       {item.manaCost ? ` · ${item.manaCost}` : ""}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
+                    <Button
                       onClick={() => setPackQuantity(item.scryfallId, item.quantity - 1)}
-                      className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-sm"
+                      variant="ghost" size="icon-xs" className="size-5 text-ui"
                       title={item.quantity <= 1 ? "Remove" : "Decrease"}
                     >
                       −
-                    </button>
-                    <span className="text-xs font-mono w-5 text-center tabular-nums">{item.quantity}</span>
-                    <button
+                    </Button>
+                    <span className="text-body font-mono w-5 text-center tabular-nums">{item.quantity}</span>
+                    <Button
                       onClick={() => setPackQuantity(item.scryfallId, item.quantity + 1)}
-                      className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-sm"
+                      variant="ghost" size="icon-xs" className="size-5 text-ui"
                       title="Increase"
                     >
                       +
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => setPackQuantity(item.scryfallId, 0)}
-                      className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs ml-1"
+                      variant="ghost" size="icon-xs" className="size-5 ml-1 text-body text-muted-foreground hover:text-danger hover:bg-danger-surface"
                       title="Remove"
                     >
                       ×
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))
@@ -269,16 +262,16 @@ function SearchPanel({ setCode, onAdd }: { setCode: string; onAdd: (card: SetCar
             setPage(1);
           }}
           placeholder="Filter cards in this set…"
-          className="h-8 text-sm"
+          className="h-8 text-ui"
         />
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {loading && results.length === 0 && (
-          <div className="p-4 text-xs text-muted-foreground">Loading…</div>
+          <div className="p-4 text-body text-muted-foreground">Loading…</div>
         )}
         {!loading && results.length === 0 && (
-          <div className="p-4 text-xs text-muted-foreground">No cards found</div>
+          <div className="p-4 text-body text-muted-foreground">No cards found</div>
         )}
         {results.map((card) => (
           <button
@@ -288,23 +281,23 @@ function SearchPanel({ setCode, onAdd }: { setCode: string; onAdd: (card: SetCar
           >
             {card.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={card.imageUrl} alt={card.name} className="w-8 rounded flex-shrink-0" loading="lazy" />
+              <img src={card.imageUrl} alt={card.name} className="w-8 rounded-md flex-shrink-0" loading="lazy" />
             ) : (
-              <div className="w-8 h-11 rounded bg-muted flex-shrink-0" />
+              <div className="w-8 h-11 rounded-md bg-muted flex-shrink-0" />
             )}
             <span
-              className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-bold flex items-center justify-center ${rarityBadge(card.rarity)}`}
+              className={`flex-shrink-0 w-4 h-4 rounded-sm text-micro font-bold flex items-center justify-center ${rarityBadge(card.rarity)}`}
               title={card.rarity}
             >
               {rarityLetter(card.rarity)}
             </span>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium truncate">{card.name}</div>
-              <div className="text-[11px] text-muted-foreground truncate">
+              <div className="text-body font-medium truncate">{card.name}</div>
+              <div className="text-label text-muted-foreground truncate">
                 #{card.collectorNumber} · {card.typeLine}
               </div>
             </div>
-            <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold bg-primary/20 text-primary">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-ui font-bold bg-primary/20 text-primary">
               +
             </span>
           </button>
@@ -312,7 +305,7 @@ function SearchPanel({ setCode, onAdd }: { setCode: string; onAdd: (card: SetCar
         {hasMore && !loading && (
           <button
             onClick={() => setPage((p) => p + 1)}
-            className="w-full px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            className="w-full px-3 py-2 text-body text-muted-foreground hover:text-foreground hover:bg-muted/40"
           >
             Load more…
           </button>

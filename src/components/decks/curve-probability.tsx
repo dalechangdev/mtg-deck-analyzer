@@ -141,7 +141,7 @@ function ProbTooltip({
   if (!active || !payload?.length || !payload[0].payload) return null;
   const { label, pct } = payload[0].payload;
   return (
-    <div className="bg-background border border-border rounded px-2.5 py-2 text-xs shadow-lg">
+    <div className="bg-background border border-border rounded-md px-2.5 py-2 text-body shadow-lg">
       <div className="font-semibold mb-0.5">Turn {label}</div>
       <div className="text-muted-foreground">{pct} chance of playing on curve</div>
     </div>
@@ -194,7 +194,7 @@ export function CurveProbability({ entries }: Props) {
         <SectionLabel>
           On-Curve Probability
         </SectionLabel>
-        <span className="text-[11px] text-muted-foreground">exact · hypergeometric</span>
+        <span className="text-label text-muted-foreground">exact · hypergeometric</span>
       </div>
 
       <ResponsiveContainer width="100%" height={130}>

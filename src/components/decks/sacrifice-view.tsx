@@ -27,21 +27,21 @@ const ROLE_LABEL: Record<SacrificeRole, string> = {
 
 const ROLE_STYLE: Record<SacrificeRole, { header: string; badge: string; addBtn: string }> = {
   "sacrifice-outlet": {
-    header: "text-red-400/80",
-    badge: "text-red-400 bg-red-950/30",
-    addBtn: "border-red-600/50 text-red-400 hover:bg-red-950/40",
+    header: "text-danger/80",
+    badge: "text-danger bg-danger-surface",
+    addBtn: "border-danger-border text-danger hover:bg-danger-surface-strong",
   },
   "sacrifice-payoff": {
-    header: "text-purple-400/80",
-    badge: "text-purple-400 bg-purple-950/30",
-    addBtn: "border-purple-600/50 text-purple-400 hover:bg-purple-950/40",
+    header: "text-highlight/80",
+    badge: "text-highlight bg-highlight-surface",
+    addBtn: "border-highlight-border text-highlight hover:bg-highlight-surface-strong",
   },
 };
 
 const SOURCE_BADGE: Record<CardSource, string | null> = {
   main: null,
-  maybe: "text-amber-400/80 bg-amber-950/20",
-  library: "text-sky-400/80 bg-sky-950/20",
+  maybe: "text-warning/80 bg-warning-surface",
+  library: "text-info/80 bg-info-surface",
 };
 
 interface Props {
@@ -147,7 +147,7 @@ export function SacrificeView({
                   <button
                     key={role}
                     onClick={() => toggle(selectedCard.id, role, !tagged)}
-                    className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
+                    className={`text-body px-3 py-1.5 rounded-md border font-medium transition-colors ${
                       tagged
                         ? `${style.badge} border-transparent`
                         : "border-border text-muted-foreground hover:text-foreground"
@@ -164,19 +164,19 @@ export function SacrificeView({
 
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
-        <span className="text-sm font-medium">{deckName}</span>
-        <span className="text-xs text-muted-foreground">Sacrifice Engine</span>
+        <span className="text-ui font-medium">{deckName}</span>
+        <span className="text-body text-muted-foreground">Sacrifice Engine</span>
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-[11px] text-muted-foreground">
-            <span className="text-red-400 font-medium">{byRole.outlets.length}</span>{" "}
+          <span className="text-label text-muted-foreground">
+            <span className="text-danger font-medium">{byRole.outlets.length}</span>{" "}
             outlet{byRole.outlets.length !== 1 ? "s" : ""}
             <span className="mx-1.5 opacity-40">·</span>
-            <span className="text-purple-400 font-medium">{byRole.payoffs.length}</span>{" "}
+            <span className="text-highlight font-medium">{byRole.payoffs.length}</span>{" "}
             payoff{byRole.payoffs.length !== 1 ? "s" : ""}
           </span>
           <Link
             href={`/decks/${deckId}`}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-body text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Full builder
           </Link>
@@ -199,7 +199,7 @@ export function SacrificeView({
                   </SectionLabel>
                 </div>
                 {cards.length === 0 ? (
-                  <p className="px-3 py-4 text-xs text-muted-foreground">None tagged yet.</p>
+                  <p className="px-3 py-4 text-body text-muted-foreground">None tagged yet.</p>
                 ) : (
                   <ul>
                     {cards.map((item) => (
@@ -208,23 +208,23 @@ export function SacrificeView({
                         className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 cursor-pointer"
                         onClick={() => setSelectedCard(cardDetails[item.cardId] ?? null)}
                       >
-                        <span className="flex-1 text-xs truncate">{item.name}</span>
+                        <span className="flex-1 text-body truncate">{item.name}</span>
                         {SOURCE_BADGE[item.source] && (
-                          <span className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 ${SOURCE_BADGE[item.source]}`}>
+                          <span className={`text-micro px-1 py-0.5 rounded-md flex-shrink-0 ${SOURCE_BADGE[item.source]}`}>
                             {item.source}
                           </span>
                         )}
                         {(roles[item.cardId] ?? [])
                           .filter((r) => r !== role)
                           .map((r) => (
-                            <span key={r} className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 ${ROLE_STYLE[r].badge}`}>
+                            <span key={r} className={`text-micro px-1 py-0.5 rounded-md flex-shrink-0 ${ROLE_STYLE[r].badge}`}>
                               {ROLE_LABEL[r]}
                             </span>
                           ))}
                         <button
                           onClick={(ev) => { ev.stopPropagation(); toggle(item.cardId, role, false); }}
                           title={`Remove ${ROLE_LABEL[role]} tag`}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs flex-shrink-0"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-md flex items-center justify-center text-muted-foreground hover:text-danger hover:bg-danger-surface text-body flex-shrink-0"
                         >
                           ×
                         </button>
@@ -254,15 +254,15 @@ export function SacrificeView({
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-xs truncate">{item.name}</span>
+                      <span className="text-body truncate">{item.name}</span>
                       {SOURCE_BADGE[item.source] && (
-                        <span className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 ${SOURCE_BADGE[item.source]}`}>
+                        <span className={`text-micro px-1 py-0.5 rounded-md flex-shrink-0 ${SOURCE_BADGE[item.source]}`}>
                           {item.source}
                         </span>
                       )}
                     </div>
                     {item.manaCost && (
-                      <span className="text-[11px] text-muted-foreground font-mono">{item.manaCost}</span>
+                      <span className="text-label text-muted-foreground font-mono">{item.manaCost}</span>
                     )}
                   </div>
                   <div
@@ -273,7 +273,7 @@ export function SacrificeView({
                       <button
                         key={role}
                         onClick={() => toggle(item.cardId, role, true)}
-                        className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_STYLE[role].addBtn}`}
+                        className={`text-micro px-1.5 py-0.5 rounded-md border ${ROLE_STYLE[role].addBtn}`}
                       >
                         + {ROLE_LABEL[role]}
                       </button>

@@ -7,6 +7,8 @@ import { CATEGORY_ORDER, getCardCategory } from "@/lib/commander";
 import type { CardData } from "@/lib/commander";
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionHeader } from "@/components/ui/section-header";
+import { COLOR_LABELS, MANA_CHIP } from "@/lib/mtg-styles";
+import { Button } from "@/components/ui/button";
 
 export type LibraryEntry = CardData & {
   libraryCardId: string;
@@ -16,15 +18,6 @@ export type LibraryEntry = CardData & {
 interface Props {
   initialEntries: LibraryEntry[];
 }
-
-const COLOR_LABELS: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
-const COLOR_STYLE: Record<string, string> = {
-  W: "bg-yellow-50 border-yellow-400 text-yellow-900",
-  U: "bg-blue-600 border-blue-800 text-white",
-  B: "bg-zinc-900 border-zinc-600 text-zinc-100",
-  R: "bg-red-600 border-red-800 text-white",
-  G: "bg-green-700 border-green-900 text-white",
-};
 
 export function LibraryManager({ initialEntries }: Props) {
   const router = useRouter();
@@ -115,20 +108,20 @@ export function LibraryManager({ initialEntries }: Props) {
     <FullHeightView>
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
-        <h1 className="text-sm font-medium">Library</h1>
-        <span className="text-xs text-muted-foreground">
+        <h1 className="text-ui font-medium">Library</h1>
+        <span className="text-body text-muted-foreground">
           {distinctCount} card{distinctCount !== 1 ? "s" : ""} · {totalCopies} cop
           {totalCopies !== 1 ? "ies" : "y"}
         </span>
         <button
           onClick={() => router.push("/packs")}
-          className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+          className="ml-auto text-body text-muted-foreground hover:text-foreground"
         >
           Open packs →
         </button>
         <button
           onClick={() => router.push("/decks")}
-          className="text-xs text-muted-foreground hover:text-foreground"
+          className="text-body text-muted-foreground hover:text-foreground"
         >
           Decks →
         </button>
@@ -149,7 +142,7 @@ export function LibraryManager({ initialEntries }: Props) {
           </SectionHeader>
           <div className="flex-1 overflow-y-auto">
             {entries.length === 0 ? (
-              <div className="p-4 text-xs text-muted-foreground">
+              <div className="p-4 text-body text-muted-foreground">
                 Your library is empty. Search on the left to add cards you own.
               </div>
             ) : (
@@ -186,39 +179,39 @@ function OwnedRow({
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40">
       {entry.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={entry.imageUrl} alt={entry.name} className="w-8 rounded flex-shrink-0" loading="lazy" />
+        <img src={entry.imageUrl} alt={entry.name} className="w-8 rounded-md flex-shrink-0" loading="lazy" />
       ) : (
-        <div className="w-8 h-11 rounded bg-muted flex-shrink-0" />
+        <div className="w-8 h-11 rounded-md bg-muted flex-shrink-0" />
       )}
       <div className="flex-1 min-w-0">
-        <span className="text-xs truncate block">{entry.name}</span>
+        <span className="text-body truncate block">{entry.name}</span>
         {entry.manaCost && (
-          <span className="text-[11px] text-muted-foreground font-mono">{entry.manaCost}</span>
+          <span className="text-label text-muted-foreground font-mono">{entry.manaCost}</span>
         )}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
-        <button
+        <Button
           onClick={() => onSetQuantity(entry.libraryCardId, entry.quantity - 1)}
           title={entry.quantity <= 1 ? "Remove from library" : "Decrease"}
-          className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-sm"
+          variant="ghost" size="icon-xs" className="size-5 text-ui"
         >
           −
-        </button>
-        <span className="text-xs font-mono w-5 text-center tabular-nums">{entry.quantity}</span>
-        <button
+        </Button>
+        <span className="text-body font-mono w-5 text-center tabular-nums">{entry.quantity}</span>
+        <Button
           onClick={() => onSetQuantity(entry.libraryCardId, entry.quantity + 1)}
           title="Increase"
-          className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted text-sm"
+          variant="ghost" size="icon-xs" className="size-5 text-ui"
         >
           +
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onSetQuantity(entry.libraryCardId, 0)}
           title="Remove from library"
-          className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs ml-1"
+          variant="ghost" size="icon-xs" className="size-5 ml-1 text-body text-muted-foreground hover:text-danger hover:bg-danger-surface"
         >
           ×
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -261,7 +254,7 @@ function AddPanel({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search cards…"
-          className="h-8 text-sm"
+          className="h-8 text-ui"
         />
         <div className="flex items-center gap-1.5 flex-wrap">
           {Object.keys(COLOR_LABELS).map((c) => {
@@ -271,8 +264,8 @@ function AddPanel({
                 key={c}
                 onClick={() => toggleColor(c)}
                 title={COLOR_LABELS[c]}
-                className={`w-6 h-6 rounded-full border-2 font-bold text-[10px] transition-all ${COLOR_STYLE[c]} ${
-                  active ? "scale-110 ring-2 ring-offset-1 ring-offset-background ring-white/30" : "opacity-40"
+                className={`w-6 h-6 rounded-full border-2 font-bold text-micro transition-all ${MANA_CHIP[c]} ${
+                  active ? "scale-110 ring-2 ring-offset-1 ring-offset-background ring-foreground/30" : "opacity-40"
                 }`}
               >
                 {c}
@@ -284,10 +277,10 @@ function AddPanel({
 
       <div className="flex-1 overflow-y-auto">
         {loading && results.length === 0 && (
-          <div className="p-4 text-xs text-muted-foreground">Loading…</div>
+          <div className="p-4 text-body text-muted-foreground">Loading…</div>
         )}
         {!loading && results.length === 0 && (
-          <div className="p-4 text-xs text-muted-foreground">No results</div>
+          <div className="p-4 text-body text-muted-foreground">No results</div>
         )}
         {results.map((card) => {
           const owned = ownedByCardId.get(card.cardId) ?? 0;
@@ -298,13 +291,13 @@ function AddPanel({
             >
               {card.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={card.imageUrl} alt={card.name} className="w-8 rounded flex-shrink-0" loading="lazy" />
+                <img src={card.imageUrl} alt={card.name} className="w-8 rounded-md flex-shrink-0" loading="lazy" />
               ) : (
-                <div className="w-8 h-11 rounded bg-muted flex-shrink-0" />
+                <div className="w-8 h-11 rounded-md bg-muted flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate">{card.name}</div>
-                <div className="text-[11px] text-muted-foreground truncate">
+                <div className="text-body font-medium truncate">{card.name}</div>
+                <div className="text-label text-muted-foreground truncate">
                   {card.manaCost && <span className="font-mono mr-1">{card.manaCost}</span>}
                   {card.typeLine}
                 </div>
@@ -313,7 +306,7 @@ function AddPanel({
               {owned > 0 && (
                 <span
                   title="In your library"
-                  className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400"
+                  className="flex-shrink-0 text-micro font-bold px-1.5 py-0.5 rounded-md bg-success/20 text-success"
                 >
                   ✓{owned}
                 </span>
@@ -322,7 +315,7 @@ function AddPanel({
               <button
                 onClick={() => onAdd(card)}
                 title={owned > 0 ? "Add another copy" : "Add to library"}
-                className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold transition-colors bg-primary/20 hover:bg-primary text-primary hover:text-primary-foreground"
+                className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-ui font-bold transition-colors bg-primary/20 hover:bg-primary text-primary hover:text-primary-foreground"
               >
                 +
               </button>

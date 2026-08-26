@@ -69,34 +69,72 @@
   --color-card: var(--card);
 
   /* ── Status ramps ─────────────────────────────────────────────────────
-     Each ramp has four steps:
-       text-{name}           the vivid accent, for text and icons
-       bg-{name}-surface     the tinted panel background
-       border-{name}-line    subtle chrome rule, to sit on that surface
-       border-{name}-border  stronger outline, for buttons and badges
-     The two border weights are not redundant — the app already used both
-     (e.g. border-amber-900/30 for panel chrome, border-amber-600/50 for
-     interactive outlines). Replaces ~180 hardcoded palette utilities.    */
+     Each ramp has five steps:
+       text-{name}                  vivid accent, for text and icons
+       bg-{name}-surface            tinted panel background
+       bg-{name}-surface-strong     the same, for hover / emphasis
+       border-{name}-line           subtle chrome rule on that surface
+       border-{name}-border         stronger outline, for buttons/badges
+     None of these collapse into each other — the app already used all
+     five weights (border-amber-900/30 for panel chrome vs
+     border-amber-600/50 for interactive outlines; bg-*-950/30 at rest vs
+     /40 on hover). Replaces the hardcoded palette utilities app-wide.    */
   --color-danger: var(--danger);
   --color-danger-surface: var(--danger-surface);
+  --color-danger-surface-strong: var(--danger-surface-strong);
   --color-danger-line: var(--danger-line);
   --color-danger-border: var(--danger-border);
   --color-warning: var(--warning);
   --color-warning-surface: var(--warning-surface);
+  --color-warning-surface-strong: var(--warning-surface-strong);
   --color-warning-line: var(--warning-line);
   --color-warning-border: var(--warning-border);
   --color-success: var(--success);
   --color-success-surface: var(--success-surface);
+  --color-success-surface-strong: var(--success-surface-strong);
   --color-success-line: var(--success-line);
   --color-success-border: var(--success-border);
   --color-info: var(--info);
   --color-info-surface: var(--info-surface);
+  --color-info-surface-strong: var(--info-surface-strong);
   --color-info-line: var(--info-line);
   --color-info-border: var(--info-border);
   --color-highlight: var(--highlight);
   --color-highlight-surface: var(--highlight-surface);
+  --color-highlight-surface-strong: var(--highlight-surface-strong);
   --color-highlight-line: var(--highlight-line);
   --color-highlight-border: var(--highlight-border);
+
+  /* ── MTG domain colours ───────────────────────────────────────────────
+     Mana identity and rarity are properties of the cards, not of the UI
+     theme, so these do not change between light and dark. Each has a base,
+     a foreground for text sitting on it, and an edge for its border.      */
+  --color-mana-w: var(--mana-w);
+  --color-mana-w-foreground: var(--mana-w-foreground);
+  --color-mana-w-edge: var(--mana-w-edge);
+  --color-mana-u: var(--mana-u);
+  --color-mana-u-foreground: var(--mana-u-foreground);
+  --color-mana-u-edge: var(--mana-u-edge);
+  --color-mana-b: var(--mana-b);
+  --color-mana-b-foreground: var(--mana-b-foreground);
+  --color-mana-b-edge: var(--mana-b-edge);
+  --color-mana-r: var(--mana-r);
+  --color-mana-r-foreground: var(--mana-r-foreground);
+  --color-mana-r-edge: var(--mana-r-edge);
+  --color-mana-g: var(--mana-g);
+  --color-mana-g-foreground: var(--mana-g-foreground);
+  --color-mana-g-edge: var(--mana-g-edge);
+
+  --color-rarity-common: var(--rarity-common);
+  --color-rarity-common-foreground: var(--rarity-common-foreground);
+  --color-rarity-uncommon: var(--rarity-uncommon);
+  --color-rarity-uncommon-foreground: var(--rarity-uncommon-foreground);
+  --color-rarity-rare: var(--rarity-rare);
+  --color-rarity-rare-foreground: var(--rarity-rare-foreground);
+  --color-rarity-mythic: var(--rarity-mythic);
+  --color-rarity-mythic-foreground: var(--rarity-mythic-foreground);
+  --color-rarity-special: var(--rarity-special);
+  --color-rarity-special-foreground: var(--rarity-special-foreground);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -152,27 +190,62 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* Status — light. Accents ~600, surfaces ~50, lines ~100, borders ~200. */
+  /* Status — light. Accent ~600, surface ~50, surface-strong ~100,
+     line ~200, border ~300.                                              */
   --danger: oklch(57.7% 0.245 27.325);
   --danger-surface: oklch(97.1% 0.013 17.38);
-  --danger-line: oklch(93.6% 0.032 17.717);
-  --danger-border: oklch(88.5% 0.062 18.334);
+  --danger-surface-strong: oklch(93.6% 0.032 17.717);
+  --danger-line: oklch(88.5% 0.062 18.334);
+  --danger-border: oklch(80.8% 0.114 19.571);
   --warning: oklch(66.6% 0.179 58.318);
   --warning-surface: oklch(98.7% 0.022 95.277);
-  --warning-line: oklch(96.2% 0.059 95.617);
-  --warning-border: oklch(92.4% 0.12 95.746);
+  --warning-surface-strong: oklch(96.2% 0.059 95.617);
+  --warning-line: oklch(92.4% 0.12 95.746);
+  --warning-border: oklch(87.9% 0.169 91.605);
   --success: oklch(62.7% 0.194 149.214);
   --success-surface: oklch(98.2% 0.018 155.826);
-  --success-line: oklch(96.2% 0.044 156.743);
-  --success-border: oklch(92.5% 0.084 155.995);
+  --success-surface-strong: oklch(96.2% 0.044 156.743);
+  --success-line: oklch(92.5% 0.084 155.995);
+  --success-border: oklch(87.1% 0.15 154.449);
   --info: oklch(58.8% 0.158 241.966);
   --info-surface: oklch(97.7% 0.013 236.62);
-  --info-line: oklch(95.1% 0.026 236.824);
-  --info-border: oklch(90.1% 0.058 230.902);
+  --info-surface-strong: oklch(95.1% 0.026 236.824);
+  --info-line: oklch(90.1% 0.058 230.902);
+  --info-border: oklch(82.8% 0.111 230.318);
   --highlight: oklch(55.8% 0.288 302.321);
   --highlight-surface: oklch(97.7% 0.014 308.299);
-  --highlight-line: oklch(94.6% 0.033 307.174);
-  --highlight-border: oklch(90.2% 0.063 306.703);
+  --highlight-surface-strong: oklch(94.6% 0.033 307.174);
+  --highlight-line: oklch(90.2% 0.063 306.703);
+  --highlight-border: oklch(82.7% 0.119 306.383);
+
+  /* ── MTG domain colours — deliberately NOT redefined under .dark ───────
+     A white mana symbol is white on either theme.                        */
+  --mana-w: oklch(98.7% 0.026 102.212);
+  --mana-w-foreground: oklch(42.1% 0.095 57.708);
+  --mana-w-edge: oklch(85.2% 0.199 91.936);
+  --mana-u: oklch(54.6% 0.245 262.881);
+  --mana-u-foreground: #fff;
+  --mana-u-edge: oklch(42.4% 0.199 265.638);
+  --mana-b: oklch(21% 0.006 285.885);
+  --mana-b-foreground: oklch(96.7% 0.001 286.375);
+  --mana-b-edge: oklch(44.2% 0.017 285.786);
+  --mana-r: oklch(57.7% 0.245 27.325);
+  --mana-r-foreground: #fff;
+  --mana-r-edge: oklch(44.4% 0.177 26.899);
+  --mana-g: oklch(52.7% 0.154 150.069);
+  --mana-g-foreground: #fff;
+  --mana-g-edge: oklch(39.3% 0.095 152.535);
+
+  --rarity-common: oklch(37% 0.013 285.805);
+  --rarity-common-foreground: oklch(96.7% 0.001 286.375);
+  --rarity-uncommon: oklch(70.4% 0.04 256.788);
+  --rarity-uncommon-foreground: oklch(20.8% 0.042 265.755);
+  --rarity-rare: oklch(82.8% 0.189 84.429);
+  --rarity-rare-foreground: oklch(27.9% 0.077 45.635);
+  --rarity-mythic: oklch(64.6% 0.222 41.116);
+  --rarity-mythic-foreground: #fff;
+  --rarity-special: oklch(55.8% 0.288 302.321);
+  --rarity-special-foreground: #fff;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -212,26 +285,32 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   /* Status — dark. These reproduce the values the components already use:
-     accents ~400, surfaces ~950/30%, lines ~900/30%, borders ~600/50%.   */
+     accent ~400, surface ~950/30%, surface-strong ~950/60% (the hover
+     state), line ~900/40%, border ~600/50%.                              */
   --danger: oklch(70.4% 0.191 22.216);
   --danger-surface: oklch(25.8% 0.092 26.042 / 30%);
-  --danger-line: oklch(39.6% 0.141 25.723 / 30%);
+  --danger-surface-strong: oklch(25.8% 0.092 26.042 / 60%);
+  --danger-line: oklch(39.6% 0.141 25.723 / 40%);
   --danger-border: oklch(57.7% 0.245 27.325 / 50%);
   --warning: oklch(82.8% 0.189 84.429);
   --warning-surface: oklch(27.9% 0.077 45.635 / 30%);
-  --warning-line: oklch(41.4% 0.112 45.904 / 30%);
+  --warning-surface-strong: oklch(27.9% 0.077 45.635 / 60%);
+  --warning-line: oklch(41.4% 0.112 45.904 / 40%);
   --warning-border: oklch(66.6% 0.179 58.318 / 50%);
   --success: oklch(79.2% 0.209 151.711);
   --success-surface: oklch(26.6% 0.065 152.934 / 30%);
-  --success-line: oklch(39.3% 0.095 152.535 / 30%);
+  --success-surface-strong: oklch(26.6% 0.065 152.934 / 60%);
+  --success-line: oklch(39.3% 0.095 152.535 / 40%);
   --success-border: oklch(62.7% 0.194 149.214 / 50%);
   --info: oklch(74.6% 0.16 232.661);
   --info-surface: oklch(29.3% 0.066 243.157 / 30%);
-  --info-line: oklch(39.1% 0.09 240.876 / 30%);
+  --info-surface-strong: oklch(29.3% 0.066 243.157 / 60%);
+  --info-line: oklch(39.1% 0.09 240.876 / 40%);
   --info-border: oklch(58.8% 0.158 241.966 / 50%);
   --highlight: oklch(71.4% 0.203 305.504);
   --highlight-surface: oklch(29.1% 0.149 302.717 / 30%);
-  --highlight-line: oklch(38.1% 0.176 304.987 / 30%);
+  --highlight-surface-strong: oklch(29.1% 0.149 302.717 / 60%);
+  --highlight-line: oklch(38.1% 0.176 304.987 / 40%);
   --highlight-border: oklch(55.8% 0.288 302.321 / 50%);
 }
 

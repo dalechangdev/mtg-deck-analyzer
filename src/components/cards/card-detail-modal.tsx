@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { DialogTitle } from "@/components/ui/dialog";
 import { Modal, ModalCloseButton } from "@/components/ui/modal";
+import { MANA_PIP, rarityStyle } from "@/lib/mtg-styles";
+import { Button } from "@/components/ui/button";
 
 export interface CardFaceDetail {
   name: string;
@@ -38,21 +40,6 @@ export interface CardDetail {
   scryfallUri: string | null;
   faces: CardFaceDetail[];
 }
-
-const COLOR_DOT: Record<string, string> = {
-  W: "bg-yellow-100 border-yellow-400",
-  U: "bg-blue-500",
-  B: "bg-zinc-800",
-  R: "bg-red-500",
-  G: "bg-green-600",
-};
-
-const RARITY_STYLE: Record<string, string> = {
-  common: "bg-zinc-700 text-zinc-100",
-  uncommon: "bg-slate-400 text-slate-900",
-  rare: "bg-amber-400 text-amber-950",
-  mythic: "bg-orange-600 text-white",
-};
 
 function ptLine(power: string | null, toughness: string | null, loyalty: string | null) {
   if (power != null && toughness != null) return `${power} / ${toughness}`;
@@ -141,20 +128,6 @@ export function CardDetailModal({
     }
   };
 
-  // Close on Escape and lock background scroll while open.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [onClose]);
-
   const activeFace = hasMultipleFaces ? card.faces[faceIndex] : null;
   const image = activeFace?.imageUrl ?? card.largeImageUrl ?? card.imageUrl;
 
@@ -180,17 +153,17 @@ export function CardDetailModal({
               className="w-[260px] max-w-full rounded-xl shadow-lg"
             />
           ) : (
-            <div className="flex aspect-[63/88] w-[260px] max-w-full items-center justify-center rounded-xl bg-muted text-xs text-muted-foreground">
+            <div className="flex aspect-[63/88] w-[260px] max-w-full items-center justify-center rounded-xl bg-muted text-body text-muted-foreground">
               No image
             </div>
           )}
           {hasMultipleFaces && (
-            <button
+            <Button
               onClick={() => setFaceIndex((i) => (i + 1) % card.faces.length)}
-              className="rounded-md border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              variant="outline" size="sm"
             >
               ⟲ Flip · {card.faces[(faceIndex + 1) % card.faces.length].name}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -207,21 +180,21 @@ export function CardDetailModal({
               <div className="flex items-start justify-between gap-3 pr-6">
                 <h2 className="text-lg font-semibold leading-tight">{card.name}</h2>
                 {card.manaCost && (
-                  <span className="flex-shrink-0 font-mono text-sm text-muted-foreground">{card.manaCost}</span>
+                  <span className="flex-shrink-0 font-mono text-ui text-muted-foreground">{card.manaCost}</span>
                 )}
               </div>
-              <p className="text-sm italic text-muted-foreground">{card.typeLine}</p>
+              <p className="text-ui italic text-muted-foreground">{card.typeLine}</p>
               {card.oracleText && (
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{card.oracleText}</p>
+                <p className="whitespace-pre-wrap text-ui leading-relaxed text-foreground/90">{card.oracleText}</p>
               )}
               {ptLine(card.power, card.toughness, card.loyalty) && (
-                <p className="text-sm font-semibold">{ptLine(card.power, card.toughness, card.loyalty)}</p>
+                <p className="text-ui font-semibold">{ptLine(card.power, card.toughness, card.loyalty)}</p>
               )}
             </div>
           )}
 
           {/* Metadata footer — shared across all cards */}
-          <div className="mt-5 space-y-3 border-t border-border pt-4 text-xs">
+          <div className="mt-5 space-y-3 border-t border-border pt-4 text-body">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground">
               <span>
                 Mana value <span className="font-medium text-foreground">{card.cmc}</span>
@@ -230,7 +203,7 @@ export function CardDetailModal({
                 <span className="flex items-center gap-1">
                   Color identity
                   {card.colorIdentity.map((c) => (
-                    <span key={c} className={`h-3.5 w-3.5 rounded-full border ${COLOR_DOT[c] ?? "bg-zinc-500"}`} />
+                    <span key={c} className={`h-3.5 w-3.5 rounded-full border ${MANA_PIP[c] ?? "bg-muted-foreground"}`} />
                   ))}
                 </span>
               ) : (
@@ -244,7 +217,7 @@ export function CardDetailModal({
               )}
               {card.rarity && (
                 <span
-                  className={`rounded px-1.5 py-0.5 font-medium capitalize ${RARITY_STYLE[card.rarity] ?? "bg-zinc-700 text-zinc-100"}`}
+                  className={`rounded-md px-1.5 py-0.5 font-medium capitalize ${rarityStyle(card.rarity)}`}
                 >
                   {card.rarity}
                 </span>
@@ -264,31 +237,31 @@ export function CardDetailModal({
             <div className="flex flex-wrap items-center gap-3 pt-1">
               {actions ?? (
                 <>
-                  <button
+                  <Button
                     onClick={addToLibrary}
                     disabled={adding}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    size="sm"
                   >
                     {adding ? "Adding…" : ownedQty != null ? "Add another copy" : "+ Add to Library"}
-                  </button>
+                  </Button>
                   {ownedQty != null && (
-                    <span className="font-medium text-emerald-400">
+                    <span className="font-medium text-success">
                       ✓ {ownedQty} in library
                     </span>
                   )}
                   {addError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
 
-                  <button
+                  <Button
                     onClick={addToCart}
                     disabled={addingToCart || interested}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                    variant="outline" size="sm"
                   >
                     {interested ? "✓ Interested" : addingToCart ? "Adding…" : "☆ Interested"}
-                  </button>
+                  </Button>
                   {cartError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
                 </>
               )}
-              {card.canBeCommander && <span className="font-medium text-amber-400">⭐ Can be your Commander</span>}
+              {card.canBeCommander && <span className="font-medium text-warning">⭐ Can be your Commander</span>}
               {card.scryfallUri && (
                 <a
                   href={card.scryfallUri}
@@ -328,14 +301,14 @@ function FaceBlock({ face, active, onSelect }: { face: CardFaceDetail; active: b
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-base font-semibold leading-tight">{face.name}</h3>
-        {face.manaCost && <span className="flex-shrink-0 font-mono text-sm text-muted-foreground">{face.manaCost}</span>}
+        <h3 className="text-lead font-semibold leading-tight">{face.name}</h3>
+        {face.manaCost && <span className="flex-shrink-0 font-mono text-ui text-muted-foreground">{face.manaCost}</span>}
       </div>
-      <p className="mt-0.5 text-sm italic text-muted-foreground">{face.typeLine}</p>
+      <p className="mt-0.5 text-ui italic text-muted-foreground">{face.typeLine}</p>
       {face.oracleText && (
-        <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{face.oracleText}</p>
+        <p className="mt-1.5 whitespace-pre-wrap text-ui leading-relaxed text-foreground/90">{face.oracleText}</p>
       )}
-      {pt && <p className="mt-1.5 text-sm font-semibold">{pt}</p>}
+      {pt && <p className="mt-1.5 text-ui font-semibold">{pt}</p>}
     </button>
   );
 }

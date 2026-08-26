@@ -290,27 +290,27 @@ export function DeckBuilder({
         <Input
           value={name}
           onChange={(e) => handleNameChange(e.target.value)}
-          className="h-8 text-sm font-medium max-w-64 border-transparent hover:border-input focus:border-input bg-transparent"
+          className="h-8 text-ui font-medium max-w-64 border-transparent hover:border-input focus:border-input bg-transparent"
         />
 
         {commander ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-ui text-muted-foreground">
             {commander.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={commander.imageUrl} alt={commander.name} className="w-6 rounded" />
+              <img src={commander.imageUrl} alt={commander.name} className="w-6 rounded-md" />
             )}
-            <span className="text-xs">{commander.name}</span>
+            <span className="text-body">{commander.name}</span>
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground">No commander</span>
+          <span className="text-body text-muted-foreground">No commander</span>
         )}
 
         <div className="ml-auto flex items-center gap-3">
-          {savingName && <span className="text-xs text-muted-foreground">Saving…</span>}
+          {savingName && <span className="text-body text-muted-foreground">Saving…</span>}
 
           <button
             onClick={() => setShowStrategy((v) => !v)}
-            className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+            className={`text-body px-2 py-0.5 rounded-md border transition-colors ${
               showStrategy
                 ? "border-primary text-primary bg-primary/10"
                 : "border-border text-muted-foreground hover:text-foreground"
@@ -321,14 +321,14 @@ export function DeckBuilder({
 
           <Link
             href={`/decks/${deckId}/builder`}
-            className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+            className="text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
           >
             Deck Builder
           </Link>
 
           <Link
             href={`/decks/${deckId}/analysis`}
-            className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+            className="text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
           >
             Analysis
           </Link>
@@ -336,7 +336,7 @@ export function DeckBuilder({
           {hasSacrificeTheme && (
             <Link
               href={`/decks/${deckId}/builder/sacrifice`}
-              className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+              className="text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
             >
               Sacrifice
             </Link>
@@ -345,9 +345,9 @@ export function DeckBuilder({
           {ownership.total > 0 && (
             <span
               title={`You own ${ownership.owned} of ${ownership.total} main-deck cards`}
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              className={`text-body px-2 py-0.5 rounded-full font-medium ${
                 ownership.needed.length === 0
-                  ? "bg-emerald-900/40 text-emerald-400"
+                  ? "bg-success-surface-strong text-success"
                   : "bg-muted/60 text-muted-foreground"
               }`}
             >
@@ -358,18 +358,18 @@ export function DeckBuilder({
           )}
 
           <span
-            className={`text-sm font-mono font-medium ${
-              validation.cardCount === 100 ? "text-green-400" : "text-muted-foreground"
+            className={`text-ui font-mono font-medium ${
+              validation.cardCount === 100 ? "text-success" : "text-muted-foreground"
             }`}
           >
             {validation.cardCount} / 100
           </span>
 
           <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+            className={`text-body px-2 py-0.5 rounded-full font-medium ${
               isValid
-                ? "bg-green-900/40 text-green-400"
-                : "bg-amber-900/40 text-amber-400"
+                ? "bg-success-surface-strong text-success"
+                : "bg-warning-surface-strong text-warning"
             }`}
           >
             {isValid ? "Valid" : "Incomplete"}
@@ -377,7 +377,7 @@ export function DeckBuilder({
 
           <button
             onClick={() => router.push("/decks")}
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="text-body text-muted-foreground hover:text-foreground"
           >
             ← Decks
           </button>
@@ -402,7 +402,7 @@ export function DeckBuilder({
             <SectionLabel>
               Mana Ramp
             </SectionLabel>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-label text-muted-foreground">
               <span className="text-foreground font-medium">{rampCount}</span>{" "}
               card{rampCount !== 1 ? "s" : ""}
             </span>
@@ -414,13 +414,13 @@ export function DeckBuilder({
                 <SectionLabel>
                   Ownership
                 </SectionLabel>
-                <span className="text-[11px] text-muted-foreground">
-                  <span className="text-emerald-400 font-medium">{ownership.owned}</span> owned ·{" "}
+                <span className="text-label text-muted-foreground">
+                  <span className="text-success font-medium">{ownership.owned}</span> owned ·{" "}
                   <span className="text-foreground font-medium">{ownership.needed.length}</span> needed
                 </span>
               </div>
               {ownership.needed.length === 0 ? (
-                <p className="text-[11px] text-emerald-400">
+                <p className="text-label text-success">
                   You own every card in the main deck — free to build.
                 </p>
               ) : (
@@ -431,7 +431,7 @@ export function DeckBuilder({
                     .map((e) => (
                       <span
                         key={e.deckCardId}
-                        className="text-[11px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground"
+                        className="text-label px-1.5 py-0.5 rounded-md bg-muted/50 text-muted-foreground"
                       >
                         {e.name}
                       </span>

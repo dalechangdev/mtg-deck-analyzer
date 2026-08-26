@@ -6,12 +6,12 @@ import type { DeckEntry, BoardClearMethod, BoardClearScope, BoardClearProfile } 
 import { SectionLabel } from "@/components/ui/section-header";
 
 const METHOD_BADGE: Record<BoardClearMethod, { label: string; cls: string }> = {
-  destroy:          { label: "destroy",    cls: "text-red-400 bg-red-950/30" },
-  exile:            { label: "exile",      cls: "text-purple-400 bg-purple-950/30" },
-  bounce:           { label: "bounce",     cls: "text-sky-400 bg-sky-950/30" },
-  damage:           { label: "damage",     cls: "text-orange-400 bg-orange-950/30" },
-  "minus-counters": { label: "-X/-X",      cls: "text-emerald-400 bg-emerald-950/30" },
-  sacrifice:        { label: "sacrifice",  cls: "text-amber-400 bg-amber-950/30" },
+  destroy:          { label: "destroy",    cls: "text-danger bg-danger-surface" },
+  exile:            { label: "exile",      cls: "text-highlight bg-highlight-surface" },
+  bounce:           { label: "bounce",     cls: "text-info bg-info-surface" },
+  damage:           { label: "damage",     cls: "text-warning bg-warning-surface" },
+  "minus-counters": { label: "-X/-X",      cls: "text-success bg-success-surface" },
+  sacrifice:        { label: "sacrifice",  cls: "text-warning bg-warning-surface" },
 };
 
 const SCOPE_LABEL: Record<BoardClearScope, string> = {
@@ -64,7 +64,7 @@ export function BoardClearCount({ entries }: Props) {
         </SectionLabel>
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          className="text-label text-muted-foreground hover:text-foreground transition-colors"
         >
           <span className="text-foreground font-medium">{count}</span>{" "}
           card{count !== 1 ? "s" : ""}
@@ -80,7 +80,7 @@ export function BoardClearCount({ entries }: Props) {
           {[...methodCounts.entries()].map(([method, n]) => {
             const { label, cls } = METHOD_BADGE[method];
             return (
-              <span key={method} className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${cls}`}>
+              <span key={method} className={`text-micro px-1.5 py-0.5 rounded-md font-medium ${cls}`}>
                 {label}{n > 1 ? ` ×${n}` : ""}
               </span>
             );
@@ -93,43 +93,43 @@ export function BoardClearCount({ entries }: Props) {
         <ul className="mt-2 space-y-2 pl-2 border-l border-border">
           {boardClears.map(({ entry, profile }) => (
             <li key={entry.deckCardId}>
-              <div className="text-[11px] text-muted-foreground truncate mb-0.5">
+              <div className="text-label text-muted-foreground truncate mb-0.5">
                 {entry.quantity > 1 && (
                   <span className="mr-1 font-medium text-foreground">{entry.quantity}×</span>
                 )}
                 {entry.name}
               </div>
               <div className="flex flex-wrap gap-1">
-                <span className={`text-[10px] px-1 py-0.5 rounded ${METHOD_BADGE[profile.method].cls}`}>
+                <span className={`text-micro px-1 py-0.5 rounded-md ${METHOD_BADGE[profile.method].cls}`}>
                   {METHOD_BADGE[profile.method].label}
                 </span>
                 {profile.scope.map((s) => (
-                  <span key={s} className="text-[10px] px-1 py-0.5 rounded text-muted-foreground bg-muted/40">
+                  <span key={s} className="text-micro px-1 py-0.5 rounded-md text-muted-foreground bg-muted/40">
                     {SCOPE_LABEL[s]}
                   </span>
                 ))}
                 {profile.reach === "opponents" && (
-                  <span className="text-[10px] px-1 py-0.5 rounded text-emerald-400 bg-emerald-950/30">
+                  <span className="text-micro px-1 py-0.5 rounded-md text-success bg-success-surface">
                     opp only
                   </span>
                 )}
                 {profile.reach === "selective" && (
-                  <span className="text-[10px] px-1 py-0.5 rounded text-amber-400 bg-amber-950/30">
+                  <span className="text-micro px-1 py-0.5 rounded-md text-warning bg-warning-surface">
                     choose
                   </span>
                 )}
                 {profile.conditionality === "x-cost" && (
-                  <span className="text-[10px] px-1 py-0.5 rounded text-sky-400 bg-sky-950/30">
+                  <span className="text-micro px-1 py-0.5 rounded-md text-info bg-info-surface">
                     X cost
                   </span>
                 )}
                 {profile.conditionality === "triggered" && (
-                  <span className="text-[10px] px-1 py-0.5 rounded text-pink-400 bg-pink-950/30">
+                  <span className="text-micro px-1 py-0.5 rounded-md text-highlight bg-highlight-surface">
                     triggered
                   </span>
                 )}
                 {profile.bypassesIndestructible && (
-                  <span className="text-[10px] px-1 py-0.5 rounded text-zinc-400 bg-zinc-800/50">
+                  <span className="text-micro px-1 py-0.5 rounded-sm text-muted-foreground bg-muted/50">
                     ↑ indestr.
                   </span>
                 )}

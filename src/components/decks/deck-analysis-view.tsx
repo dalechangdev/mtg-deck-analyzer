@@ -23,9 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type Assignment = "INCLUDED" | "EXCLUDED";
 
 const STATUS_STYLE = {
-  under: { dot: "bg-amber-400", text: "text-amber-400", bar: "bg-amber-500/70" },
-  met: { dot: "bg-emerald-400", text: "text-emerald-400", bar: "bg-emerald-500/70" },
-  over: { dot: "bg-sky-400", text: "text-sky-400", bar: "bg-sky-500/70" },
+  under: { dot: "bg-warning", text: "text-warning", bar: "bg-warning/70" },
+  met: { dot: "bg-success", text: "text-success", bar: "bg-success/70" },
+  over: { dot: "bg-info", text: "text-info", bar: "bg-info/70" },
 } as const;
 
 interface Props {
@@ -172,9 +172,9 @@ export function DeckAnalysisView({
                   <button
                     key={role.id}
                     onClick={() => toggleRole(selectedCard.id, role.id, filled)}
-                    className={`text-xs px-3 py-1.5 rounded border font-medium transition-colors ${
+                    className={`text-body px-3 py-1.5 rounded-md border font-medium transition-colors ${
                       filled
-                        ? "border-transparent bg-emerald-950/40 text-emerald-400"
+                        ? "border-transparent bg-success-surface-strong text-success"
                         : "border-border text-muted-foreground hover:text-foreground hover:border-input"
                     }`}
                   >
@@ -189,8 +189,8 @@ export function DeckAnalysisView({
 
       {/* Header */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-shrink-0">
-        <span className="text-sm font-medium">{deckName}</span>
-        <span className="text-xs text-muted-foreground">Template Analysis</span>
+        <span className="text-ui font-medium">{deckName}</span>
+        <span className="text-body text-muted-foreground">Template Analysis</span>
 
         <Select
           value={template.id}
@@ -218,13 +218,13 @@ export function DeckAnalysisView({
         <div className="ml-auto flex items-center gap-3">
           <Link
             href="/templates"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-body text-muted-foreground hover:text-foreground transition-colors"
           >
             Manage templates
           </Link>
           <Link
             href={`/decks/${deckId}`}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-body text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Full builder
           </Link>
@@ -232,7 +232,7 @@ export function DeckAnalysisView({
       </div>
 
       {/* Summary */}
-      <div className="flex items-center gap-4 px-4 py-2 border-b border-border bg-muted/20 flex-shrink-0 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-4 px-4 py-2 border-b border-border bg-muted/20 flex-shrink-0 text-label text-muted-foreground">
         <span>
           <span className="font-mono font-medium text-foreground">
             {analysis.deckCardCount}
@@ -244,7 +244,7 @@ export function DeckAnalysisView({
           targets sum to{" "}
           <span className="font-mono font-medium text-foreground">{analysis.targetSum}</span>
           {overlap > 0 && (
-            <span className="text-amber-400/90"> ({overlap} of double duty)</span>
+            <span className="text-warning/90"> ({overlap} of double duty)</span>
           )}
         </span>
         <span className="opacity-40">·</span>
@@ -281,9 +281,9 @@ export function DeckAnalysisView({
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted/40 text-left"
                 >
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
-                  <span className="text-xs font-medium w-44 flex-shrink-0">{req.roleName}</span>
+                  <span className="text-body font-medium w-44 flex-shrink-0">{req.roleName}</span>
 
-                  <span className="font-mono text-xs w-16 flex-shrink-0 text-right">
+                  <span className="font-mono text-body w-16 flex-shrink-0 text-right">
                     <span className={style.text}>{req.actual}</span>
                     <span className="text-muted-foreground"> / {req.targetCount}</span>
                   </span>
@@ -292,11 +292,11 @@ export function DeckAnalysisView({
                     <span className={`block h-full ${style.bar}`} style={{ width: `${pct}%` }} />
                   </span>
 
-                  <span className={`font-mono text-[11px] w-10 text-right ${style.text}`}>
+                  <span className={`font-mono text-label w-10 text-right ${style.text}`}>
                     {req.delta > 0 ? `+${req.delta}` : req.delta}
                   </span>
 
-                  <span className="text-[11px] text-muted-foreground w-16 text-right">
+                  <span className="text-label text-muted-foreground w-16 text-right">
                     {req.cardIds.length} card{req.cardIds.length !== 1 ? "s" : ""}
                   </span>
                 </button>
@@ -304,17 +304,17 @@ export function DeckAnalysisView({
                 {isOpen && (
                   <div className="px-4 pb-3 bg-muted/10">
                     {req.note && (
-                      <p className="text-[11px] text-muted-foreground italic py-1.5">{req.note}</p>
+                      <p className="text-label text-muted-foreground italic py-1.5">{req.note}</p>
                     )}
                     {req.minCount !== req.targetCount || req.maxCount !== null ? (
-                      <p className="text-[11px] text-muted-foreground py-1">
+                      <p className="text-label text-muted-foreground py-1">
                         Accepts {req.minCount}
                         {req.maxCount !== null ? `–${req.maxCount}` : " or more"}
                       </p>
                     ) : null}
 
                     {req.cardIds.length === 0 ? (
-                      <p className="text-[11px] text-muted-foreground py-2">
+                      <p className="text-label text-muted-foreground py-2">
                         Nothing fills this role yet.
                       </p>
                     ) : (
@@ -328,13 +328,13 @@ export function DeckAnalysisView({
                               key={cardId}
                               className="group flex items-center gap-1.5 py-0.5 min-w-0"
                             >
-                              <span className="text-[11px] truncate flex-1">
+                              <span className="text-label truncate flex-1">
                                 {card?.name ?? cardId}
                               </span>
                               {manual && (
                                 <span
                                   title="Assigned by hand"
-                                  className="text-[10px] px-1 rounded bg-sky-950/40 text-sky-400 flex-shrink-0"
+                                  className="text-micro px-1 rounded-md bg-info-surface-strong text-info flex-shrink-0"
                                 >
                                   manual
                                 </span>
@@ -342,7 +342,7 @@ export function DeckAnalysisView({
                               <button
                                 onClick={() => setOverride(cardId, req.roleId, "EXCLUDED")}
                                 title={`Doesn't count as ${req.roleName}`}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-[11px] flex-shrink-0"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4 rounded-md flex items-center justify-center text-muted-foreground hover:text-danger hover:bg-danger-surface text-label flex-shrink-0"
                               >
                                 ×
                               </button>
@@ -363,13 +363,13 @@ export function DeckAnalysisView({
                               key={card.cardId}
                               className="group flex items-center gap-1.5 py-0.5 min-w-0"
                             >
-                              <span className="text-[11px] truncate flex-1 text-muted-foreground line-through">
+                              <span className="text-label truncate flex-1 text-muted-foreground line-through">
                                 {card.name}
                               </span>
                               <button
                                 onClick={() => setOverride(card.cardId, req.roleId, null)}
                                 title="Undo — fall back to automatic classification"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-1 rounded border border-border text-muted-foreground hover:text-foreground flex-shrink-0"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-micro px-1 rounded-md border border-border text-muted-foreground hover:text-foreground flex-shrink-0"
                               >
                                 undo
                               </button>
@@ -408,8 +408,8 @@ export function DeckAnalysisView({
                       title="View card details"
                       className="flex-1 min-w-0 text-left cursor-pointer disabled:cursor-default"
                     >
-                      <span className="text-xs truncate">{card.name}</span>
-                      <span className="text-[11px] text-muted-foreground ml-2">
+                      <span className="text-body truncate">{card.name}</span>
+                      <span className="text-label text-muted-foreground ml-2">
                         {card.typeLine}
                       </span>
                     </button>
@@ -418,7 +418,7 @@ export function DeckAnalysisView({
                         <button
                           key={role.id}
                           onClick={() => setOverride(cardId, role.id, "INCLUDED")}
-                          className="text-[10px] px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:border-input"
+                          className="text-micro px-1.5 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-input"
                         >
                           + {role.name}
                         </button>

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/section-header";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
 
 const CMC_BUCKETS = [0, 1, 2, 3, 4, 5] as const;
 const CMC_LABEL = (n: number) => (n >= 6 ? "6+" : String(n));
@@ -74,13 +75,13 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
       {(validation.colorViolations.length > 0 || validation.duplicates.length > 0) && (
         <div className="px-3 py-2 border-b border-border flex-shrink-0 space-y-1">
           {validation.colorViolations.length > 0 && (
-            <div className="text-xs text-red-400">
+            <div className="text-body text-danger">
               ⚠ {validation.colorViolations.length} color identity violation
               {validation.colorViolations.length !== 1 ? "s" : ""}
             </div>
           )}
           {validation.duplicates.length > 0 && (
-            <div className="text-xs text-amber-400">
+            <div className="text-body text-warning">
               ⚠ {validation.duplicates.length} duplicate card
               {validation.duplicates.length !== 1 ? "s" : ""}
             </div>
@@ -135,7 +136,7 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                 />
               </section>
             ) : (
-              <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border">
+              <div className="px-3 py-2 text-body text-muted-foreground border-b border-border">
                 No commander set — right-click a card to set it.
               </div>
             )}
@@ -231,7 +232,7 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
           <div className="w-72 flex-shrink-0 flex flex-col overflow-hidden">
 
             {/* Maybeboard — top half */}
-            <div className={`flex flex-col overflow-hidden bg-amber-950/5 ${hasMaybe && hasWishlist ? "flex-1 border-b border-amber-900/30" : hasMaybe ? "flex-1" : "hidden"}`}>
+            <div className={`flex flex-col overflow-hidden bg-warning-surface ${hasMaybe && hasWishlist ? "flex-1 border-b border-warning-line" : hasMaybe ? "flex-1" : "hidden"}`}>
               <div className="flex items-center gap-1 px-3 py-1.5 bg-warning-surface border-b border-warning-line flex-shrink-0">
                 <input
                   value={maybeboardName}
@@ -264,7 +265,7 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
             </div>
 
             {/* Wishlist — bottom half */}
-            <div className={`flex flex-col overflow-hidden bg-purple-950/5 ${hasWishlist ? "flex-1" : "hidden"}`}>
+            <div className={`flex flex-col overflow-hidden bg-highlight-surface ${hasWishlist ? "flex-1" : "hidden"}`}>
               <div className="flex items-center gap-1 px-3 py-1.5 bg-highlight-surface border-b border-highlight-line flex-shrink-0">
                 <input
                   value={wishlistName}
@@ -325,8 +326,8 @@ function CardRow({
   isMaybe?: boolean;
   isWishlist?: boolean;
 }) {
-  const textColor = isViolation ? "text-red-400" : isMaybe ? "text-amber-400/80" : isWishlist ? "text-purple-400/80" : "";
-  const rowBg = isViolation ? "bg-red-950/20" : isMaybe ? "bg-amber-950/10" : isWishlist ? "bg-purple-950/10" : "";
+  const textColor = isViolation ? "text-danger" : isMaybe ? "text-warning/80" : isWishlist ? "text-highlight/80" : "";
+  const rowBg = isViolation ? "bg-danger-surface" : isMaybe ? "bg-warning-surface" : isWishlist ? "bg-highlight-surface" : "";
 
   return (
     <div
@@ -334,7 +335,7 @@ function CardRow({
       onClick={() => onAnnotate(entry.cardId, entry.name, entry.imageUrl)}
     >
       <div className="flex-1 min-w-0">
-        <span className={`text-xs truncate block ${textColor}`}>
+        <span className={`text-body truncate block ${textColor}`}>
           {isViolation && <span className="mr-1">⚠</span>}
           {entry.quantity > 1 && (
             <span className="text-muted-foreground mr-1">{entry.quantity}×</span>
@@ -342,7 +343,7 @@ function CardRow({
           {entry.name}
         </span>
         {entry.manaCost && (
-          <span className="text-[11px] text-muted-foreground font-mono">{entry.manaCost}</span>
+          <span className="text-label text-muted-foreground font-mono">{entry.manaCost}</span>
         )}
       </div>
       <div
@@ -353,7 +354,7 @@ function CardRow({
           <button
             onClick={() => onSetCommander(entry.deckCardId)}
             title="Set as commander"
-            className="text-[10px] px-1.5 py-0.5 rounded border border-amber-600/50 text-amber-400 hover:bg-amber-950/40"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-warning-border text-warning hover:bg-warning-surface-strong"
           >
             ★
           </button>
@@ -363,14 +364,14 @@ function CardRow({
             <button
               onClick={() => onMoveCard(entry.deckCardId, "maybe")}
               title="Move to maybeboard"
-              className="text-[10px] px-1.5 py-0.5 rounded border border-amber-600/50 text-amber-400 hover:bg-amber-950/40"
+              className="text-micro px-1.5 py-0.5 rounded-md border border-warning-border text-warning hover:bg-warning-surface-strong"
             >
               → maybe
             </button>
             <button
               onClick={() => onMoveCard(entry.deckCardId, "main")}
               title="Move to main deck"
-              className="text-[10px] px-1.5 py-0.5 rounded border border-green-600/50 text-green-400 hover:bg-green-950/40"
+              className="text-micro px-1.5 py-0.5 rounded-md border border-success-border text-success hover:bg-success-surface-strong"
             >
               → main
             </button>
@@ -379,7 +380,7 @@ function CardRow({
           <button
             onClick={() => onMoveCard(entry.deckCardId, "main")}
             title="Move to main deck"
-            className="text-[10px] px-1.5 py-0.5 rounded border border-green-600/50 text-green-400 hover:bg-green-950/40"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-success-border text-success hover:bg-success-surface-strong"
           >
             → main
           </button>
@@ -387,18 +388,18 @@ function CardRow({
           <button
             onClick={() => onMoveCard(entry.deckCardId, "maybe")}
             title="Move to maybeboard"
-            className="text-[10px] px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:border-amber-600/50 hover:text-amber-400"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-border text-muted-foreground hover:border-warning-border hover:text-warning"
           >
             → maybe
           </button>
         )}
-        <button
+        <Button
           onClick={() => onRemove(entry.deckCardId)}
           title="Remove"
-          className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs"
+          variant="ghost" size="icon-xs" className="size-5 text-body text-muted-foreground hover:text-danger hover:bg-danger-surface"
         >
           ×
-        </button>
+        </Button>
       </div>
     </div>
   );

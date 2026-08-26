@@ -6,6 +6,7 @@ import type { CardData, DeckEntry } from "@/lib/commander";
 import { isColorSubset, isBasicLand } from "@/lib/commander";
 import { scoreCardSynergy, THEME_LABELS } from "@/lib/synergy";
 import type { SynergyTheme } from "@/lib/synergy";
+import { COLOR_LABELS, MANA_CHIP } from "@/lib/mtg-styles";
 
 interface Props {
   commanderColorIdentity: string[];
@@ -14,20 +15,11 @@ interface Props {
   onAdd: (card: CardData, slot?: "main" | "maybe" | "wishlist") => void;
 }
 
-const COLOR_LABELS: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
-const COLOR_STYLE: Record<string, string> = {
-  W: "bg-yellow-50 border-yellow-400 text-yellow-900",
-  U: "bg-blue-600 border-blue-800 text-white",
-  B: "bg-zinc-900 border-zinc-600 text-zinc-100",
-  R: "bg-red-600 border-red-800 text-white",
-  G: "bg-green-700 border-green-900 text-white",
-};
-
 const SYNERGY_STYLE: Record<0 | 1 | 2 | 3, string> = {
   0: "bg-muted/50 text-muted-foreground",
-  1: "bg-yellow-900/40 text-yellow-400",
-  2: "bg-green-900/40 text-green-400",
-  3: "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40",
+  1: "bg-warning-surface-strong text-warning",
+  2: "bg-success-surface-strong text-success",
+  3: "bg-success/20 text-success ring-1 ring-success/40",
 };
 
 const SYNERGY_LABEL: Record<0 | 1 | 2 | 3, string> = {
@@ -74,7 +66,7 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search cards…"
-          className="h-8 text-sm"
+          className="h-8 text-ui"
         />
         <div className="flex items-center gap-1.5 flex-wrap">
           {Object.keys(COLOR_LABELS).map((c) => {
@@ -84,8 +76,8 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
                 key={c}
                 onClick={() => toggleColor(c)}
                 title={COLOR_LABELS[c]}
-                className={`w-6 h-6 rounded-full border-2 font-bold text-[10px] transition-all ${COLOR_STYLE[c]} ${
-                  active ? "scale-110 ring-2 ring-offset-1 ring-offset-background ring-white/30" : "opacity-40"
+                className={`w-6 h-6 rounded-full border-2 font-bold text-micro transition-all ${MANA_CHIP[c]} ${
+                  active ? "scale-110 ring-2 ring-offset-1 ring-offset-background ring-foreground/30" : "opacity-40"
                 }`}
               >
                 {c}
@@ -94,7 +86,7 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
           })}
           <button
             onClick={() => setCommanderOnly((v) => !v)}
-            className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+            className={`ml-1 px-2 py-0.5 rounded-full text-label font-medium border transition-colors ${
               commanderOnly
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border text-muted-foreground hover:text-foreground"
@@ -107,10 +99,10 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
 
       <div className="flex-1 overflow-y-auto">
         {loading && results.length === 0 && (
-          <div className="p-4 text-xs text-muted-foreground">Loading…</div>
+          <div className="p-4 text-body text-muted-foreground">Loading…</div>
         )}
         {!loading && results.length === 0 && (
-          <div className="p-4 text-xs text-muted-foreground">No results</div>
+          <div className="p-4 text-body text-muted-foreground">No results</div>
         )}
         {results.map((card) => {
           const isBasic = isBasicLand(card.typeLine);
@@ -137,13 +129,13 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
             >
               {card.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={card.imageUrl} alt={card.name} className="w-8 rounded flex-shrink-0" loading="lazy" />
+                <img src={card.imageUrl} alt={card.name} className="w-8 rounded-md flex-shrink-0" loading="lazy" />
               ) : (
-                <div className="w-8 h-11 rounded bg-muted flex-shrink-0" />
+                <div className="w-8 h-11 rounded-md bg-muted flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate">{card.name}</div>
-                <div className="text-[11px] text-muted-foreground truncate">
+                <div className="text-body font-medium truncate">{card.name}</div>
+                <div className="text-label text-muted-foreground truncate">
                   {card.manaCost && <span className="font-mono mr-1">{card.manaCost}</span>}
                   {card.typeLine}
                 </div>
@@ -153,7 +145,7 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
               {(card.ownedQuantity ?? 0) > 0 && (
                 <span
                   title="In your library"
-                  className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400"
+                  className="flex-shrink-0 text-micro font-bold px-1.5 py-0.5 rounded-md bg-success/20 text-success"
                 >
                   Owned
                 </span>
@@ -163,7 +155,7 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
               {synergy && synergy.score > 0 && (
                 <div
                   title={synergy.matchedThemes.map((t) => THEME_LABELS[t]).join(", ")}
-                  className={`flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${SYNERGY_STYLE[synergy.score]}`}
+                  className={`flex-shrink-0 text-micro font-bold px-1.5 py-0.5 rounded-md ${SYNERGY_STYLE[synergy.score]}`}
                 >
                   {SYNERGY_LABEL[synergy.score]}
                 </div>
@@ -178,7 +170,7 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
                   colorIllegal ? "Color identity violation" :
                   inMain ? "Add another" : "Add to deck"
                 }
-                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-ui font-bold transition-colors ${
                   alreadyInMain
                     ? "bg-muted text-muted-foreground cursor-default"
                     : "bg-primary/20 hover:bg-primary text-primary hover:text-primary-foreground"
@@ -196,10 +188,10 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
                   alreadyInMaybe ? "Already in maybeboard" :
                   "Add to maybeboard"
                 }
-                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors ${
+                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-micro font-bold border transition-colors ${
                   alreadyInMaybe || alreadyInMain
                     ? "border-border text-muted-foreground cursor-default opacity-40"
-                    : "border-border text-muted-foreground hover:border-amber-500 hover:text-amber-400"
+                    : "border-border text-muted-foreground hover:border-warning hover:text-warning"
                 }`}
               >
                 ?
@@ -214,10 +206,10 @@ export function SearchPanel({ commanderColorIdentity, commanderThemes, entries, 
                   alreadyInWishlist ? "Already in wishlist" :
                   "Add to wishlist"
                 }
-                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-colors ${
+                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-micro font-bold border transition-colors ${
                   alreadyInWishlist || alreadyInMain
                     ? "border-border text-muted-foreground cursor-default opacity-40"
-                    : "border-border text-muted-foreground hover:border-purple-500 hover:text-purple-400"
+                    : "border-border text-muted-foreground hover:border-highlight hover:text-highlight"
                 }`}
               >
                 ★

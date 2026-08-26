@@ -35,7 +35,7 @@ export function DeckThemeSelect({ allThemes, selectedIds, onToggle }: Props) {
       {selectedIds.map((id) => (
         <span
           key={id}
-          className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30"
+          className="flex items-center gap-1 text-label px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30"
         >
           {themeMap.get(id) ?? id}
           <button
@@ -48,7 +48,7 @@ export function DeckThemeSelect({ allThemes, selectedIds, onToggle }: Props) {
       ))}
 
       <Popover.Root>
-        <Popover.Trigger className="text-[11px] px-2 py-0.5 rounded border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground flex items-center gap-1 transition-colors">
+        <Popover.Trigger className="text-label px-2 py-0.5 rounded-md border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground flex items-center gap-1 transition-colors">
           {selectedIds.length === 0 ? "Add themes" : "+"}
           <ChevronDown size={10} />
         </Popover.Trigger>
@@ -71,7 +71,7 @@ export function DeckThemeSelect({ allThemes, selectedIds, onToggle }: Props) {
                         return (
                           <label
                             key={theme.id}
-                            className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted/40 transition-colors"
+                            className="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:bg-muted/40 transition-colors"
                           >
                             <Checkbox.Root
                               checked={checked}
@@ -82,7 +82,7 @@ export function DeckThemeSelect({ allThemes, selectedIds, onToggle }: Props) {
                                 <Check size={9} strokeWidth={3} />
                               </Checkbox.Indicator>
                             </Checkbox.Root>
-                            <span className="text-xs">{theme.name}</span>
+                            <span className="text-body">{theme.name}</span>
                           </label>
                         );
                       })}

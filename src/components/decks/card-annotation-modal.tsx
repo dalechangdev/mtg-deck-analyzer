@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Modal, ModalBody, ModalHeader } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 type Annotation = {
   id: string;
@@ -94,9 +95,9 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
       {/* Annotation list */}
       <ModalBody className="p-4 space-y-3">
           {loading ? (
-            <p className="text-xs text-muted-foreground">Loading…</p>
+            <p className="text-body text-muted-foreground">Loading…</p>
           ) : annotations.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No notes yet. Add one below.</p>
+            <p className="text-body text-muted-foreground">No notes yet. Add one below.</p>
           ) : (
             annotations.map((a) => (
               <div key={a.id} className="group rounded-lg border border-border bg-muted/20 p-3">
@@ -117,36 +118,36 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
                       className="field-sizing-fixed min-h-0 resize-none bg-background text-body md:text-body"
                     />
                     <div className="flex gap-2">
-                      <button
+                      <Button
                         onClick={() => saveEdit(a.id)}
-                        className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90"
+                        size="xs"
                       >
                         Save
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setEditingId(null)}
-                        className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground"
+                        variant="outline" size="xs"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex gap-2 items-start">
-                    <p className="flex-1 text-xs text-foreground/90 whitespace-pre-wrap">{a.content}</p>
+                    <p className="flex-1 text-body text-foreground/90 whitespace-pre-wrap">{a.content}</p>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                      <button
+                      <Button
                         onClick={() => { setEditingId(a.id); setEditContent(a.content); }}
-                        className="text-[10px] px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground"
+                        variant="outline" size="xs" className="text-micro h-5 px-1.5"
                       >
                         Edit
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => deleteAnnotation(a.id)}
-                        className="text-[10px] px-1.5 py-0.5 rounded border border-red-800/50 text-red-400/70 hover:text-red-400"
+                        variant="outline" size="xs" className="text-micro h-5 px-1.5 border-danger-border text-danger/70 hover:text-danger"
                       >
                         ×
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -170,13 +171,13 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
           rows={3}
           className="field-sizing-fixed min-h-0 resize-none bg-background text-body md:text-body"
         />
-        <button
+        <Button
           onClick={addAnnotation}
           disabled={saving || !newContent.trim()}
-          className="w-full text-xs py-1.5 rounded bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          size="sm" className="w-full"
         >
           {saving ? "Saving…" : "Add Note"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

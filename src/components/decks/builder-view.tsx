@@ -6,6 +6,7 @@ import { CATEGORY_ORDER, getCardCategory, isBasicLand } from "@/lib/commander";
 import type { CardData, DeckEntry } from "@/lib/commander";
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
+import { Button } from "@/components/ui/button";
 
 export type LibraryCard = CardData & {
   libraryCardId: string;
@@ -118,16 +119,16 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
       {/* Header */}
       <div className="px-4 py-2 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium">{deckName}</span>
+          <span className="text-ui font-medium">{deckName}</span>
           {commander && (
-            <span className="text-xs text-muted-foreground">{commander.name}</span>
+            <span className="text-body text-muted-foreground">{commander.name}</span>
           )}
-          <span className="text-xs font-mono text-muted-foreground ml-auto">
+          <span className="text-body font-mono text-muted-foreground ml-auto">
             {mainCount} / 100
           </span>
           <Link
             href={`/decks/${deckId}`}
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="text-body text-muted-foreground hover:text-foreground"
           >
             ← Full builder
           </Link>
@@ -137,7 +138,7 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
             {themes.map((t) => (
               <span
                 key={t.id}
-                className="text-[11px] px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground"
+                className="text-label px-1.5 py-0.5 rounded-full bg-muted/60 text-muted-foreground"
               >
                 {t.name}
               </span>
@@ -182,7 +183,7 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
                 );
               })}
               {mainCards.length === 0 && !commander && (
-                <p className="px-3 py-4 text-xs text-muted-foreground">No cards in main deck.</p>
+                <p className="px-3 py-4 text-body text-muted-foreground">No cards in main deck.</p>
               )}
             </div>
           </div>
@@ -199,7 +200,7 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
                 <MaybeRow key={entry.deckCardId} entry={entry} onRemove={removeCard} onMove={moveCard} />
               ))}
               {maybeCards.length === 0 && (
-                <p className="px-3 py-4 text-xs text-muted-foreground">No maybeboard cards.</p>
+                <p className="px-3 py-4 text-body text-muted-foreground">No maybeboard cards.</p>
               )}
             </div>
           </div>
@@ -214,7 +215,7 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
                 value={libFilter}
                 onChange={(e) => setLibFilter(e.target.value)}
                 placeholder="Filter cards…"
-                className="w-full text-xs bg-background border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
+                className="w-full text-body bg-background border border-border rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
               />
             </div>
             <div className="flex-1 overflow-y-auto">
@@ -230,7 +231,7 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
                 );
               })}
               {filteredLibrary.length === 0 && (
-                <p className="px-3 py-4 text-xs text-muted-foreground">No matching cards.</p>
+                <p className="px-3 py-4 text-body text-muted-foreground">No matching cards.</p>
               )}
             </div>
           </div>
@@ -264,14 +265,14 @@ function MainRow({
   return (
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40">
       <div className="flex-1 min-w-0">
-        <span className="text-xs truncate block">
+        <span className="text-body truncate block">
           {entry.quantity > 1 && (
             <span className="text-muted-foreground mr-1">{entry.quantity}×</span>
           )}
           {entry.name}
         </span>
         {entry.manaCost && (
-          <span className="text-[11px] text-muted-foreground font-mono">{entry.manaCost}</span>
+          <span className="text-label text-muted-foreground font-mono">{entry.manaCost}</span>
         )}
       </div>
       {!isCommander && (
@@ -279,17 +280,17 @@ function MainRow({
           <button
             onClick={() => onMove(entry.deckCardId, "maybe")}
             title="Move to maybeboard"
-            className="text-[10px] px-1.5 py-0.5 rounded border border-amber-600/50 text-amber-400 hover:bg-amber-950/40"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-warning-border text-warning hover:bg-warning-surface-strong"
           >
             → maybe
           </button>
-          <button
+          <Button
             onClick={() => onRemove(entry.deckCardId)}
             title="Remove"
-            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs"
+            variant="ghost" size="icon-xs" className="size-5 text-body text-muted-foreground hover:text-danger hover:bg-danger-surface"
           >
             ×
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -306,30 +307,30 @@ function MaybeRow({
   onMove: (id: string, slot: "main" | "maybe") => void;
 }) {
   return (
-    <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-amber-950/10">
+    <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-warning-surface">
       <div className="flex-1 min-w-0">
-        <span className="text-xs truncate block text-amber-400/80">
+        <span className="text-body truncate block text-warning/80">
           {entry.name}
         </span>
         {entry.manaCost && (
-          <span className="text-[11px] text-muted-foreground font-mono">{entry.manaCost}</span>
+          <span className="text-label text-muted-foreground font-mono">{entry.manaCost}</span>
         )}
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={() => onMove(entry.deckCardId, "main")}
           title="Move to main deck"
-          className="text-[10px] px-1.5 py-0.5 rounded border border-green-600/50 text-green-400 hover:bg-green-950/40"
+          className="text-micro px-1.5 py-0.5 rounded-md border border-success-border text-success hover:bg-success-surface-strong"
         >
           → main
         </button>
-        <button
+        <Button
           onClick={() => onRemove(entry.deckCardId)}
           title="Remove"
-          className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-950/30 text-xs"
+          variant="ghost" size="icon-xs" className="size-5 text-body text-muted-foreground hover:text-danger hover:bg-danger-surface"
         >
           ×
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -346,26 +347,26 @@ function LibraryRow({
 }) {
   const badge = inDeck
     ? inDeck.slot === "main"
-      ? { label: "in deck", cls: "text-green-400 bg-green-950/30" }
-      : { label: "maybe", cls: "text-amber-400 bg-amber-950/30" }
+      ? { label: "in deck", cls: "text-success bg-success-surface" }
+      : { label: "maybe", cls: "text-warning bg-warning-surface" }
     : null;
 
   return (
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs truncate">{card.name}</span>
+          <span className="text-body truncate">{card.name}</span>
           {badge && (
-            <span className={`text-[10px] px-1 py-0.5 rounded flex-shrink-0 ${badge.cls}`}>
+            <span className={`text-micro px-1 py-0.5 rounded-md flex-shrink-0 ${badge.cls}`}>
               {badge.label}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {card.manaCost && (
-            <span className="text-[11px] text-muted-foreground font-mono">{card.manaCost}</span>
+            <span className="text-label text-muted-foreground font-mono">{card.manaCost}</span>
           )}
-          <span className="text-[11px] text-muted-foreground">×{card.quantity}</span>
+          <span className="text-label text-muted-foreground">×{card.quantity}</span>
         </div>
       </div>
       {!inDeck && (
@@ -373,14 +374,14 @@ function LibraryRow({
           <button
             onClick={() => onAdd(card, "main")}
             title="Add to main deck"
-            className="text-[10px] px-1.5 py-0.5 rounded border border-green-600/50 text-green-400 hover:bg-green-950/40"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-success-border text-success hover:bg-success-surface-strong"
           >
             + main
           </button>
           <button
             onClick={() => onAdd(card, "maybe")}
             title="Add to maybeboard"
-            className="text-[10px] px-1.5 py-0.5 rounded border border-amber-600/50 text-amber-400 hover:bg-amber-950/40"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-warning-border text-warning hover:bg-warning-surface-strong"
           >
             + maybe
           </button>
@@ -391,7 +392,7 @@ function LibraryRow({
           <button
             onClick={() => onAdd(card, "main")}
             title="Promote to main deck"
-            className="text-[10px] px-1.5 py-0.5 rounded border border-green-600/50 text-green-400 hover:bg-green-950/40"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-success-border text-success hover:bg-success-surface-strong"
           >
             → main
           </button>

@@ -2,14 +2,7 @@
 
 import { useState } from "react";
 import { CardDetailModal, type CardDetail } from "./card-detail-modal";
-
-const COLOR_DOT: Record<string, string> = {
-  W: "bg-yellow-100 border-yellow-400",
-  U: "bg-blue-500",
-  B: "bg-zinc-800",
-  R: "bg-red-500",
-  G: "bg-green-600",
-};
+import { MANA_PIP } from "@/lib/mtg-styles";
 
 export function CardThumbnail({ card }: { card: CardDetail }) {
   const [hovered, setHovered] = useState(false);
@@ -33,19 +26,19 @@ export function CardThumbnail({ card }: { card: CardDetail }) {
           />
         ) : (
           <div className="rounded-xl w-full aspect-[63/88] bg-muted flex flex-col items-center justify-center p-3 gap-1 shadow-md">
-            <span className="text-xs font-medium text-center leading-tight">{card.name}</span>
-            <span className="text-xs text-muted-foreground text-center">{card.typeLine}</span>
+            <span className="text-body font-medium text-center leading-tight">{card.name}</span>
+            <span className="text-body text-muted-foreground text-center">{card.typeLine}</span>
             <div className="flex gap-1 mt-1">
               {card.colorIdentity.map((c) => (
-                <span key={c} className={`w-3 h-3 rounded-full border ${COLOR_DOT[c] ?? "bg-zinc-500"}`} />
+                <span key={c} className={`w-3 h-3 rounded-full border ${MANA_PIP[c] ?? "bg-muted-foreground"}`} />
               ))}
             </div>
           </div>
         )}
 
         {hovered && !open && (
-          <div className="absolute z-40 left-full top-0 ml-2 w-56 rounded-lg border border-border bg-popover p-3 shadow-xl text-xs space-y-1 pointer-events-none">
-            <div className="font-semibold text-sm">{card.name}</div>
+          <div className="absolute z-40 left-full top-0 ml-2 w-56 rounded-lg border border-border bg-popover p-3 shadow-xl text-body space-y-1 pointer-events-none">
+            <div className="font-semibold text-ui">{card.name}</div>
             {card.manaCost && <div className="text-muted-foreground font-mono">{card.manaCost}</div>}
             <div className="text-muted-foreground italic">{card.typeLine}</div>
             {card.oracleText && (
@@ -54,7 +47,7 @@ export function CardThumbnail({ card }: { card: CardDetail }) {
               </div>
             )}
             {card.canBeCommander && (
-              <div className="text-amber-400 font-medium pt-1">⭐ Can be Commander</div>
+              <div className="text-warning font-medium pt-1">⭐ Can be Commander</div>
             )}
           </div>
         )}

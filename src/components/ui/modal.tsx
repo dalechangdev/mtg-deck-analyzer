@@ -18,9 +18,14 @@ import {
  * language the three hand-rolled modals already used (heavy scrim, flex
  * column panel, sticky header, scrolling body).
  *
- * Base UI supplies what the hand-rolled versions each had to reimplement —
- * and mostly didn't: focus trapping, Escape to close, body scroll lock,
- * outside-click dismissal, and aria wiring via ModalHeader's title.
+ * All three hand-rolled versions reimplemented Escape-to-close and body
+ * scroll locking; Base UI provides those, plus the focus trapping, outside
+ * click dismissal, and aria wiring that none of them had.
+ *
+ * Do not re-add a manual scroll lock in a caller. One lingered here through
+ * an earlier refactor and leaked `overflow: hidden` onto <body> forever: it
+ * captured the "previous" value *after* Base UI had already set it, then
+ * dutifully restored that on unmount.
  */
 
 const MODAL_SIZES = {
@@ -28,28 +33,6 @@ const MODAL_SIZES = {
   md: "max-w-2xl",
   lg: "max-w-3xl",
 } as const
-
-/**
- * Every call site renders this component conditionally ({x && <Modal/>}), so
- * closing unmounts it in the same tick that Base UI begins its exit
- * transition — before the transition ends and its scroll-lock cleanup runs.
- * The result is a stray `overflow: hidden` left on <body>.
- *
- * Counting mounted modals lets the last one out release the lock itself.
- */
-let openModalCount = 0
-
-function useScrollLockRelease() {
-  React.useEffect(() => {
-    openModalCount += 1
-    return () => {
-      openModalCount -= 1
-      if (openModalCount === 0) {
-        document.body.style.overflow = ""
-      }
-    }
-  }, [])
-}
 
 interface ModalProps extends DialogPrimitive.Popup.Props {
   open: boolean
@@ -65,8 +48,6 @@ function Modal({
   children,
   ...props
 }: ModalProps) {
-  useScrollLockRelease()
-
   return (
     <Dialog
       open={open}

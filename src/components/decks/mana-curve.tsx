@@ -48,7 +48,7 @@ function CurveTooltip({ active, payload }: { active?: boolean; payload?: Tooltip
   const { label, count, cards } = payload[0].payload;
   const heading = label === "Land" ? "Lands" : `CMC ${label}`;
   return (
-    <div className="bg-background border border-border rounded px-2.5 py-2 text-xs shadow-lg max-w-48">
+    <div className="bg-background border border-border rounded-md px-2.5 py-2 text-body shadow-lg max-w-48">
       <div className="font-semibold mb-1">{heading} — {count} card{count !== 1 ? "s" : ""}</div>
       <ul className="space-y-0.5 text-muted-foreground">
         {cards.slice(0, 8).map((name) => (
@@ -112,7 +112,7 @@ export function ManaCurve({ entries }: Props) {
         <SectionLabel>
           Mana Curve
         </SectionLabel>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-label text-muted-foreground">
           avg CMC <span className="text-foreground font-medium">{avgCmc.toFixed(2)}</span>
           <span className="mx-1.5 opacity-40">·</span>
           {totalSpells} spell{totalSpells !== 1 ? "s" : ""}

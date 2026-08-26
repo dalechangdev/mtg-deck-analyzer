@@ -58,27 +58,27 @@ export function CmcCompareModal({ deckId, cmcLabel, cards, onClose }: Props) {
               <div key={entry.deckCardId} className="px-5 py-4 space-y-2">
                 {/* Name + mana cost */}
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm font-semibold text-foreground">
+                  <span className="text-ui font-semibold text-foreground">
                     {entry.quantity > 1 && (
                       <span className="text-muted-foreground font-normal mr-1.5">{entry.quantity}×</span>
                     )}
                     {entry.name}
                   </span>
                   {entry.manaCost && (
-                    <span className="text-[11px] font-mono text-muted-foreground flex-shrink-0">
+                    <span className="text-label font-mono text-muted-foreground flex-shrink-0">
                       {entry.manaCost}
                     </span>
                   )}
                 </div>
 
                 {/* Type line */}
-                <p className="text-[11px] text-muted-foreground/70 italic">{entry.typeLine}</p>
+                <p className="text-label text-muted-foreground/70 italic">{entry.typeLine}</p>
 
                 {/* Oracle text */}
                 {entry.oracleText && (
                   <div className="space-y-1">
                     {entry.oracleText.split("\n").map((para, i) => (
-                      <p key={i} className="text-xs text-foreground/80 leading-relaxed">
+                      <p key={i} className="text-body text-foreground/80 leading-relaxed">
                         {para}
                       </p>
                     ))}

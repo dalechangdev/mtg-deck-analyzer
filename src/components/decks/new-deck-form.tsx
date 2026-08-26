@@ -45,7 +45,7 @@ export function NewDeckForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Deck Name</label>
+        <label className="text-ui font-medium">Deck Name</label>
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -56,21 +56,21 @@ export function NewDeckForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Commander <span className="text-muted-foreground font-normal">(optional)</span></label>
+        <label className="text-ui font-medium">Commander <span className="text-muted-foreground font-normal">(optional)</span></label>
         {commander ? (
           <div className="flex items-center gap-3 p-2 rounded-lg border border-border bg-muted/40">
             {commander.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={commander.imageUrl} alt={commander.name} className="w-10 rounded" />
+              <img src={commander.imageUrl} alt={commander.name} className="w-10 rounded-md" />
             )}
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm truncate">{commander.name}</div>
-              <div className="text-xs text-muted-foreground truncate">{commander.typeLine}</div>
+              <div className="font-medium text-ui truncate">{commander.name}</div>
+              <div className="text-body text-muted-foreground truncate">{commander.typeLine}</div>
             </div>
             <button
               type="button"
               onClick={() => { setCommander(null); setCommanderQuery(""); }}
-              className="text-muted-foreground hover:text-foreground text-xs px-2"
+              className="text-muted-foreground hover:text-foreground text-body px-2"
             >
               Change
             </button>
@@ -93,11 +93,11 @@ export function NewDeckForm() {
                   >
                     {card.imageUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={card.imageUrl} alt={card.name} className="w-8 rounded flex-shrink-0" />
+                      <img src={card.imageUrl} alt={card.name} className="w-8 rounded-md flex-shrink-0" />
                     )}
                     <div className="min-w-0">
-                      <div className="text-sm font-medium truncate">{card.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{card.typeLine}</div>
+                      <div className="text-ui font-medium truncate">{card.name}</div>
+                      <div className="text-body text-muted-foreground truncate">{card.typeLine}</div>
                     </div>
                   </button>
                 ))}

@@ -16,6 +16,7 @@ const STATUS_RAMPS = ["danger", "warning", "success", "info", "highlight"]
 const STATUS_COLORS = STATUS_RAMPS.flatMap((ramp) => [
   ramp,
   `${ramp}-surface`,
+  `${ramp}-surface-strong`,
   `${ramp}-line`,
   `${ramp}-border`,
 ])
