@@ -119,14 +119,9 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-          {/* The deck row is wide but short, so categories flow into columns
-              rather than one tall list the user has to scroll.
-              `auto-rows-max` is load-bearing: the sections are overflow-hidden,
-              which zeroes their minimum size, so `auto` rows get squeezed to
-              this fixed-height container and the next row paints over them. */}
-          <div className="flex-1 overflow-y-auto p-2 grid auto-rows-max gap-x-3 gap-y-2 content-start items-start grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
+          <div className="flex-1 overflow-y-auto p-2">
             {commander ? (
-              <section className="col-span-full rounded-md border border-border/60 overflow-hidden">
+              <section className="mb-2 rounded-md border border-border/60 overflow-hidden">
                 <SectionHeader>
                   Commander
                 </SectionHeader>
@@ -141,17 +136,24 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                 />
               </section>
             ) : (
-              <div className="col-span-full px-3 py-2 text-body text-muted-foreground">
+              <div className="px-3 py-2 text-body text-muted-foreground">
                 No commander set — right-click a card to set it.
               </div>
             )}
 
+            {/* The deck row is wide but short, so categories flow into columns
+                rather than one tall list. Multi-column rather than grid: each
+                section sits directly under the one above it, so one tall
+                category doesn't open a gap across its whole row. This must not
+                be the scroll container — with a fixed height, columns overflow
+                sideways instead of growing. */}
+            <div className="columns-[14rem] gap-x-3">
             {groupBy === "type"
               ? CATEGORY_ORDER.map((cat) => {
                   const cards = grouped[cat];
                   if (!cards || cards.length === 0) return null;
                   return (
-                    <section key={cat} className="rounded-md border border-border/60 overflow-hidden">
+                    <section key={cat} className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
                       <SectionHeader>
                         {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
                       </SectionHeader>
@@ -179,7 +181,7 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                     if (!cards || cards.length === 0) return null;
                     const label = CMC_LABEL(n);
                     return (
-                      <section key={n} className="rounded-md border border-border/60 overflow-hidden">
+                      <section key={n} className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
                         <SectionHeader
                           className="cursor-pointer hover:bg-muted/40 hover:text-foreground transition-colors"
                           onClick={() => setComparingCmc({ label, cards })}
@@ -206,7 +208,7 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                     );
                   })}
                   {landMainCards.length > 0 && (
-                    <section className="rounded-md border border-border/60 overflow-hidden">
+                    <section className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
                       <SectionHeader>
                         Lands ({landMainCards.reduce((sum, e) => sum + e.quantity, 0)})
                       </SectionHeader>
@@ -228,6 +230,7 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                     </section>
                   )}
                 </>}
+            </div>
           </div>
         </div>
 
