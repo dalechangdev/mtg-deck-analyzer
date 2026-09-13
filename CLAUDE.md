@@ -11,14 +11,16 @@ Run from the repo root; `pnpm` is the package manager (workspaces + Turborepo).
 ```bash
 pnpm install
 pnpm turbo run typecheck            # or build / lint / dev — turbo.json tasks
-pnpm --filter @mtg/itaca test       # node:test via tsx; the only test suite
+pnpm --filter @mtg/itaca test       # node:test via tsx
 pnpm --filter @mtg/itaca exec tsx --test test/parse-listing.test.ts   # single file
+pnpm --filter @mtg/deck-builder test # node:test via tsx
 pnpm --filter @mtg/deck-builder dev # :3000
 pnpm --filter @mtg/restock dev      # :3001
 ```
 
 There is **no `test` task in `turbo.json`** — `pnpm turbo run test` runs nothing. Tests
-live only in `packages/itaca/test` and parse gzipped HTML fixtures offline.
+live in `packages/itaca/test` (parses gzipped HTML fixtures offline) and `apps/mtg/test`
+(pure deck logic such as `src/lib/deck-version.ts`; no database). Neither needs network.
 
 Deck builder database (Prisma owns it, see below):
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NewVersionModal } from "./new-version-modal";
-import { deckPageUrl, gamesPageUrl, type VersionSummary } from "@/lib/deck-api";
+import { compareUrl, deckPageUrl, gamesPageUrl, type VersionSummary } from "@/lib/deck-api";
 
 interface Props {
   deckId: string;
@@ -17,10 +17,14 @@ function label(version: VersionSummary): string {
   return version.isCurrent ? `${version.name} (current)` : version.name;
 }
 
+const chip =
+  "text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors";
+
 /**
  * Builder-header control: which version you're editing, a jump to any other,
- * "New version" copying this one, and this version's game log. Switching
- * navigates to `?v=`, so the page reloads that version's saved cards.
+ * "New version" copying this one, this version's game log, and a comparison
+ * against its parent. Switching navigates to `?v=`, so the page reloads that
+ * version's saved cards.
  */
 export function VersionSwitcher({ deckId, versionId, versions }: Props) {
   const router = useRouter();
@@ -59,18 +63,17 @@ export function VersionSwitcher({ deckId, versionId, versions }: Props) {
         </SelectContent>
       </Select>
 
-      <button
-        onClick={() => setCreating(true)}
-        className="text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
-      >
+      <button onClick={() => setCreating(true)} className={chip}>
         New version
       </button>
-      <Link
-        href={gamesPageUrl(deckId, versionId)}
-        className="text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
-      >
+      <Link href={gamesPageUrl(deckId, versionId)} className={chip}>
         Games{viewing && viewing.record.games > 0 ? ` (${viewing.record.games})` : ""}
       </Link>
+      {versions.length > 1 && (
+        <Link href={compareUrl(deckId, versionId)} className={chip}>
+          Compare
+        </Link>
+      )}
       <Link
         href={deckPageUrl(deckId, versionId, "/versions")}
         className="text-body text-muted-foreground hover:text-foreground transition-colors"

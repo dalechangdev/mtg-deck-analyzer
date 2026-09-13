@@ -2,6 +2,9 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import type { VersionSummary } from "@/lib/deck-api";
+import { evaluateTemplate } from "@/lib/deck-template";
+import { loadDeckCards, loadRoleOverrides, loadTemplate } from "@/lib/deck-template-loader";
+import { diffVersions, versionStats, type VersionComparison } from "@/lib/deck-version";
 
 /**
  * PRECONDITION FOR EVERY FUNCTION IN THIS FILE: the caller has already
@@ -105,4 +108,88 @@ export async function loadVersionSummaries(deckId: string): Promise<VersionSumma
     createdAt: v.createdAt.toISOString(),
     updatedAt: v.updatedAt.toISOString(),
   }));
+}
+
+export type ComparePair =
+  | { ok: true; a: string; b: string }
+  | { ok: false; reason: "not-found" | "nothing-to-compare" };
+
+/**
+ * Which two versions does a compare request mean?
+ *
+ * `a` is the version under inspection (default: current). `b` is its baseline:
+ * as requested, else a's parent if that still exists, else the newest other
+ * version. A requested id that isn't this deck's is "not-found"; a deck with a
+ * single version has "nothing-to-compare".
+ */
+export async function resolveComparePair(
+  deckId: string,
+  aRequested?: string | null,
+  bRequested?: string | null
+): Promise<ComparePair> {
+  const a = await resolveVersionId(deckId, aRequested);
+  if (!a) return { ok: false, reason: "not-found" };
+
+  if (bRequested) {
+    const b = await resolveVersionId(deckId, bRequested);
+    return b ? { ok: true, a, b } : { ok: false, reason: "not-found" };
+  }
+
+  const [others, version] = await Promise.all([
+    prisma.deckVersion.findMany({
+      where: { deckId, id: { not: a } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    }),
+    prisma.deckVersion.findUnique({ where: { id: a }, select: { parentVersionId: true } }),
+  ]);
+  if (others.length === 0) return { ok: false, reason: "nothing-to-compare" };
+
+  const b = others.find((v) => v.id === version?.parentVersionId)?.id ?? others[0].id;
+  return { ok: true, a, b };
+}
+
+/**
+ * Everything the compare page shows, for two versions already resolved to this
+ * deck by resolveComparePair.
+ *
+ * Both sides are scored against the same template with the deck's role
+ * overrides, so the only thing allowed to differ between them is the cards.
+ * Null when the template doesn't exist or isn't visible to `viewerId`.
+ */
+export async function loadVersionComparison(
+  deckId: string,
+  aId: string,
+  bId: string,
+  templateId: string,
+  viewerId: string
+): Promise<VersionComparison | null> {
+  const [versions, template, overrides, aCards, bCards] = await Promise.all([
+    loadVersionSummaries(deckId),
+    loadTemplate(templateId, viewerId),
+    loadRoleOverrides(deckId),
+    loadDeckCards(aId),
+    loadDeckCards(bId),
+  ]);
+  if (!template) return null;
+
+  const aSummary = versions.find((v) => v.id === aId);
+  const bSummary = versions.find((v) => v.id === bId);
+  // Deleted between resolving the pair and loading it.
+  if (!aSummary || !bSummary) return null;
+
+  return {
+    versions,
+    a: {
+      summary: aSummary,
+      stats: versionStats(aCards),
+      analysis: evaluateTemplate(aCards, template, overrides),
+    },
+    b: {
+      summary: bSummary,
+      stats: versionStats(bCards),
+      analysis: evaluateTemplate(bCards, template, overrides),
+    },
+    diff: diffVersions(bCards, aCards),
+  };
 }

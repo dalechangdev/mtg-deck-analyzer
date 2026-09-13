@@ -12,7 +12,7 @@ versions.
 | 2 | Card routes + loaders take `versionId`; pages use the current version | done (uncommitted) |
 | 3 | Version routes, switcher, branch / rename / make current | done (uncommitted) |
 | 4 | Game log routes + page | done (uncommitted) |
-| 5 | `deck-version.ts`, compare route + page | todo |
+| 5 | `deck-version.ts`, compare route + page | done (uncommitted) |
 
 ### Step 2 notes
 
@@ -90,6 +90,39 @@ versions.
   ordering, the version record, PATCH preserving untouched fields, clearing with
   null, cross-version / cross-deck / cross-account 404s on API and page, delete.
   **Not clicked through in a browser:** the log form and inline edit.
+
+### Step 5 notes
+
+- `src/lib/deck-version.ts` (pure, client-safe): `diffVersions(from, to)` keyed
+  by card id, main slot only, with commander changes; `curveBins` /
+  `curveAverage` (moved out of `mana-curve.tsx`, so the builder and the compare
+  page compute the curve and average CMC identically — 7+ counted as 7);
+  `versionStats`; `winRate` (over games with a result); the `VersionComparison`
+  payload type.
+- `deck-version-loader.ts`: `resolveComparePair(deckId, a?, b?)` — `a` defaults
+  to current; `b` to a's parent, else the newest other version; a requested id
+  from another deck is not-found; a one-version deck is nothing-to-compare.
+  `loadVersionComparison` loads both card lists once and scores both against
+  the same template with the deck's role overrides.
+- `GET /api/decks/[id]/compare?a=&b=&templateId=` (404 not-found, 400 when
+  there's nothing to compare) and `/decks/[id]/compare` (friendly message for a
+  one-version deck). The diff runs from baseline `b` to version `a`.
+- `version-compare.tsx`: version and baseline pickers with swap, template
+  picker, at-a-glance table with differences, card changes (in a not b / in b
+  not a / count changed), `ManaCurveComparison` (a in the builder's curve
+  colour, b in `--chart-2`), and a per-requirement scorecard. Entry points:
+  "Compare" in the builder switcher and on each version card (hidden with one
+  version).
+- `REQUIREMENT_STATUS_STYLE` moved to `mtg-styles.ts`; the analysis page imports
+  it rather than keeping its own copy.
+- Tests: `apps/mtg/test/deck-version.test.ts`, run with
+  `pnpm --filter @mtg/deck-builder test` (new script; CLAUDE.md updated).
+- Verified: `tsc` 0, ESLint clean, 10/10 unit tests; the signed-in end-to-end
+  script now runs 83/83 (20 new for compare: default baseline is the parent,
+  diff contents and direction, stats, shared template, game records, swapped
+  sides, 404s for unknown / other-deck / other-account versions, 400 for a
+  one-version deck, and the page in each state). **Not clicked through in a
+  browser:** the pickers, the chart, and the page layout.
 
 ### Step 1 notes
 

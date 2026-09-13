@@ -71,3 +71,15 @@ export function gamesApiUrl(deckId: string, versionId: string, gameId?: string):
 export function gamesPageUrl(deckId: string, versionId: string): string {
   return `/decks/${deckId}/versions/${versionId}/games`;
 }
+
+/**
+ * The compare page: version `a` against baseline `b`. Omit `b` to compare with
+ * a's parent (or, failing that, the newest other version); omit `templateId` to
+ * score against the deck's attached template.
+ */
+export function compareUrl(deckId: string, a: string, b?: string, templateId?: string): string {
+  const search = new URLSearchParams({ a });
+  if (b) search.set("b", b);
+  if (templateId) search.set("templateId", templateId);
+  return `/decks/${deckId}/compare?${search}`;
+}

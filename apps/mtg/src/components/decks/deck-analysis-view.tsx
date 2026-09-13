@@ -23,14 +23,9 @@ import {
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionLabel } from "@/components/ui/section-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { REQUIREMENT_STATUS_STYLE as STATUS_STYLE } from "@/lib/mtg-styles";
 
 type Assignment = "INCLUDED" | "EXCLUDED";
-
-const STATUS_STYLE = {
-  under: { dot: "bg-warning", text: "text-warning", bar: "bg-warning/70" },
-  met: { dot: "bg-success", text: "text-success", bar: "bg-success/70" },
-  over: { dot: "bg-info", text: "text-info", bar: "bg-info/70" },
-} as const;
 
 interface Props {
   deckId: string;

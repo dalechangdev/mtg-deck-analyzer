@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
     "clean": "rm -rf .next .turbo",
     "db:up": "supabase start",
     "db:down": "supabase stop",

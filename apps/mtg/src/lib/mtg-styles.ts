@@ -86,3 +86,14 @@ export const GAME_RESULT_STYLE: Record<GameResultKey, string> = {
   LOSS: "bg-danger-surface-strong text-danger border-danger-border",
   DRAW: "bg-warning-surface-strong text-warning border-warning-border",
 }
+
+/**
+ * A template requirement's status (RequirementResult["status"] in
+ * deck-template.ts). Shared by the analysis page and the version comparison,
+ * which must colour the same status the same way.
+ */
+export const REQUIREMENT_STATUS_STYLE = {
+  under: { dot: "bg-warning", text: "text-warning", bar: "bg-warning/70" },
+  met: { dot: "bg-success", text: "text-success", bar: "bg-success/70" },
+  over: { dot: "bg-info", text: "text-info", bar: "bg-info/70" },
+} as const
