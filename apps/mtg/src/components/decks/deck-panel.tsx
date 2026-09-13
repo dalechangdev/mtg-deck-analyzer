@@ -120,8 +120,11 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
             </ToggleGroup>
           </div>
           {/* The deck row is wide but short, so categories flow into columns
-              rather than one tall list the user has to scroll. */}
-          <div className="flex-1 overflow-y-auto p-2 grid gap-x-3 gap-y-2 content-start items-start grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
+              rather than one tall list the user has to scroll.
+              `auto-rows-max` is load-bearing: the sections are overflow-hidden,
+              which zeroes their minimum size, so `auto` rows get squeezed to
+              this fixed-height container and the next row paints over them. */}
+          <div className="flex-1 overflow-y-auto p-2 grid auto-rows-max gap-x-3 gap-y-2 content-start items-start grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
             {commander ? (
               <section className="col-span-full rounded-md border border-border/60 overflow-hidden">
                 <SectionHeader>
