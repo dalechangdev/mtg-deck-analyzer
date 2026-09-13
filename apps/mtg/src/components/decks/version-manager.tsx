@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { NewVersionModal } from "./new-version-modal";
-import { deckPageUrl, versionsApiUrl, type VersionSummary } from "@/lib/deck-api";
+import { deckPageUrl, gamesPageUrl, versionsApiUrl, type VersionSummary } from "@/lib/deck-api";
 
 interface Props {
   deckId: string;
@@ -210,6 +210,12 @@ export function VersionManager({ deckId, versionId, versions }: Props) {
                   className={buttonVariants({ variant: "outline", size: "xs" })}
                 >
                   Analysis
+                </Link>
+                <Link
+                  href={gamesPageUrl(deckId, version.id)}
+                  className={buttonVariants({ variant: "outline", size: "xs" })}
+                >
+                  Games{games > 0 ? ` (${games})` : ""}
                 </Link>
                 <Button variant="outline" size="xs" onClick={() => setBranchFrom(version)}>
                   New version from this

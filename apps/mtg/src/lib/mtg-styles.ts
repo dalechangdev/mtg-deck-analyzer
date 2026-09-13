@@ -66,3 +66,23 @@ export const RARITY_STYLE: Record<string, string> = {
 export function rarityStyle(rarity: string | null | undefined): string {
   return (rarity && RARITY_STYLE[rarity]) || RARITY_STYLE.common
 }
+
+/** Keys match `GameResult` in deck-api.ts (the GameResult enum in the schema). */
+type GameResultKey = "WIN" | "LOSS" | "DRAW"
+
+export const GAME_RESULT_LABEL: Record<GameResultKey, string> = {
+  WIN: "Win",
+  LOSS: "Loss",
+  DRAW: "Draw",
+}
+
+/**
+ * Result badges and the result picker. Built on the status tokens, so a win is
+ * the same green as the builder's "Valid" badge and a loss the same red as its
+ * destructive actions.
+ */
+export const GAME_RESULT_STYLE: Record<GameResultKey, string> = {
+  WIN: "bg-success-surface-strong text-success border-success-border",
+  LOSS: "bg-danger-surface-strong text-danger border-danger-border",
+  DRAW: "bg-warning-surface-strong text-warning border-warning-border",
+}

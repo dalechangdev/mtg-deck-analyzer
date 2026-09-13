@@ -43,3 +43,31 @@ export function deckPageUrl(
   const search = new URLSearchParams({ ...params, v: versionId });
   return `/decks/${deckId}${subpath}?${search}`;
 }
+
+export type GameResult = "WIN" | "LOSS" | "DRAW";
+
+/** One logged game, as the games API and page hand it to clients. */
+export type GameLogEntry = {
+  id: string;
+  /** Calendar date, `YYYY-MM-DD`. */
+  playedAt: string;
+  /** Null for a game that wasn't finished or wasn't tracked. */
+  result: GameResult | null;
+  podSize: number | null;
+  opponents: string | null;
+  turns: number | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** A version's game log, or one game in it when `gameId` is given. */
+export function gamesApiUrl(deckId: string, versionId: string, gameId?: string): string {
+  const base = `/api/decks/${deckId}/versions/${versionId}/games`;
+  return gameId ? `${base}/${gameId}` : base;
+}
+
+/** The game log page for a version. The version is in the path, not `?v=`: the page is about that version. */
+export function gamesPageUrl(deckId: string, versionId: string): string {
+  return `/decks/${deckId}/versions/${versionId}/games`;
+}

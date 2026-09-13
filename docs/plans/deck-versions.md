@@ -11,7 +11,7 @@ versions.
 | 1 | Schema, migration + backfill, RLS, `requireVersionAccess` | done (applied locally, uncommitted) |
 | 2 | Card routes + loaders take `versionId`; pages use the current version | done (uncommitted) |
 | 3 | Version routes, switcher, branch / rename / make current | done (uncommitted) |
-| 4 | Game log routes + page | todo |
+| 4 | Game log routes + page | done (uncommitted) |
 | 5 | `deck-version.ts`, compare route + page | todo |
 
 ### Step 2 notes
@@ -66,6 +66,30 @@ versions.
   PATCH), make current, pages with `?v=`, cross-deck and cross-account 404s,
   delete-current fallback to parent, last-version 409. **Not clicked through in a
   browser:** the switcher Select, the modal, and the manager's inline edits.
+
+### Step 4 notes
+
+- API: `GET/POST /api/decks/[id]/versions/[versionId]/games` (newest first),
+  `PATCH/DELETE /games/[gameId]`, gated by `requireVersionAccess` and scoped by
+  `{ id, versionId }` like the card routes.
+- Validation in `src/lib/game-log-input.ts`: notes required (trimmed, ≤ 10 000);
+  `result` WIN/LOSS/DRAW/null; `podSize` 2–10; `turns` 1–99; `opponents` ≤ 500;
+  `playedAt` a real `YYYY-MM-DD`, not in the future (36h slack for timezones
+  ahead of UTC). PATCH only touches keys it was sent; `null` clears.
+- `playedAt` is stored at **12:00 UTC** on the chosen date and read back with
+  `toISOString().slice(0, 10)`, so the calendar day survives any timezone. The
+  form's "today" default is computed in the browser (the create form only opens
+  on click), never during a server render.
+- Page `/decks/[id]/versions/[versionId]/games`: record + win rate (over games
+  with a result), chips to jump between versions' logs, create / edit / two-click
+  delete. Links from the builder switcher ("Games (n)") and each version card.
+- Result colours are `GAME_RESULT_STYLE` / `GAME_RESULT_LABEL` in
+  `mtg-styles.ts`, on the success / danger / warning tokens.
+- Verified: `tsc` 0, ESLint clean; the signed-in end-to-end script now runs
+  63/63 (step 3's 39 plus 24 for games): validation 400s, date round-trip,
+  ordering, the version record, PATCH preserving untouched fields, clearing with
+  null, cross-version / cross-deck / cross-account 404s on API and page, delete.
+  **Not clicked through in a browser:** the log form and inline edit.
 
 ### Step 1 notes
 
