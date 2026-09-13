@@ -10,7 +10,7 @@ versions.
 |---|---|---|
 | 1 | Schema, migration + backfill, RLS, `requireVersionAccess` | done (applied locally, uncommitted) |
 | 2 | Card routes + loaders take `versionId`; pages use the current version | done (uncommitted) |
-| 3 | Version routes, switcher, branch / rename / make current | todo |
+| 3 | Version routes, switcher, branch / rename / make current | done (uncommitted) |
 | 4 | Game log routes + page | todo |
 | 5 | `deck-version.ts`, compare route + page | todo |
 
@@ -35,6 +35,37 @@ versions.
   running dev server the moved routes answer 401 unauthenticated while the old
   card routes answer 404. **Not yet exercised signed in:** adding/moving/removing
   cards, creating a deck, and the analysis page, in a browser.
+
+### Step 3 notes
+
+- API: `GET/POST /api/decks/[id]/versions` (POST copies `fromVersionId`, default
+  current, inside a transaction; the new version is not made current),
+  `GET/PATCH/DELETE /versions/[versionId]`, `PUT /versions/[versionId]/current`.
+  DELETE takes `SELECT … FOR UPDATE` on the deck row so concurrent deletes can't
+  leave a deck with zero versions; the last version answers 409; deleting the
+  current version hands "current" to its parent, else the newest remaining.
+- Validation in `src/lib/deck-version-input.ts` (name ≤ 60 chars, notes ≤ 5000),
+  reusing `readJsonBody` / `isUniqueViolation` from `template-input.ts`.
+- **Bug fixed in the shared `isUniqueViolation`:** the pg driver adapter reports
+  composite unique violations as `constraint.index` only
+  (`DeckVersion_deckId_name_key`), with no `fields` and no `meta.target`, so the
+  helper returned false and duplicate names were 500s. It now parses Prisma's
+  default index name. This also fixes the templates' race-path 409 for
+  `(ownerId, name)`.
+- Every deck page reads `?v=` (`resolveVersionId`; unknown id → 404), and every
+  in-app link between deck pages goes through `deckPageUrl` so navigation stays
+  on the version. Client views seeded from props are keyed by `versionId` so
+  switching remounts instead of showing stale state.
+- UI: `version-switcher.tsx` in the builder header (switch / New version / All
+  versions), `new-version-modal.tsx`, `/decks/[id]/versions` with
+  `version-manager.tsx` (inline rename, notes on blur, make current, branch,
+  two-click delete; W/L/D shown from `GameLog`, all zero until step 4).
+- Verified: `tsc` 0, ESLint clean; signed-in end-to-end script against the dev
+  server with a throwaway Supabase user — 39/39: branch copies cards as new rows,
+  swaps in one version don't touch the other, 409 on duplicate names (POST and
+  PATCH), make current, pages with `?v=`, cross-deck and cross-account 404s,
+  delete-current fallback to parent, last-version 409. **Not clicked through in a
+  browser:** the switcher Select, the modal, and the manager's inline edits.
 
 ### Step 1 notes
 

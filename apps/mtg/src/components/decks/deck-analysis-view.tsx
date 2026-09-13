@@ -15,7 +15,7 @@ import {
 import { PotentialPool } from "./potential-pool";
 import { DeckSteps } from "./deck-steps";
 import { toastManager } from "@/lib/toast";
-import { versionCardsUrl } from "@/lib/deck-api";
+import { deckPageUrl, versionCardsUrl } from "@/lib/deck-api";
 import {
   CardDetailModal,
   type CardDetail,
@@ -127,12 +127,12 @@ export function DeckAnalysisView({
   const switchTemplate = useCallback(
     async (templateId: string) => {
       startTransition(() => {
-        router.push(`/decks/${deckId}/analysis?templateId=${templateId}`);
+        router.push(deckPageUrl(deckId, versionId, "/analysis", { templateId }));
       });
       // Remember the choice so the deck defaults to it next visit.
       await fetch(`/api/decks/${deckId}/templates/${templateId}`, { method: "PUT" });
     },
-    [deckId, router]
+    [deckId, versionId, router]
   );
 
   const roles = useMemo(
@@ -277,7 +277,7 @@ export function DeckAnalysisView({
             Manage templates
           </Link>
           <Link
-            href={`/decks/${deckId}`}
+            href={deckPageUrl(deckId, versionId)}
             className="text-body text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Full builder
@@ -287,6 +287,7 @@ export function DeckAnalysisView({
 
       <DeckSteps
         deckId={deckId}
+        versionId={versionId}
         current="analysis"
         commanderName={entries.find((e) => e.isCommander)?.name ?? null}
         potentialCount={potentialCards.reduce((sum, e) => sum + e.quantity, 0)}

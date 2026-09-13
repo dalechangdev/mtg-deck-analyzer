@@ -15,10 +15,13 @@ const SACRIFICE_ROLE_IDS: string[] = ["sacrifice-outlet", "sacrifice-payoff"];
 
 export default async function SacrificePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { id } = await params;
+  const { v } = await searchParams;
   const userId = await requireUserId();
 
   const deck = await prisma.deck.findFirst({
@@ -28,14 +31,15 @@ export default async function SacrificePage({
 
   if (!deck) notFound();
 
+  // Only after the ownership check above: resolveVersionId trusts its deckId.
+  // Resolved before the theme gate so its redirect stays on the same version.
+  const versionId = await resolveVersionId(id, typeof v === "string" ? v : null);
+  if (!versionId) notFound();
+
   const hasSacrificeTheme = deck.themes.some(
     (t) => t.id === "sacrifice" || t.id === "aristocrats"
   );
-  if (!hasSacrificeTheme) return <SacrificeThemeGate deckId={id} />;
-
-  // Only after the ownership check above: resolveVersionId trusts its deckId.
-  const versionId = await resolveVersionId(id);
-  if (!versionId) notFound();
+  if (!hasSacrificeTheme) return <SacrificeThemeGate deckId={id} versionId={versionId} />;
 
   const [deckCards, libraryRows] = await Promise.all([
     prisma.deckCard.findMany({
@@ -111,7 +115,10 @@ export default async function SacrificePage({
 
   return (
     <SacrificeView
+      // Seeds state from props once — remount when the version changes.
+      key={versionId}
       deckId={id}
+      versionId={versionId}
       deckName={deck.name}
       entries={deckCards.map(toDeckEntry)}
       libraryCards={libraryCards}

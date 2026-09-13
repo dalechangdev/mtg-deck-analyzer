@@ -20,7 +20,7 @@ export default async function DeckAnalysisPage({
 }) {
   const { id } = await params;
   const userId = await requireUserId();
-  const requested = (await searchParams).templateId;
+  const { templateId: requested, v } = await searchParams;
 
   const deck = await prisma.deck.findFirst({
     where: { id, userId },
@@ -30,7 +30,7 @@ export default async function DeckAnalysisPage({
 
   const [templateId, versionId] = await Promise.all([
     resolveTemplateId(id, typeof requested === "string" ? requested : null),
-    resolveVersionId(id),
+    resolveVersionId(id, typeof v === "string" ? v : null),
   ]);
   if (!versionId) notFound();
 

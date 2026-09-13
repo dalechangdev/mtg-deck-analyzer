@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { deckPageUrl } from "@/lib/deck-api";
 import { CardDetailModal } from "@/components/cards/card-detail-modal";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
 import type { DeckEntry } from "@/lib/commander";
@@ -46,6 +47,7 @@ const SOURCE_BADGE: Record<CardSource, string | null> = {
 
 interface Props {
   deckId: string;
+  versionId: string;
   deckName: string;
   entries: DeckEntry[];
   libraryCards: LibraryCard[];
@@ -55,6 +57,7 @@ interface Props {
 
 export function SacrificeView({
   deckId,
+  versionId,
   deckName,
   entries,
   libraryCards,
@@ -175,7 +178,7 @@ export function SacrificeView({
             payoff{byRole.payoffs.length !== 1 ? "s" : ""}
           </span>
           <Link
-            href={`/decks/${deckId}`}
+            href={deckPageUrl(deckId, versionId)}
             className="text-body text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Full builder

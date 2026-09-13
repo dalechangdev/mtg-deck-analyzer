@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { deckPageUrl } from "@/lib/deck-api";
 
 /**
  * The three stages of a build: pick a commander, pile up everything that might
@@ -11,6 +12,8 @@ export type BuildStep = "commander" | "potential" | "analysis";
 
 interface Props {
   deckId: string;
+  /** Links stay on this version. */
+  versionId: string;
   current: BuildStep;
   commanderName: string | null;
   potentialCount: number;
@@ -22,6 +25,7 @@ interface Props {
 
 export function DeckSteps({
   deckId,
+  versionId,
   current,
   commanderName,
   potentialCount,
@@ -43,7 +47,7 @@ export function DeckSteps({
       label: "Commander",
       detail: commanderName ?? "Not chosen",
       done: commanderName !== null,
-      href: onStep ? undefined : `/decks/${deckId}?step=commander`,
+      href: onStep ? undefined : deckPageUrl(deckId, versionId, "", { step: "commander" }),
     },
     {
       key: "potential",
@@ -51,7 +55,7 @@ export function DeckSteps({
       label: "Potential",
       detail: `${potentialCount} card${potentialCount === 1 ? "" : "s"}`,
       done: potentialCount > 0,
-      href: onStep ? undefined : `/decks/${deckId}`,
+      href: onStep ? undefined : deckPageUrl(deckId, versionId),
     },
     {
       key: "analysis",
@@ -59,7 +63,7 @@ export function DeckSteps({
       label: "Analysis",
       detail: `${mainCount} / ${deckSize} in deck`,
       done: mainCount >= deckSize,
-      href: `/decks/${deckId}/analysis`,
+      href: deckPageUrl(deckId, versionId, "/analysis"),
     },
   ];
 

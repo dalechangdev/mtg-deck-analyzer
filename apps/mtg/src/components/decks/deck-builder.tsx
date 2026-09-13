@@ -12,7 +12,8 @@ import { DeckThemeSelect } from "./deck-theme-select";
 import { Toaster } from "@/components/ui/toaster";
 import { toastManager } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
-import { versionCardsUrl } from "@/lib/deck-api";
+import { deckPageUrl, versionCardsUrl, type VersionSummary } from "@/lib/deck-api";
+import { VersionSwitcher } from "./version-switcher";
 import { validateDeck, isBasicLand, isManaRamp } from "@/lib/commander";
 import { extractThemes } from "@/lib/synergy";
 import { ManaCurve } from "./mana-curve";
@@ -33,6 +34,8 @@ interface Props {
   deckId: string;
   /** The version whose cards are being edited. Deck-level fields (name, themes, notes) are shared. */
   versionId: string;
+  /** Every version of the deck, for the switcher. */
+  versions: VersionSummary[];
   initialName: string;
   initialEntries: DeckEntry[];
   initialDescription: string;
@@ -47,6 +50,7 @@ interface Props {
 export function DeckBuilder({
   deckId,
   versionId,
+  versions,
   initialName,
   initialEntries,
   initialDescription,
@@ -363,6 +367,8 @@ export function DeckBuilder({
           className="h-8 text-ui font-medium max-w-64 border-transparent hover:border-input focus:border-input bg-transparent"
         />
 
+        <VersionSwitcher deckId={deckId} versionId={versionId} versions={versions} />
+
         {commander ? (
           <div className="flex items-center gap-2 text-ui text-muted-foreground">
             {commander.imageUrl && (
@@ -390,7 +396,7 @@ export function DeckBuilder({
           </button>
 
           <Link
-            href={`/decks/${deckId}/builder`}
+            href={deckPageUrl(deckId, versionId, "/builder")}
             className="text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
           >
             Deck Builder
@@ -398,7 +404,7 @@ export function DeckBuilder({
 
           {hasSacrificeTheme && (
             <Link
-              href={`/decks/${deckId}/builder/sacrifice`}
+              href={deckPageUrl(deckId, versionId, "/builder/sacrifice")}
               className="text-body px-2 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
             >
               Sacrifice
@@ -450,6 +456,7 @@ export function DeckBuilder({
       {/* Build steps */}
       <DeckSteps
         deckId={deckId}
+        versionId={versionId}
         current={step}
         commanderName={commander?.name ?? null}
         potentialCount={maybeCount}

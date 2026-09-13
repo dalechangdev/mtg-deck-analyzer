@@ -309,8 +309,12 @@ export async function nameIsTaken(
  *
  * `field` matters — P2002 covers every unique index on the model's write, so a
  * catch-all would report a repeated (templateId, roleId) as a name collision.
- * The driver adapter reports the columns under `driverAdapterError` and quotes
- * camelCase ones; `meta.target` is the shape without an adapter.
+ *
+ * Where the columns are reported varies:
+ * - driver adapter, `constraint.fields` — quoted when camelCase;
+ * - driver adapter, `constraint.index` only — e.g. `DeckVersion_deckId_name_key`,
+ *   which is what the pg adapter actually returns for these composite indexes;
+ * - `meta.target` — the shape without an adapter.
  */
 export function isUniqueViolation(error: unknown, field: string): boolean {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
@@ -319,13 +323,35 @@ export function isUniqueViolation(error: unknown, field: string): boolean {
   const meta = error.meta as
     | {
         target?: string | string[];
-        driverAdapterError?: { cause?: { constraint?: { fields?: string[] } } };
+        modelName?: string;
+        driverAdapterError?: {
+          cause?: { constraint?: { fields?: string[]; index?: string }; table?: string };
+        };
       }
     | undefined;
 
-  const target = meta?.driverAdapterError?.cause?.constraint?.fields ?? meta?.target ?? [];
+  const cause = meta?.driverAdapterError?.cause;
+  const target =
+    cause?.constraint?.fields ??
+    meta?.target ??
+    fieldsFromIndexName(cause?.constraint?.index, cause?.table ?? meta?.modelName) ??
+    [];
   const fields = (Array.isArray(target) ? target : [target]).map((f) => f.replace(/"/g, ""));
 
   return fields.includes(field);
+}
+
+/**
+ * Prisma names a unique index `{Model}_{field}_{field}_key`, so the columns can
+ * be read back out of the name. A custom `map:` name, or one Postgres truncated
+ * at 63 bytes, won't parse — then nothing matches and the caller's 500 stands,
+ * which is the safe direction to fail.
+ */
+function fieldsFromIndexName(index?: string, table?: string): string[] | undefined {
+  if (!index || !table) return undefined;
+  const prefix = `${table}_`;
+  const suffix = "_key";
+  if (!index.startsWith(prefix) || !index.endsWith(suffix)) return undefined;
+  return index.slice(prefix.length, -suffix.length).split("_");
 }
 

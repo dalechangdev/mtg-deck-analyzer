@@ -7,7 +7,7 @@ import type { CardData, DeckEntry } from "@/lib/commander";
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
-import { versionCardsUrl } from "@/lib/deck-api";
+import { deckPageUrl, versionCardsUrl } from "@/lib/deck-api";
 
 export type LibraryCard = CardData & {
   libraryCardId: string;
@@ -129,7 +129,7 @@ export function BuilderView({ deckId, versionId, deckName, themes, maybeboardNam
             {mainCount} / 100
           </span>
           <Link
-            href={`/decks/${deckId}`}
+            href={deckPageUrl(deckId, versionId)}
             className="text-body text-muted-foreground hover:text-foreground"
           >
             ← Full builder

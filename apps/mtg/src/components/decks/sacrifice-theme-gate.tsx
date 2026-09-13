@@ -2,23 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { deckPageUrl } from "@/lib/deck-api";
 
 interface Props {
   deckId: string;
+  versionId: string;
 }
 
-export function SacrificeThemeGate({ deckId }: Props) {
+export function SacrificeThemeGate({ deckId, versionId }: Props) {
   const router = useRouter();
   const [seconds, setSeconds] = useState(7);
 
   useEffect(() => {
     if (seconds <= 0) {
-      router.push(`/decks/${deckId}/builder`);
+      router.push(deckPageUrl(deckId, versionId, "/builder"));
       return;
     }
     const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [seconds, router, deckId]);
+  }, [seconds, router, deckId, versionId]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">

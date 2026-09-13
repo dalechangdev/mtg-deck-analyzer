@@ -7,8 +7,15 @@ import { toImageUrl } from "@/lib/card-detail";
 import { resolveVersionId } from "@/lib/deck-version-loader";
 import { deckEntryInclude, deckEntryOrderBy, toDeckEntry } from "@/lib/deck-entry";
 
-export default async function DeckBuilderPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DeckBuilderPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { id } = await params;
+  const { v } = await searchParams;
   const userId = await requireUserId();
 
   const [deck, libraryCards] = await Promise.all([
@@ -33,7 +40,7 @@ export default async function DeckBuilderPage({ params }: { params: Promise<{ id
   if (!deck) notFound();
 
   // Only after the ownership check above: resolveVersionId trusts its deckId.
-  const versionId = await resolveVersionId(id);
+  const versionId = await resolveVersionId(id, typeof v === "string" ? v : null);
   if (!versionId) notFound();
 
   const cards = await prisma.deckCard.findMany({
@@ -59,6 +66,8 @@ export default async function DeckBuilderPage({ params }: { params: Promise<{ id
 
   return (
     <BuilderView
+      // Seeds state from props once — remount when the version changes.
+      key={versionId}
       deckId={id}
       versionId={versionId}
       deckName={deck.name}
