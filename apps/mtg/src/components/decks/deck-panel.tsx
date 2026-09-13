@@ -183,7 +183,7 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                     return (
                       <section key={n} className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
                         <SectionHeader
-                          className="cursor-pointer hover:bg-muted/40 hover:text-foreground transition-colors"
+                          className="cursor-pointer hover:bg-border transition-colors"
                           onClick={() => setComparingCmc({ label, cards })}
                           title="Click to compare cards at this CMC"
                         >

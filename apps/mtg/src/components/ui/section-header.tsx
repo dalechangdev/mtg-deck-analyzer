@@ -16,8 +16,11 @@ const sectionHeaderVariants = cva(
   {
     variants: {
       variant: {
-        /** Group heading inside a scrolling list. */
-        group: "py-1.5 text-label bg-muted/20",
+        /** Group heading inside a scrolling list. Sits between rows of
+         *  `text-body` item names, so it needs its own opaque band and full
+         *  contrast to read as a heading rather than as another item — and
+         *  opaque also keeps `sticky` headers from showing rows through. */
+        group: "py-1.5 text-label text-foreground bg-muted border-b border-border",
         /** Heading at the top of a panel or column. */
         panel: "py-2 text-body border-b border-border",
         /** Panel heading that also holds controls. */
