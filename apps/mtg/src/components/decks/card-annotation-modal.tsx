@@ -17,10 +17,26 @@ interface Props {
   cardId: string;
   cardName: string;
   imageUrl: string | null;
+  /** Copies in the viewer's Library. */
+  ownedQuantity: number;
+  /** Copies this deck calls for — what "owned" has to cover. */
+  deckQuantity: number;
+  /** Sets the Library count; the parent owns the state and the request. */
+  onSetOwned: (quantity: number) => void;
   onClose: () => void;
 }
 
-export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClose }: Props) {
+export function CardAnnotationModal({
+  deckId,
+  cardId,
+  cardName,
+  imageUrl,
+  ownedQuantity,
+  deckQuantity,
+  onSetOwned,
+  onClose,
+}: Props) {
+  const owned = ownedQuantity >= deckQuantity;
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [newContent, setNewContent] = useState("");
@@ -78,7 +94,31 @@ export function CardAnnotationModal({ deckId, cardId, cardName, imageUrl, onClos
 
   return (
     <Modal open onClose={onClose} size="sm" className="max-h-[80vh]">
-      <ModalHeader title="Notes" description={cardName} className="px-4" />
+      <ModalHeader title="Notes" description={cardName} className="px-4">
+        {/* Marking raises the Library count to what the deck needs; unmarking
+            takes back only this deck's copies, so a playset owned for other
+            decks isn't wiped by one click here. */}
+        <Button
+          onClick={() =>
+            onSetOwned(owned ? Math.max(0, ownedQuantity - deckQuantity) : deckQuantity)
+          }
+          aria-pressed={owned}
+          title={owned ? "Remove this deck's copies from your Library" : "Add to your Library"}
+          variant="outline"
+          size="xs"
+          className={
+            owned
+              ? "ml-auto flex-shrink-0 border-success-border bg-success-surface text-success hover:bg-success-surface-strong hover:text-success"
+              : "ml-auto flex-shrink-0"
+          }
+        >
+          {owned
+            ? `✓ Owned${deckQuantity > 1 ? ` ${ownedQuantity}` : ""}`
+            : ownedQuantity > 0
+              ? `Mark owned (${ownedQuantity}/${deckQuantity})`
+              : "Mark as owned"}
+        </Button>
+      </ModalHeader>
 
       {/* Card image */}
       {imageUrl && (

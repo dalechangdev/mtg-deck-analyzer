@@ -305,6 +305,33 @@ export function DeckBuilder({
     [deckId, versionId, entries]
   );
 
+  // --- Library ownership, from the notes dialog ---
+  // Every entry for the card shares one Library count, so all of them update.
+  const setOwned = useCallback(
+    async (cardId: string, quantity: number) => {
+      const previous = entries;
+      setEntries((prev) =>
+        prev.map((e) => (e.cardId === cardId ? { ...e, ownedQuantity: quantity } : e))
+      );
+
+      const res = await fetch("/api/library", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId, quantity }),
+      });
+
+      if (!res.ok) {
+        setEntries(previous);
+        toastManager.add({
+          title: "Failed to update your Library",
+          description: "Your change was not saved.",
+          timeout: 4000,
+        });
+      }
+    },
+    [entries]
+  );
+
   // --- Step 1: choose the commander from search, card need not be in the deck ---
   const chooseCommander = useCallback(
     async (card: CardData) => {
@@ -356,6 +383,14 @@ export function DeckBuilder({
           cardId={annotatingCard.cardId}
           cardName={annotatingCard.cardName}
           imageUrl={annotatingCard.imageUrl}
+          ownedQuantity={
+            entries.find((e) => e.cardId === annotatingCard.cardId)?.ownedQuantity ?? 0
+          }
+          deckQuantity={Math.max(
+            1,
+            ...entries.filter((e) => e.cardId === annotatingCard.cardId).map((e) => e.quantity)
+          )}
+          onSetOwned={(quantity) => setOwned(annotatingCard.cardId, quantity)}
           onClose={() => setAnnotatingCard(null)}
         />
       )}
