@@ -37,7 +37,7 @@ export function DeckSteps({
     key: BuildStep;
     n: number;
     label: string;
-    detail: string;
+    detail?: string;
     done: boolean;
     href?: string;
   }[] = [
@@ -61,7 +61,6 @@ export function DeckSteps({
       key: "analysis",
       n: 3,
       label: "Analysis",
-      detail: `${mainCount} / ${deckSize} in deck`,
       done: mainCount >= deckSize,
       href: deckPageUrl(deckId, versionId, "/analysis"),
     },
@@ -95,9 +94,11 @@ export function DeckSteps({
             </span>
             <span className="min-w-0">
               <span className="block text-body font-medium leading-tight">{step.label}</span>
-              <span className="block text-micro text-muted-foreground truncate max-w-40 leading-tight">
-                {step.detail}
-              </span>
+              {step.detail && (
+                <span className="block text-micro text-muted-foreground truncate max-w-40 leading-tight">
+                  {step.detail}
+                </span>
+              )}
             </span>
           </>
         );
