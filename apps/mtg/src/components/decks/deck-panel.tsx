@@ -1,0 +1,407 @@
+"use client";
+
+import { useState } from "react";
+import { CATEGORY_ORDER, getCardCategory, validateDeck } from "@/lib/commander";
+import type { DeckEntry } from "@/lib/commander";
+import { CmcCompareModal } from "./cmc-compare-modal";
+import {
+  SectionHeader,
+  SectionLabel,
+  sectionLabelVariants,
+} from "@/components/ui/section-header";
+import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
+
+const CMC_BUCKETS = [0, 1, 2, 3, 4, 5] as const;
+const CMC_LABEL = (n: number) => (n >= 6 ? "6+" : String(n));
+const CMC_MAX = 6;
+
+interface Props {
+  deckId: string;
+  entries: DeckEntry[];
+  onRemove: (deckCardId: string) => void;
+  onSetCommander: (deckCardId: string) => void;
+  onMoveCard: (deckCardId: string, slot: "main" | "maybe" | "wishlist") => void;
+  onAnnotate: (cardId: string, cardName: string, imageUrl: string | null) => void;
+  maybeboardName: string;
+  onMaybeboardNameChange: (val: string) => void;
+  wishlistName: string;
+  onWishlistNameChange: (val: string) => void;
+}
+
+export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCard, onAnnotate, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
+  const [groupBy, setGroupBy] = useState<"type" | "cmc">("type");
+  const [comparingCmc, setComparingCmc] = useState<{ label: string; cards: DeckEntry[] } | null>(null);
+
+  const validation = validateDeck(entries);
+  const commander = entries.find((e) => e.isCommander);
+  const mainCards = entries.filter((e) => !e.isCommander && e.slot === "main");
+  const maybeCards = entries.filter((e) => e.slot === "maybe");
+  const wishlistCards = entries.filter((e) => e.slot === "wishlist");
+
+  const grouped = CATEGORY_ORDER.reduce<Record<string, DeckEntry[]>>((acc, cat) => {
+    acc[cat] = mainCards
+      .filter((e) => getCardCategory(e.typeLine) === cat)
+      .sort((a, b) => (a.cmc ?? 0) - (b.cmc ?? 0) || a.name.localeCompare(b.name));
+    return acc;
+  }, {} as Record<string, DeckEntry[]>);
+
+  const nonLandMainCards = mainCards.filter((e) => getCardCategory(e.typeLine) !== "Lands");
+  const landMainCards = mainCards.filter((e) => getCardCategory(e.typeLine) === "Lands").sort((a, b) => a.name.localeCompare(b.name));
+
+  const groupedByCmc = [...CMC_BUCKETS, CMC_MAX].reduce<Record<number, DeckEntry[]>>((acc, n) => {
+    acc[n] = nonLandMainCards
+      .filter((e) => (n === CMC_MAX ? (e.cmc ?? 0) >= CMC_MAX : (e.cmc ?? 0) === n))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return acc;
+  }, {} as Record<number, DeckEntry[]>);
+
+  const hasMaybe = maybeCards.length > 0;
+  const hasWishlist = wishlistCards.length > 0;
+  const hasSideColumn = hasMaybe || hasWishlist;
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {comparingCmc && (
+        <CmcCompareModal
+          deckId={deckId}
+          cmcLabel={comparingCmc.label}
+          cards={comparingCmc.cards}
+          onClose={() => setComparingCmc(null)}
+        />
+      )}
+      {/* Validation bar — spans full width */}
+      {(validation.colorViolations.length > 0 || validation.duplicates.length > 0) && (
+        <div className="px-3 py-2 border-b border-border flex-shrink-0 space-y-1">
+          {validation.colorViolations.length > 0 && (
+            <div className="text-body text-danger">
+              ⚠ {validation.colorViolations.length} color identity violation
+              {validation.colorViolations.length !== 1 ? "s" : ""}
+            </div>
+          )}
+          {validation.duplicates.length > 0 && (
+            <div className="text-body text-warning">
+              ⚠ {validation.duplicates.length} duplicate card
+              {validation.duplicates.length !== 1 ? "s" : ""}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Two-column area */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+
+        {/* ── Main deck column ── */}
+        <div className={`flex flex-col overflow-hidden min-w-0 ${hasSideColumn ? "flex-1 border-r border-border" : "flex-1"}`}>
+          <div className="px-3 py-1.5 bg-muted/30 border-b border-border flex-shrink-0 flex items-center gap-2">
+            <SectionLabel className="flex-1">
+              Main Deck ({validation.cardCount})
+            </SectionLabel>
+            <ToggleGroup
+              value={[groupBy]}
+              onValueChange={(value) => {
+                // Base UI allows an empty selection; keep the last choice.
+                const next = value[0] as "type" | "cmc" | undefined;
+                if (next) setGroupBy(next);
+              }}
+              multiple={false}
+              variant="outline"
+              size="sm"
+              spacing={0}
+              className="flex-shrink-0"
+            >
+              <ToggleGroupItem value="type" className="h-6 min-w-0 px-2 text-micro">
+                Type
+              </ToggleGroupItem>
+              <ToggleGroupItem value="cmc" className="h-6 min-w-0 px-2 text-micro">
+                CMC
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          {/* The deck row is wide but short, so categories flow into columns
+              rather than one tall list the user has to scroll. */}
+          <div className="flex-1 overflow-y-auto p-2 grid gap-x-3 gap-y-2 content-start items-start grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
+            {commander ? (
+              <section className="col-span-full rounded-md border border-border/60 overflow-hidden">
+                <SectionHeader>
+                  Commander
+                </SectionHeader>
+                <CardRow
+                  entry={commander}
+                  onRemove={onRemove}
+                  isViolation={false}
+                  showCommanderToggle={false}
+                  onSetCommander={onSetCommander}
+                  onMoveCard={onMoveCard}
+                  onAnnotate={onAnnotate}
+                />
+              </section>
+            ) : (
+              <div className="col-span-full px-3 py-2 text-body text-muted-foreground">
+                No commander set — right-click a card to set it.
+              </div>
+            )}
+
+            {groupBy === "type"
+              ? CATEGORY_ORDER.map((cat) => {
+                  const cards = grouped[cat];
+                  if (!cards || cards.length === 0) return null;
+                  return (
+                    <section key={cat} className="rounded-md border border-border/60 overflow-hidden">
+                      <SectionHeader>
+                        {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
+                      </SectionHeader>
+                      {cards.map((entry) => (
+                        <CardRow
+                          key={entry.deckCardId}
+                          entry={entry}
+                          onRemove={onRemove}
+                          isViolation={
+                            validation.colorViolations.includes(entry.cardId) ||
+                            validation.duplicates.includes(entry.cardId)
+                          }
+                          showCommanderToggle={entry.canBeCommander && !commander}
+                          onSetCommander={onSetCommander}
+                          onMoveCard={onMoveCard}
+                          onAnnotate={onAnnotate}
+                        />
+                      ))}
+                    </section>
+                  );
+                })
+              : <>
+                  {[...CMC_BUCKETS, CMC_MAX].map((n) => {
+                    const cards = groupedByCmc[n];
+                    if (!cards || cards.length === 0) return null;
+                    const label = CMC_LABEL(n);
+                    return (
+                      <section key={n} className="rounded-md border border-border/60 overflow-hidden">
+                        <SectionHeader
+                          className="cursor-pointer hover:bg-muted/40 hover:text-foreground transition-colors"
+                          onClick={() => setComparingCmc({ label, cards })}
+                          title="Click to compare cards at this CMC"
+                        >
+                          CMC {label} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
+                        </SectionHeader>
+                        {cards.map((entry) => (
+                          <CardRow
+                            key={entry.deckCardId}
+                            entry={entry}
+                            onRemove={onRemove}
+                            isViolation={
+                              validation.colorViolations.includes(entry.cardId) ||
+                              validation.duplicates.includes(entry.cardId)
+                            }
+                            showCommanderToggle={entry.canBeCommander && !commander}
+                            onSetCommander={onSetCommander}
+                            onMoveCard={onMoveCard}
+                            onAnnotate={onAnnotate}
+                          />
+                        ))}
+                      </section>
+                    );
+                  })}
+                  {landMainCards.length > 0 && (
+                    <section className="rounded-md border border-border/60 overflow-hidden">
+                      <SectionHeader>
+                        Lands ({landMainCards.reduce((sum, e) => sum + e.quantity, 0)})
+                      </SectionHeader>
+                      {landMainCards.map((entry) => (
+                        <CardRow
+                          key={entry.deckCardId}
+                          entry={entry}
+                          onRemove={onRemove}
+                          isViolation={
+                            validation.colorViolations.includes(entry.cardId) ||
+                            validation.duplicates.includes(entry.cardId)
+                          }
+                          showCommanderToggle={entry.canBeCommander && !commander}
+                          onSetCommander={onSetCommander}
+                          onMoveCard={onMoveCard}
+                          onAnnotate={onAnnotate}
+                        />
+                      ))}
+                    </section>
+                  )}
+                </>}
+          </div>
+        </div>
+
+        {/* ── Side column: potential (top half) + wishlist (bottom half) ── */}
+        {hasSideColumn && (
+          <div className="w-72 flex-shrink-0 flex flex-col overflow-hidden">
+
+            {/* Potential — top half */}
+            <div className={`flex flex-col overflow-hidden bg-warning-surface ${hasMaybe && hasWishlist ? "flex-1 border-b border-warning-line" : hasMaybe ? "flex-1" : "hidden"}`}>
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-warning-surface border-b border-warning-line flex-shrink-0">
+                <input
+                  value={maybeboardName}
+                  onChange={(e) => onMaybeboardNameChange(e.target.value)}
+                  placeholder="Potential"
+                  className={cn(
+                    sectionLabelVariants({ tone: "inherit" }),
+                    "flex-1 min-w-0 bg-transparent text-warning/80 placeholder:text-warning/40 focus:outline-none"
+                  )}
+                />
+                <span className="text-label text-warning/60 flex-shrink-0">
+                  ({maybeCards.reduce((sum, e) => sum + e.quantity, 0)})
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {maybeCards.map((entry) => (
+                  <CardRow
+                    key={entry.deckCardId}
+                    entry={entry}
+                    onRemove={onRemove}
+                    isViolation={false}
+                    showCommanderToggle={false}
+                    onSetCommander={onSetCommander}
+                    onMoveCard={onMoveCard}
+                    onAnnotate={onAnnotate}
+                    isMaybe
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Wishlist — bottom half */}
+            <div className={`flex flex-col overflow-hidden bg-highlight-surface ${hasWishlist ? "flex-1" : "hidden"}`}>
+              <div className="flex items-center gap-1 px-3 py-1.5 bg-highlight-surface border-b border-highlight-line flex-shrink-0">
+                <input
+                  value={wishlistName}
+                  onChange={(e) => onWishlistNameChange(e.target.value)}
+                  placeholder="Wishlist"
+                  className={cn(
+                    sectionLabelVariants({ tone: "inherit" }),
+                    "flex-1 min-w-0 bg-transparent text-highlight/80 placeholder:text-highlight/40 focus:outline-none"
+                  )}
+                />
+                <span className="text-label text-highlight/60 flex-shrink-0">
+                  ({wishlistCards.reduce((sum, e) => sum + e.quantity, 0)})
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {wishlistCards.map((entry) => (
+                  <CardRow
+                    key={entry.deckCardId}
+                    entry={entry}
+                    onRemove={onRemove}
+                    isViolation={false}
+                    showCommanderToggle={false}
+                    onSetCommander={onSetCommander}
+                    onMoveCard={onMoveCard}
+                    onAnnotate={onAnnotate}
+                    isWishlist
+                  />
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+function CardRow({
+  entry,
+  onRemove,
+  isViolation,
+  showCommanderToggle,
+  onSetCommander,
+  onMoveCard,
+  onAnnotate,
+  isMaybe = false,
+  isWishlist = false,
+}: {
+  entry: DeckEntry;
+  onRemove: (id: string) => void;
+  isViolation: boolean;
+  showCommanderToggle: boolean;
+  onSetCommander: (id: string) => void;
+  onMoveCard: (id: string, slot: "main" | "maybe" | "wishlist") => void;
+  onAnnotate: (cardId: string, cardName: string, imageUrl: string | null) => void;
+  isMaybe?: boolean;
+  isWishlist?: boolean;
+}) {
+  const textColor = isViolation ? "text-danger" : isMaybe ? "text-warning/80" : isWishlist ? "text-highlight/80" : "";
+  const rowBg = isViolation ? "bg-danger-surface" : isMaybe ? "bg-warning-surface" : isWishlist ? "bg-highlight-surface" : "";
+
+  return (
+    <div
+      className={`group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/40 cursor-pointer ${rowBg}`}
+      onClick={() => onAnnotate(entry.cardId, entry.name, entry.imageUrl)}
+    >
+      <div className="flex-1 min-w-0">
+        <span className={`text-body truncate block ${textColor}`}>
+          {isViolation && <span className="mr-1">⚠</span>}
+          {entry.quantity > 1 && (
+            <span className="text-muted-foreground mr-1">{entry.quantity}×</span>
+          )}
+          {entry.name}
+        </span>
+        {entry.manaCost && (
+          <span className="text-label text-muted-foreground font-mono">{entry.manaCost}</span>
+        )}
+      </div>
+      <div
+        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {showCommanderToggle && (
+          <button
+            onClick={() => onSetCommander(entry.deckCardId)}
+            title="Set as commander"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-warning-border text-warning hover:bg-warning-surface-strong"
+          >
+            ★
+          </button>
+        )}
+        {isWishlist ? (
+          <>
+            <button
+              onClick={() => onMoveCard(entry.deckCardId, "maybe")}
+              title="Move to potential"
+              className="text-micro px-1.5 py-0.5 rounded-md border border-warning-border text-warning hover:bg-warning-surface-strong"
+            >
+              → potential
+            </button>
+            <button
+              onClick={() => onMoveCard(entry.deckCardId, "main")}
+              title="Move to main deck"
+              className="text-micro px-1.5 py-0.5 rounded-md border border-success-border text-success hover:bg-success-surface-strong"
+            >
+              → main
+            </button>
+          </>
+        ) : isMaybe ? (
+          <button
+            onClick={() => onMoveCard(entry.deckCardId, "main")}
+            title="Move to main deck"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-success-border text-success hover:bg-success-surface-strong"
+          >
+            → main
+          </button>
+        ) : (
+          <button
+            onClick={() => onMoveCard(entry.deckCardId, "maybe")}
+            title="Move to potential"
+            className="text-micro px-1.5 py-0.5 rounded-md border border-border text-muted-foreground hover:border-warning-border hover:text-warning"
+          >
+            → potential
+          </button>
+        )}
+        <Button
+          onClick={() => onRemove(entry.deckCardId)}
+          title="Remove"
+          variant="ghost" size="icon-xs" className="size-5 text-body text-muted-foreground hover:text-danger hover:bg-danger-surface"
+        >
+          ×
+        </Button>
+      </div>
+    </div>
+  );
+}

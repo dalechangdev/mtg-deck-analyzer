@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Canonical card identity — one row per unique card (oracle_id from Scryfall)
+model Card {
+  id               String   @id // Scryfall oracle_id
+  name             String
+  manaCost         String?
+  cmc              Float
+  typeLine         String
+  oracleText       String?
+  colors           String[]
+  colorIdentity    String[] // WUBRG subset — drives Commander legality checks
+  keywords         String[]
+  power            String?
+  toughness        String?
+  loyalty          String?
+  isCommanderLegal Boolean  @default(false)
+  canBeCommander   Boolean  @default(false) // legendary creature or designated planeswalker
+
+  printings CardPrinting[]
+  faces     CardFace[]
+  deckCards DeckCard[]
+
+  // Lists rather than optional singletons now that these are per-user: a card
+  // has one library entry PER ACCOUNT, so always query them with a userId
+  // filter and take the first.
+  libraryEntries      LibraryCard[]
+  shoppingCartEntries ShoppingCartCard[]
+
+  annotations     CardAnnotation[]
+  themes          CardTheme[]
+  roleAssignments DeckCardRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([colorIdentity])
+}
+
+model CardTheme {
+  id          String  @id // slug, e.g. "sacrifice", "token-generation"
+  name        String  @unique
+  description String?
+  cards       Card[]
+}
+
+// Double-faced cards, adventure cards, split cards, etc.
+model CardFace {
+  id         String  @id @default(cuid())
+  cardId     String
+  card       Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  faceIndex  Int
+  name       String
+  manaCost   String?
+  typeLine   String
+  oracleText String?
+  power      String?
+  toughness  String?
+  loyalty    String?
+  imageUri   String?
+
+  @@index([cardId])
+}
+
+// One row per Scryfall card id — same card printed in many sets
+model CardPrinting {
+  id              String  @id // Scryfall card id (uuid)
+  cardId          String
+  card            Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  setCode         String
+  setName         String
+  rarity          String
+  collectorNumber String
+  imageUris       Json? // { small, normal, large, png, art_crop, border_crop }
+  scryfallUri     String?
+
+  @@index([cardId])
+  @@index([setCode])
+}
+
+model Deck {
+  id             String           @id @default(cuid())
+  userId         String?          @db.Uuid // -> auth.users(id); null only on pre-auth rows
+  name           String
+  description    String?
+  maybeboardName String?
+  wishlistName   String?
+  cards          DeckCard[]
+  annotations    CardAnnotation[]
+  themes         DeckTheme[]
+  templates      DeckTemplate[]
+  cardRoles      DeckCardRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model DeckTheme {
+  id    String @id
+  name  String @unique
+  decks Deck[]
+}
+
+model DeckCard {
+  id          String  @id @default(cuid())
+  deckId      String
+  deck        Deck    @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  cardId      String
+  card        Card    @relation(fields: [cardId], references: [id])
+  quantity    Int     @default(1)
+  isCommander Boolean @default(false)
+  slot        String  @default("main") // "main" | "maybe"
+
+  @@unique([deckId, cardId])
+  @@index([deckId])
+}
+
+// Deck-specific notes on a card — survives card removal from the deck
+model CardAnnotation {
+  id        String   @id @default(cuid())
+  deckId    String
+  cardId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck Deck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([deckId, cardId])
+}
+
+// A card the user physically owns. One collection per account: uniqueness is
+// (userId, cardId), NOT cardId — a global unique here would mean the first
+// person to own a Sol Ring locked everyone else out of owning one.
+model LibraryCard {
+  id       String  @id @default(cuid())
+  userId   String? @db.Uuid // -> auth.users(id); null only on pre-auth rows
+  cardId   String
+  card     Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  quantity Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, cardId])
+  @@index([cardId])
+  @@index([userId])
+}
+
+// Cards marked "interested" from the browser. Per account, same as LibraryCard.
+model ShoppingCartCard {
+  id     String  @id @default(cuid())
+  userId String? @db.Uuid // -> auth.users(id); null only on pre-auth rows
+  cardId String
+  card   Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, cardId])
+  @@index([cardId])
+  @@index([userId])
+}
+
+// How a card automatically qualifies for a role.
+// CLASSIFIER    — a predicate registered in src/lib/deck-template.ts (e.g. "isManaRamp")
+// THEME         — the card carries the CardTheme with this id
+// TYPE_LINE     — case-insensitive substring of the type line (e.g. "Land")
+// ORACLE_REGEX  — regex tested against oracle text
+// MANUAL_ONLY   — never auto-matches; only DeckCardRole can fill it
+enum RoleMatcherKind {
+  CLASSIFIER
+  THEME
+  TYPE_LINE
+  ORACLE_REGEX
+  MANUAL_ONLY
+}
+
+enum RoleAssignment {
+  INCLUDED
+  EXCLUDED
+}
+
+// The vocabulary of roles a card can play in a deck. A card may fill several.
+model CardRole {
+  id          String  @id // slug, e.g. "ramp", "mass-disruption"
+  name        String  @unique
+  description String?
+  isBuiltIn   Boolean @default(false)
+
+  matchers        RoleMatcher[]
+  requirements    TemplateRequirement[]
+  deckAssignments DeckCardRole[]
+}
+
+// A card fills the role if ANY of its matchers hit.
+model RoleMatcher {
+  id     String          @id @default(cuid())
+  roleId String
+  role   CardRole        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  kind   RoleMatcherKind
+  value  String // predicate name | CardTheme id | type-line substring | regex source
+
+  @@index([roleId])
+}
+
+// A named deckbuilding ruleset, e.g. "Commander Baseline"
+// A named deckbuilding ruleset, e.g. "Commander Baseline".
+//
+// ownerId null means a shared reference template, readable by everyone and
+// writable by nobody through the API; non-null means one account's private
+// copy. That is exactly the "duplicate to edit" flow the app already has:
+// /api/templates/[id]/duplicate copies a null-owner template into the caller's.
+//
+// `name` is therefore no longer globally unique — two accounts may both hold a
+// template called "Commander Baseline". It is unique per owner instead.
+model AnalysisTemplate {
+  id          String  @id @default(cuid())
+  ownerId     String? @db.Uuid // -> auth.users(id); null = shared reference template
+  name        String
+  description String?
+  format      String  @default("commander")
+  deckSize    Int     @default(100)
+  isBuiltIn   Boolean @default(false) // reference templates — duplicate to edit
+
+  requirements TemplateRequirement[]
+  decks        DeckTemplate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+// One line item: "12 cards that provide card advantage".
+// Requirements overlap by design — targets may sum past deckSize.
+model TemplateRequirement {
+  id          String           @id @default(cuid())
+  templateId  String
+  template    AnalysisTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  roleId      String
+  role        CardRole         @relation(fields: [roleId], references: [id])
+  targetCount Int
+  minCount    Int? // 38 lands is really 36–40
+  maxCount    Int?
+  sortOrder   Int              @default(0)
+  note        String?
+
+  @@unique([templateId, roleId])
+  @@index([templateId])
+}
+
+model DeckTemplate {
+  deckId     String
+  templateId String
+  deck       Deck             @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  template   AnalysisTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  attachedAt DateTime         @default(now())
+
+  @@id([deckId, templateId])
+  @@index([templateId])
+}
+
+// Per-deck human override — beats auto-classification in both directions.
+// The only source for deck-relative roles like "identity".
+model DeckCardRole {
+  id         String         @id @default(cuid())
+  deckId     String
+  cardId     String
+  roleId     String
+  assignment RoleAssignment @default(INCLUDED)
+
+  deck Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  card Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  role CardRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([deckId, cardId, roleId])
+  @@index([deckId])
+  @@index([cardId])
+}

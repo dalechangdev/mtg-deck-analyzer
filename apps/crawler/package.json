@@ -1,0 +1,24 @@
+{
+  "name": "@mtg/crawler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .turbo"
+  },
+  "dependencies": {
+    "@mtg/store-core": "workspace:*",
+    "@mtg/itaca": "workspace:*",
+    "@mtg/metropolis": "workspace:*",
+    "@supabase/supabase-js": "^2.58.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
