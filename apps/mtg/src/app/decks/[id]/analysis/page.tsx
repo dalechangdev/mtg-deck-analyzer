@@ -8,6 +8,7 @@ import {
   loadTemplate,
   resolveTemplateId,
 } from "@/lib/deck-template-loader";
+import { resolveVersionId } from "@/lib/deck-version-loader";
 import { DeckAnalysisView } from "@/components/decks/deck-analysis-view";
 
 export default async function DeckAnalysisPage({
@@ -27,15 +28,17 @@ export default async function DeckAnalysisPage({
   });
   if (!deck) notFound();
 
-  const templateId = await resolveTemplateId(
-    id,
-    typeof requested === "string" ? requested : null
-  );
+  const [templateId, versionId] = await Promise.all([
+    resolveTemplateId(id, typeof requested === "string" ? requested : null),
+    resolveVersionId(id),
+  ]);
+  if (!versionId) notFound();
 
   const [template, entries, cardDetails, overrideRows, templates] = await Promise.all([
     loadTemplate(templateId, userId),
-    loadDeckCards(id),
-    loadDeckCardDetails(id),
+    loadDeckCards(versionId),
+    loadDeckCardDetails(versionId),
+    // Role overrides are deck-level: a card plays the same role in every version.
     loadRoleOverrideRows(id),
     // The template picker offers the caller's own templates plus the shared
     // reference ones — never another account's.
@@ -52,6 +55,7 @@ export default async function DeckAnalysisPage({
   return (
     <DeckAnalysisView
       deckId={id}
+      versionId={versionId}
       deckName={deck.name}
       template={template}
       templates={templates}

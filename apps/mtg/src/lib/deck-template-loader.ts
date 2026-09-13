@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
-import { cardDetailInclude, toCardDetail, toImageUrl } from "@/lib/card-detail";
+import { cardDetailInclude, toCardDetail } from "@/lib/card-detail";
+import { deckEntryOrderBy, toDeckEntry } from "@/lib/deck-entry";
 import {
   evaluateTemplate,
   toOverrides,
@@ -22,9 +23,13 @@ export const DEFAULT_TEMPLATE_ID = "commander-baseline";
 /**
  * PRECONDITION FOR EVERY FUNCTION IN THIS FILE: the caller has already
  * established that the signed-in user owns `deckId` — via requireDeckAccess()
- * in a Route Handler, or a `findFirst({ where: { id, userId } })` in a page.
+ * in a Route Handler, or a `findFirst({ where: { id, userId } })` in a page —
+ * and, for loaders that take a `versionId`, that the version belongs to that
+ * deck (resolveVersionId or requireVersionAccess).
  *
- * These loaders take a deck id and do not re-check ownership, so calling one
+ * Cards are per version; role overrides and templates are per deck.
+ *
+ * These loaders take ids and do not re-check ownership, so calling one
  * with an unvalidated id from a URL reads another account's deck. The checks
  * are not repeated here because every current caller gates first and the extra
  * round trip on each of five loaders is not free; if that ever stops being
@@ -96,9 +101,9 @@ export async function loadTemplate(
   };
 }
 
-export async function loadDeckCards(deckId: string): Promise<AnalyzedCard[]> {
+export async function loadDeckCards(versionId: string): Promise<AnalyzedCard[]> {
   const deckCards = await prisma.deckCard.findMany({
-    where: { deckId },
+    where: { versionId },
     include: {
       card: {
         include: {
@@ -110,38 +115,25 @@ export async function loadDeckCards(deckId: string): Promise<AnalyzedCard[]> {
         },
       },
     },
-    orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
+    orderBy: deckEntryOrderBy,
   });
 
   return deckCards.map((dc) => ({
-    deckCardId: dc.id,
-    isCommander: dc.isCommander,
-    quantity: dc.quantity,
-    slot: (dc.slot ?? "main") as "main" | "maybe" | "wishlist",
-    cardId: dc.card.id,
-    name: dc.card.name,
-    manaCost: dc.card.manaCost,
-    cmc: dc.card.cmc,
-    typeLine: dc.card.typeLine,
-    oracleText: dc.card.oracleText,
-    colorIdentity: dc.card.colorIdentity,
-    keywords: dc.card.keywords,
-    canBeCommander: dc.card.canBeCommander,
-    imageUrl: toImageUrl(dc.card.printings, dc.card.faces),
+    ...toDeckEntry(dc),
     faces: dc.card.faces.map((f) => ({ typeLine: f.typeLine, oracleText: f.oracleText })),
     themeIds: dc.card.themes.map((t) => t.id),
   }));
 }
 
 /**
- * Full card details for the deck, keyed by cardId — what the card modal needs
+ * Full card details for a version, keyed by cardId — what the card modal needs
  * on top of the trimmed `AnalyzedCard` rows the evaluator runs on.
  */
 export async function loadDeckCardDetails(
-  deckId: string
+  versionId: string
 ): Promise<Record<string, CardDetail>> {
   const deckCards = await prisma.deckCard.findMany({
-    where: { deckId },
+    where: { versionId },
     include: { card: { include: cardDetailInclude } },
   });
 
@@ -163,13 +155,14 @@ export async function loadRoleOverrides(deckId: string): Promise<RoleOverrides> 
 
 export async function analyzeDeck(
   deckId: string,
+  versionId: string,
   templateId: string,
   viewerId: string,
   options: EvaluateOptions = {}
 ): Promise<TemplateAnalysis | null> {
   const [template, entries, overrides] = await Promise.all([
     loadTemplate(templateId, viewerId),
-    loadDeckCards(deckId),
+    loadDeckCards(versionId),
     loadRoleOverrides(deckId),
   ]);
   if (!template) return null;

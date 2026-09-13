@@ -2,13 +2,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { BuilderView } from "@/components/decks/builder-view";
-import type { DeckEntry } from "@/lib/commander";
 import type { LibraryCard } from "@/components/decks/builder-view";
-
-function toImageUrl(printings: { imageUris: unknown }[], faces: { imageUri: string | null }[]): string | null {
-  const imageUris = printings[0]?.imageUris as Record<string, string> | null;
-  return imageUris?.normal ?? imageUris?.small ?? faces[0]?.imageUri ?? null;
-}
+import { toImageUrl } from "@/lib/card-detail";
+import { resolveVersionId } from "@/lib/deck-version-loader";
+import { deckEntryInclude, deckEntryOrderBy, toDeckEntry } from "@/lib/deck-entry";
 
 export default async function DeckBuilderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,20 +14,7 @@ export default async function DeckBuilderPage({ params }: { params: Promise<{ id
   const [deck, libraryCards] = await Promise.all([
     prisma.deck.findFirst({
       where: { id, userId },
-      include: {
-        themes: true,
-        cards: {
-          include: {
-            card: {
-              include: {
-                printings: { take: 1, orderBy: { setCode: "desc" } },
-                faces: { take: 1, orderBy: { faceIndex: "asc" } },
-              },
-            },
-          },
-          orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
-        },
-      },
+      include: { themes: true },
     }),
     prisma.libraryCard.findMany({
       where: { userId },
@@ -48,22 +32,15 @@ export default async function DeckBuilderPage({ params }: { params: Promise<{ id
 
   if (!deck) notFound();
 
-  const entries: DeckEntry[] = deck.cards.map((dc) => ({
-    deckCardId: dc.id,
-    isCommander: dc.isCommander,
-    quantity: dc.quantity,
-    slot: (dc.slot ?? "main") as "main" | "maybe" | "wishlist",
-    cardId: dc.card.id,
-    name: dc.card.name,
-    manaCost: dc.card.manaCost,
-    cmc: dc.card.cmc,
-    typeLine: dc.card.typeLine,
-    oracleText: dc.card.oracleText,
-    colorIdentity: dc.card.colorIdentity,
-    keywords: dc.card.keywords,
-    canBeCommander: dc.card.canBeCommander,
-    imageUrl: toImageUrl(dc.card.printings, dc.card.faces),
-  }));
+  // Only after the ownership check above: resolveVersionId trusts its deckId.
+  const versionId = await resolveVersionId(id);
+  if (!versionId) notFound();
+
+  const cards = await prisma.deckCard.findMany({
+    where: { versionId },
+    include: deckEntryInclude,
+    orderBy: deckEntryOrderBy,
+  });
 
   const library: LibraryCard[] = libraryCards.map((lc) => ({
     libraryCardId: lc.id,
@@ -83,10 +60,11 @@ export default async function DeckBuilderPage({ params }: { params: Promise<{ id
   return (
     <BuilderView
       deckId={id}
+      versionId={versionId}
       deckName={deck.name}
       themes={deck.themes}
       maybeboardName={deck.maybeboardName ?? "Maybeboard"}
-      initialEntries={entries}
+      initialEntries={cards.map(toDeckEntry)}
       libraryCards={library}
     />
   );

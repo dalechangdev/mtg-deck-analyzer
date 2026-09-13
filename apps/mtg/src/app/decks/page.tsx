@@ -14,19 +14,24 @@ export default async function DecksPage() {
     where: { userId },
     orderBy: { updatedAt: "desc" },
     include: {
-      cards: {
-        where: { isCommander: true },
+      // Commander and card count describe the version the deck opens on.
+      currentVersion: {
         include: {
-          card: {
+          cards: {
+            where: { isCommander: true },
             include: {
-              printings: { take: 1, orderBy: { setCode: "desc" } },
-              faces: { take: 1, orderBy: { faceIndex: "asc" } },
+              card: {
+                include: {
+                  printings: { take: 1, orderBy: { setCode: "desc" } },
+                  faces: { take: 1, orderBy: { faceIndex: "asc" } },
+                },
+              },
             },
+            take: 1,
           },
+          _count: { select: { cards: true } },
         },
-        take: 1,
       },
-      _count: { select: { cards: true } },
     },
   });
 
@@ -49,7 +54,8 @@ export default async function DecksPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {decks.map((deck) => {
-            const commanderCard = deck.cards[0]?.card;
+            const commanderCard = deck.currentVersion?.cards[0]?.card;
+            const cardCount = deck.currentVersion?._count.cards ?? 0;
             const printing = commanderCard?.printings[0];
             const imageUris = printing?.imageUris as Record<string, string> | null;
             const imageUrl =
@@ -80,7 +86,7 @@ export default async function DecksPage() {
                   {commanderCard && (
                     <div className="text-body text-muted-foreground truncate">{commanderCard.name}</div>
                   )}
-                  <div className="text-body text-muted-foreground">{deck._count.cards} / 100 cards</div>
+                  <div className="text-body text-muted-foreground">{cardCount} / 100 cards</div>
                 </div>
               </Link>
             );

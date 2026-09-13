@@ -7,15 +7,17 @@ import {
 } from "@/lib/deck-template-loader";
 import { evaluateTemplate } from "@/lib/deck-template";
 import { requireDeckAccess } from "@/lib/ownership";
+import { resolveVersionId } from "@/lib/deck-version-loader";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * GET /api/decks/[id]/analysis?templateId=…&includeCommander=1
+ * GET /api/decks/[id]/analysis?templateId=…&versionId=…&includeCommander=1
  *
  * Analyses are computed per request, never stored — a card swap can't leave a
  * stale scorecard behind. Falls back to the deck's attached template, then to
- * the built-in baseline.
+ * the built-in baseline; and to the deck's current version. A versionId that
+ * isn't a version of this deck answers 404.
  */
 export async function GET(req: Request, { params }: Ctx) {
   const { id } = await params;
@@ -24,12 +26,17 @@ export async function GET(req: Request, { params }: Ctx) {
 
   const url = new URL(req.url);
 
-  const templateId = await resolveTemplateId(id, url.searchParams.get("templateId"));
+  const [templateId, versionId] = await Promise.all([
+    resolveTemplateId(id, url.searchParams.get("templateId")),
+    resolveVersionId(id, url.searchParams.get("versionId")),
+  ]);
+  if (!versionId) return NextResponse.json({ error: "Version not found" }, { status: 404 });
+
   const includeCommander = url.searchParams.get("includeCommander") === "1";
 
   const [template, entries, overrides] = await Promise.all([
     loadTemplate(templateId, access.userId),
-    loadDeckCards(id),
+    loadDeckCards(versionId),
     loadRoleOverrides(id),
   ]);
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });

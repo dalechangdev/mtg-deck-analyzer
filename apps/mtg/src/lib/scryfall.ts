@@ -114,7 +114,12 @@ export async function fetchBulkDataUrl(): Promise<string> {
   });
   if (!res.ok) throw new Error(`Scryfall bulk-data fetch failed: ${res.status}`);
   const data = await res.json();
-  return data.download_uri as string;
+  // Scryfall retired `download_uri` (one giant JSON array) in favour of
+  // `jsonl_download_uri` -- gzipped line-delimited JSON. The fallback keeps
+  // working against any endpoint that still serves the old field.
+  const url = (data.jsonl_download_uri ?? data.download_uri) as string | undefined;
+  if (!url) throw new Error("Scryfall bulk-data response carried no download URL");
+  return url;
 }
 
 export async function searchCards(query: string, page = 1): Promise<{ data: ScryfallCard[]; hasMore: boolean }> {

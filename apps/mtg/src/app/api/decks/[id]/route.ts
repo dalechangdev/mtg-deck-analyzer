@@ -1,73 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireDeckAccess } from "@/lib/ownership";
+import { resolveVersionId } from "@/lib/deck-version-loader";
+import { deckEntryInclude, deckEntryOrderBy, toDeckEntry } from "@/lib/deck-entry";
 import { Prisma } from "@/generated/prisma/client";
-
-function toEntry(dc: {
-  id: string;
-  isCommander: boolean;
-  quantity: number;
-  slot: string;
-  card: {
-    id: string;
-    name: string;
-    manaCost: string | null;
-    cmc: number;
-    typeLine: string;
-    oracleText: string | null;
-    colorIdentity: string[];
-    keywords: string[];
-    canBeCommander: boolean;
-    printings: { imageUris: unknown }[];
-    faces: { imageUri: string | null }[];
-  };
-}) {
-  const printing = dc.card.printings[0];
-  const imageUris = printing?.imageUris as Record<string, string> | null;
-  const imageUrl = imageUris?.normal ?? imageUris?.small ?? dc.card.faces[0]?.imageUri ?? null;
-
-  return {
-    deckCardId: dc.id,
-    isCommander: dc.isCommander,
-    quantity: dc.quantity,
-    slot: dc.slot as "main" | "maybe",
-    cardId: dc.card.id,
-    name: dc.card.name,
-    manaCost: dc.card.manaCost,
-    cmc: dc.card.cmc,
-    typeLine: dc.card.typeLine,
-    oracleText: dc.card.oracleText,
-    colorIdentity: dc.card.colorIdentity,
-    keywords: dc.card.keywords,
-    canBeCommander: dc.card.canBeCommander,
-    imageUrl,
-  };
-}
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const access = await requireDeckAccess(id);
   if (access.response) return access.response;
 
-  const deck = await prisma.deck.findUnique({
-    where: { id },
-    include: {
-      themes: { select: { id: true } },
-      cards: {
-        include: {
-          card: {
-            include: {
-              printings: { take: 1, orderBy: { setCode: "desc" } },
-              faces: { take: 1, orderBy: { faceIndex: "asc" } },
-            },
-          },
-        },
-        orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
-      },
-    },
-  });
+  const [deck, versionId] = await Promise.all([
+    prisma.deck.findUnique({
+      where: { id },
+      include: { themes: { select: { id: true } } },
+    }),
+    resolveVersionId(id),
+  ]);
 
-  if (!deck) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!deck || !versionId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Entries are the current version's.
+  const cards = await prisma.deckCard.findMany({
+    where: { versionId },
+    include: deckEntryInclude,
+    orderBy: deckEntryOrderBy,
+  });
 
   return NextResponse.json({
     id: deck.id,
@@ -76,7 +34,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     themeIds: deck.themes.map((t) => t.id),
     maybeboardName: deck.maybeboardName,
     wishlistName: deck.wishlistName,
-    entries: deck.cards.map(toEntry),
+    versionId,
+    entries: cards.map(toDeckEntry),
   });
 }
 

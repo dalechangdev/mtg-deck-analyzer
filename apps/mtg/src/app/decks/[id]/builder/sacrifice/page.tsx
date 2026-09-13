@@ -3,11 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { SacrificeView } from "@/components/decks/sacrifice-view";
 import { SacrificeThemeGate } from "@/components/decks/sacrifice-theme-gate";
-import type { DeckEntry } from "@/lib/commander";
 import { isColorSubset } from "@/lib/commander";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
 import { toCardDetail, toImageUrl } from "@/lib/card-detail";
 import type { LibraryCard } from "@/components/decks/builder-view";
+import { resolveVersionId } from "@/lib/deck-version-loader";
+import { deckEntryOrderBy, toDeckEntry } from "@/lib/deck-entry";
 
 type SacrificeRole = "sacrifice-outlet" | "sacrifice-payoff";
 const SACRIFICE_ROLE_IDS: string[] = ["sacrifice-outlet", "sacrifice-payoff"];
@@ -22,24 +23,7 @@ export default async function SacrificePage({
 
   const deck = await prisma.deck.findFirst({
     where: { id, userId },
-    include: {
-      themes: { select: { id: true } },
-      cards: {
-        include: {
-          card: {
-            include: {
-              printings: { take: 1, orderBy: { setCode: "desc" } },
-              faces: { orderBy: { faceIndex: "asc" } },
-              themes: {
-                where: { id: { in: SACRIFICE_ROLE_IDS } },
-                select: { id: true },
-              },
-            },
-          },
-        },
-        orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
-      },
-    },
+    include: { themes: { select: { id: true } } },
   });
 
   if (!deck) notFound();
@@ -49,47 +33,52 @@ export default async function SacrificePage({
   );
   if (!hasSacrificeTheme) return <SacrificeThemeGate deckId={id} />;
 
-  const libraryRows = await prisma.libraryCard.findMany({
-    where: { userId },
-    include: {
-      card: {
-        include: {
-          printings: { take: 1, orderBy: { setCode: "desc" } },
-          faces: { orderBy: { faceIndex: "asc" } },
-          themes: {
-            where: { id: { in: SACRIFICE_ROLE_IDS } },
-            select: { id: true },
+  // Only after the ownership check above: resolveVersionId trusts its deckId.
+  const versionId = await resolveVersionId(id);
+  if (!versionId) notFound();
+
+  const [deckCards, libraryRows] = await Promise.all([
+    prisma.deckCard.findMany({
+      where: { versionId },
+      include: {
+        card: {
+          include: {
+            printings: { take: 1, orderBy: { setCode: "desc" } },
+            faces: { orderBy: { faceIndex: "asc" } },
+            themes: {
+              where: { id: { in: SACRIFICE_ROLE_IDS } },
+              select: { id: true },
+            },
           },
         },
       },
-    },
-    orderBy: { card: { name: "asc" } },
-  });
+      orderBy: deckEntryOrderBy,
+    }),
+    prisma.libraryCard.findMany({
+      where: { userId },
+      include: {
+        card: {
+          include: {
+            printings: { take: 1, orderBy: { setCode: "desc" } },
+            faces: { orderBy: { faceIndex: "asc" } },
+            themes: {
+              where: { id: { in: SACRIFICE_ROLE_IDS } },
+              select: { id: true },
+            },
+          },
+        },
+      },
+      orderBy: { card: { name: "asc" } },
+    }),
+  ]);
 
-  const commander = deck.cards.find((dc) => dc.isCommander);
+  const commander = deckCards.find((dc) => dc.isCommander);
 
   const legalLibraryRows = libraryRows.filter((lc) => {
     if (!lc.card.isCommanderLegal) return false;
     if (commander) return isColorSubset(lc.card.colorIdentity, commander.card.colorIdentity);
     return true;
   });
-
-  const entries: DeckEntry[] = deck.cards.map((dc) => ({
-    deckCardId: dc.id,
-    isCommander: dc.isCommander,
-    quantity: dc.quantity,
-    slot: (dc.slot ?? "main") as "main" | "maybe" | "wishlist",
-    cardId: dc.card.id,
-    name: dc.card.name,
-    manaCost: dc.card.manaCost,
-    cmc: dc.card.cmc,
-    typeLine: dc.card.typeLine,
-    oracleText: dc.card.oracleText,
-    colorIdentity: dc.card.colorIdentity,
-    keywords: dc.card.keywords,
-    canBeCommander: dc.card.canBeCommander,
-    imageUrl: toImageUrl(dc.card.printings, dc.card.faces),
-  }));
 
   const libraryCards: LibraryCard[] = legalLibraryRows.map((lc) => ({
     libraryCardId: lc.id,
@@ -109,14 +98,14 @@ export default async function SacrificePage({
   // Build cardDetails — deck cards overwrite library cards on collision (same card)
   const cardDetails: Record<string, CardDetail> = {};
   for (const lc of legalLibraryRows) cardDetails[lc.card.id] = toCardDetail(lc.card);
-  for (const dc of deck.cards) cardDetails[dc.card.id] = toCardDetail(dc.card);
+  for (const dc of deckCards) cardDetails[dc.card.id] = toCardDetail(dc.card);
 
   // Merge sacrifice roles — deck cards overwrite library cards on collision
   const initialRoles: Record<string, SacrificeRole[]> = {};
   for (const lc of legalLibraryRows) {
     initialRoles[lc.card.id] = lc.card.themes.map((t) => t.id as SacrificeRole);
   }
-  for (const dc of deck.cards) {
+  for (const dc of deckCards) {
     initialRoles[dc.card.id] = dc.card.themes.map((t) => t.id as SacrificeRole);
   }
 
@@ -124,7 +113,7 @@ export default async function SacrificePage({
     <SacrificeView
       deckId={id}
       deckName={deck.name}
-      entries={entries}
+      entries={deckCards.map(toDeckEntry)}
       libraryCards={libraryCards}
       cardDetails={cardDetails}
       initialRoles={initialRoles}

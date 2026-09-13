@@ -7,6 +7,7 @@ import type { CardData, DeckEntry } from "@/lib/commander";
 import { FullHeightView } from "@/components/ui/shell";
 import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
+import { versionCardsUrl } from "@/lib/deck-api";
 
 export type LibraryCard = CardData & {
   libraryCardId: string;
@@ -15,6 +16,7 @@ export type LibraryCard = CardData & {
 
 interface Props {
   deckId: string;
+  versionId: string;
   deckName: string;
   themes: { id: string; name: string }[];
   maybeboardName: string;
@@ -22,7 +24,7 @@ interface Props {
   libraryCards: LibraryCard[];
 }
 
-export function BuilderView({ deckId, deckName, themes, maybeboardName, initialEntries, libraryCards }: Props) {
+export function BuilderView({ deckId, versionId, deckName, themes, maybeboardName, initialEntries, libraryCards }: Props) {
   const [entries, setEntries] = useState<DeckEntry[]>(initialEntries);
   const [libFilter, setLibFilter] = useState("");
 
@@ -61,12 +63,12 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
   // --- Move card between slots ---
   const moveCard = useCallback(async (deckCardId: string, slot: "main" | "maybe") => {
     setEntries((prev) => prev.map((e) => e.deckCardId === deckCardId ? { ...e, slot } : e));
-    await fetch(`/api/decks/${deckId}/cards/${deckCardId}`, {
+    await fetch(versionCardsUrl(deckId, versionId, deckCardId), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ slot }),
     });
-  }, [deckId]);
+  }, [deckId, versionId]);
 
   // --- Remove card from deck ---
   const removeCard = useCallback(async (deckCardId: string) => {
@@ -76,8 +78,8 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
     } else {
       setEntries((prev) => prev.filter((e) => e.deckCardId !== deckCardId));
     }
-    await fetch(`/api/decks/${deckId}/cards/${deckCardId}`, { method: "DELETE" });
-  }, [deckId, entries]);
+    await fetch(versionCardsUrl(deckId, versionId, deckCardId), { method: "DELETE" });
+  }, [deckId, versionId, entries]);
 
   // --- Add library card to deck ---
   const addFromLibrary = useCallback(async (card: LibraryCard, slot: "main" | "maybe") => {
@@ -99,7 +101,7 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
     };
     setEntries((prev) => [...prev, optimistic]);
 
-    const res = await fetch(`/api/decks/${deckId}/cards`, {
+    const res = await fetch(versionCardsUrl(deckId, versionId), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardId: card.cardId, slot }),
@@ -112,7 +114,7 @@ export function BuilderView({ deckId, deckName, themes, maybeboardName, initialE
 
     const { id: realId } = await res.json();
     setEntries((prev) => prev.map((e) => e.deckCardId === tempId ? { ...e, deckCardId: realId } : e));
-  }, [deckId, inDeckByCardId, moveCard]);
+  }, [deckId, versionId, inDeckByCardId, moveCard]);
 
   return (
     <FullHeightView>

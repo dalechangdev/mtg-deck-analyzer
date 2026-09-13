@@ -1,11 +1,10 @@
 import "dotenv/config";
 import { Readable } from "stream";
+import { createGunzip } from "zlib";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { chain } = require("stream-chain");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { parser } = require("stream-json/parser.js");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { streamArray } = require("stream-json/streamers/stream-array.js");
+const { parser } = require("stream-json/jsonl/parser.js");
 import { prisma } from "../src/lib/prisma";
 import { fetchBulkDataUrl, canBeCommander, type ScryfallCard } from "../src/lib/scryfall";
 
@@ -79,8 +78,11 @@ async function run() {
   if (!res.ok) throw new Error(`Download failed: ${res.status}`);
   if (!res.body) throw new Error("No response body");
 
+  // The bulk file is gzipped JSONL served as application/gzip with no
+  // Content-Encoding, so fetch hands back the compressed bytes untouched and
+  // the gunzip has to be explicit. One JSON object per line, not an array.
   const nodeStream = Readable.fromWeb(res.body as import("stream/web").ReadableStream);
-  const cards = chain([nodeStream, parser(), streamArray()]);
+  const cards = chain([nodeStream, createGunzip(), parser()]);
 
   let batch: ScryfallCard[] = [];
   let upserted = 0;

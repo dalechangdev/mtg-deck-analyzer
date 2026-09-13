@@ -93,16 +93,77 @@ model Deck {
   description    String?
   maybeboardName String?
   wishlistName   String?
-  cards          DeckCard[]
+  versions       DeckVersion[]    @relation("DeckVersions")
   annotations    CardAnnotation[]
   themes         DeckTheme[]
   templates      DeckTemplate[]
   cardRoles      DeckCardRole[]
 
+  // The version the deck opens on. An FK rather than an isActive flag on
+  // DeckVersion: "at most one active per deck" needs a partial unique index,
+  // which Prisma can't express. Null only transiently while a deck is being
+  // created, or if its current version is deleted.
+  currentVersionId String?      @unique
+  currentVersion   DeckVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// A named variant of a deck. Each version owns a full copy of its card list —
+// branching copies the parent's DeckCard rows, and diffs between versions are
+// computed at read time, never stored. See docs/plans/deck-versions.md.
+//
+// Deck-level data (annotations, role overrides, themes, templates) is shared by
+// every version of the deck.
+model DeckVersion {
+  id     String  @id @default(cuid())
+  deckId String
+  deck   Deck    @relation("DeckVersions", fields: [deckId], references: [id], onDelete: Cascade)
+  name   String
+  notes  String?
+
+  // Lineage, so compare can default to "vs parent". Survives the parent's deletion.
+  parentVersionId String?
+  parent          DeckVersion?  @relation("VersionLineage", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  children        DeckVersion[] @relation("VersionLineage")
+
+  currentOf Deck?      @relation("CurrentVersion")
+  cards     DeckCard[]
+  games     GameLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([deckId, name])
+  @@index([parentVersionId])
+}
+
+enum GameResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+// Notes on one game played with a version. Everything but the write-up is
+// optional: result is null for games that didn't finish or weren't tracked.
+model GameLog {
+  id        String      @id @default(cuid())
+  versionId String
+  version   DeckVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  playedAt  DateTime    @default(now())
+  result    GameResult?
+  podSize   Int?
+  opponents String? // free text, e.g. "Atraxa, Krenko, Yuriko"
+  turns     Int?
+  notes     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([versionId, playedAt])
 }
 
 model DeckTheme {
@@ -111,18 +172,19 @@ model DeckTheme {
   decks Deck[]
 }
 
+// Belongs to a version, not a deck. There is deliberately no denormalised
+// deckId: ownership is checked through version -> deck (requireVersionAccess).
 model DeckCard {
-  id          String  @id @default(cuid())
-  deckId      String
-  deck        Deck    @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  id          String      @id @default(cuid())
+  versionId   String
+  version     DeckVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   cardId      String
-  card        Card    @relation(fields: [cardId], references: [id])
-  quantity    Int     @default(1)
-  isCommander Boolean @default(false)
-  slot        String  @default("main") // "main" | "maybe"
+  card        Card        @relation(fields: [cardId], references: [id])
+  quantity    Int         @default(1)
+  isCommander Boolean     @default(false)
+  slot        String      @default("main") // "main" | "maybe"
 
-  @@unique([deckId, cardId])
-  @@index([deckId])
+  @@unique([versionId, cardId])
 }
 
 // Deck-specific notes on a card — survives card removal from the deck

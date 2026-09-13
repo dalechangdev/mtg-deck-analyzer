@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireDeckAccess } from "@/lib/ownership";
+import { requireVersionAccess } from "@/lib/ownership";
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id: deckId } = await params;
-  const access = await requireDeckAccess(deckId);
+type Ctx = { params: Promise<{ id: string; versionId: string }> };
+
+export async function POST(req: Request, { params }: Ctx) {
+  const { id: deckId, versionId } = await params;
+  const access = await requireVersionAccess(deckId, versionId);
   if (access.response) return access.response;
 
   const { cardId, isCommander = false, slot = "main" } = await req.json();
@@ -17,10 +19,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const isBasic = card.typeLine.toLowerCase().includes("basic land");
 
-  // Only one commander allowed
+  // Only one commander allowed — per version, since versions may differ.
   if (isCommander) {
     await prisma.deckCard.updateMany({
-      where: { deckId, isCommander: true },
+      where: { versionId, isCommander: true },
       data: { isCommander: false },
     });
   }
@@ -28,17 +30,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   let deckCard;
   if (isBasic) {
     deckCard = await prisma.deckCard.upsert({
-      where: { deckId_cardId: { deckId, cardId } },
-      create: { deckId, cardId, isCommander: false, quantity: 1, slot },
+      where: { versionId_cardId: { versionId, cardId } },
+      create: { versionId, cardId, isCommander: false, quantity: 1, slot },
       update: { quantity: { increment: 1 } },
     });
   } else {
     const existing = await prisma.deckCard.findUnique({
-      where: { deckId_cardId: { deckId, cardId } },
+      where: { versionId_cardId: { versionId, cardId } },
     });
     if (existing) return NextResponse.json({ error: "Card already in deck" }, { status: 409 });
     deckCard = await prisma.deckCard.create({
-      data: { deckId, cardId, isCommander, quantity: 1, slot },
+      data: { versionId, cardId, isCommander, quantity: 1, slot },
     });
   }
 

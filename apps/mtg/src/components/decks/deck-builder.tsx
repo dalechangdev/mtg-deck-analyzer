@@ -12,6 +12,7 @@ import { DeckThemeSelect } from "./deck-theme-select";
 import { Toaster } from "@/components/ui/toaster";
 import { toastManager } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
+import { versionCardsUrl } from "@/lib/deck-api";
 import { validateDeck, isBasicLand, isManaRamp } from "@/lib/commander";
 import { extractThemes } from "@/lib/synergy";
 import { ManaCurve } from "./mana-curve";
@@ -30,6 +31,8 @@ const DOCK_RAIL_OFFSET = "pr-56";
 
 interface Props {
   deckId: string;
+  /** The version whose cards are being edited. Deck-level fields (name, themes, notes) are shared. */
+  versionId: string;
   initialName: string;
   initialEntries: DeckEntry[];
   initialDescription: string;
@@ -43,6 +46,7 @@ interface Props {
 
 export function DeckBuilder({
   deckId,
+  versionId,
   initialName,
   initialEntries,
   initialDescription,
@@ -194,7 +198,7 @@ export function DeckBuilder({
         setEntries((prev) =>
           prev.map((e) => (e.cardId === card.cardId ? { ...e, quantity: e.quantity + 1 } : e))
         );
-        const res = await fetch(`/api/decks/${deckId}/cards`, {
+        const res = await fetch(versionCardsUrl(deckId, versionId), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ cardId: card.cardId, slot }),
@@ -217,7 +221,7 @@ export function DeckBuilder({
       };
       setEntries((prev) => [...prev, optimistic]);
 
-      const res = await fetch(`/api/decks/${deckId}/cards`, {
+      const res = await fetch(versionCardsUrl(deckId, versionId), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cardId: card.cardId, slot }),
@@ -233,7 +237,7 @@ export function DeckBuilder({
         prev.map((e) => (e.deckCardId === tempId ? { ...e, deckCardId: realId } : e))
       );
     },
-    [deckId, entries]
+    [deckId, versionId, entries]
   );
 
   // --- Remove card ---
@@ -247,9 +251,9 @@ export function DeckBuilder({
       } else {
         setEntries((prev) => prev.filter((e) => e.deckCardId !== deckCardId));
       }
-      await fetch(`/api/decks/${deckId}/cards/${deckCardId}`, { method: "DELETE" });
+      await fetch(versionCardsUrl(deckId, versionId, deckCardId), { method: "DELETE" });
     },
-    [deckId, entries]
+    [deckId, versionId, entries]
   );
 
   // --- Move card between slots ---
@@ -258,13 +262,13 @@ export function DeckBuilder({
       setEntries((prev) =>
         prev.map((e) => (e.deckCardId === deckCardId ? { ...e, slot } : e))
       );
-      await fetch(`/api/decks/${deckId}/cards/${deckCardId}`, {
+      await fetch(versionCardsUrl(deckId, versionId, deckCardId), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slot }),
       });
     },
-    [deckId]
+    [deckId, versionId]
   );
 
   // --- Set commander, for a card already in the deck ---
@@ -279,7 +283,7 @@ export function DeckBuilder({
         )
       );
 
-      const res = await fetch(`/api/decks/${deckId}/cards/${deckCardId}`, {
+      const res = await fetch(versionCardsUrl(deckId, versionId, deckCardId), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isCommander: true }),
@@ -294,7 +298,7 @@ export function DeckBuilder({
         });
       }
     },
-    [deckId, entries]
+    [deckId, versionId, entries]
   );
 
   // --- Step 1: choose the commander from search, card need not be in the deck ---
@@ -315,7 +319,7 @@ export function DeckBuilder({
       ]);
       setStep("potential");
 
-      const res = await fetch(`/api/decks/${deckId}/cards`, {
+      const res = await fetch(versionCardsUrl(deckId, versionId), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cardId: card.cardId, isCommander: true, slot: "main" }),
@@ -336,7 +340,7 @@ export function DeckBuilder({
         prev.map((e) => (e.deckCardId === tempId ? { ...e, deckCardId: realId } : e))
       );
     },
-    [deckId, entries, setCommander]
+    [deckId, versionId, entries, setCommander]
   );
 
   return (

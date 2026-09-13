@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireDeckAccess } from "@/lib/ownership";
+import { requireVersionAccess } from "@/lib/ownership";
+
+type Ctx = { params: Promise<{ id: string; versionId: string; deckCardId: string }> };
 
 /**
- * Every query here is scoped by BOTH deckCardId and deckId. The deck gate
- * establishes that the caller owns the deck in the URL; scoping by deckId is
- * what ties the row to that deck, so a deckCardId belonging to somebody else's
- * deck cannot be edited by pairing it with a deck you do own.
+ * Every query here is scoped by BOTH deckCardId and versionId. The gate
+ * establishes that the caller owns the version in the URL; scoping by versionId
+ * is what ties the row to that version, so a deckCardId belonging to somebody
+ * else's deck — or to another version of your own — cannot be edited by pairing
+ * it with a version you do own.
  */
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string; deckCardId: string }> }
-) {
-  const { id: deckId, deckCardId } = await params;
-  const access = await requireDeckAccess(deckId);
+export async function PATCH(req: Request, { params }: Ctx) {
+  const { id: deckId, versionId, deckCardId } = await params;
+  const access = await requireVersionAccess(deckId, versionId);
   if (access.response) return access.response;
 
   const { slot, isCommander } = await req.json();
@@ -29,13 +29,13 @@ export async function PATCH(
   // the commander always sits in the main slot.
   if (isCommander === true) {
     await prisma.deckCard.updateMany({
-      where: { deckId, isCommander: true },
+      where: { versionId, isCommander: true },
       data: { isCommander: false },
     });
   }
 
   const { count } = await prisma.deckCard.updateMany({
-    where: { id: deckCardId, deckId },
+    where: { id: deckCardId, versionId },
     data: {
       ...(slot !== undefined && { slot }),
       ...(isCommander !== undefined && { isCommander }),
@@ -44,7 +44,7 @@ export async function PATCH(
   });
   if (count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const updated = await prisma.deckCard.findFirst({ where: { id: deckCardId, deckId } });
+  const updated = await prisma.deckCard.findFirst({ where: { id: deckCardId, versionId } });
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json({
@@ -54,16 +54,13 @@ export async function PATCH(
   });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string; deckCardId: string }> }
-) {
-  const { id: deckId, deckCardId } = await params;
-  const access = await requireDeckAccess(deckId);
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const { id: deckId, versionId, deckCardId } = await params;
+  const access = await requireVersionAccess(deckId, versionId);
   if (access.response) return access.response;
 
   const existing = await prisma.deckCard.findFirst({
-    where: { id: deckCardId, deckId },
+    where: { id: deckCardId, versionId },
     select: { id: true, quantity: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });

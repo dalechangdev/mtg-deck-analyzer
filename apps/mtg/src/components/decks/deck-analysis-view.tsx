@@ -15,6 +15,7 @@ import {
 import { PotentialPool } from "./potential-pool";
 import { DeckSteps } from "./deck-steps";
 import { toastManager } from "@/lib/toast";
+import { versionCardsUrl } from "@/lib/deck-api";
 import {
   CardDetailModal,
   type CardDetail,
@@ -33,6 +34,8 @@ const STATUS_STYLE = {
 
 interface Props {
   deckId: string;
+  /** The version being scored. Role overrides and the template are deck-level. */
+  versionId: string;
   deckName: string;
   template: Template;
   templates: { id: string; name: string; isBuiltIn: boolean }[];
@@ -43,6 +46,7 @@ interface Props {
 
 export function DeckAnalysisView({
   deckId,
+  versionId,
   deckName,
   template,
   templates,
@@ -162,7 +166,7 @@ export function DeckAnalysisView({
         prev.map((e) => (e.deckCardId === deckCardId ? { ...e, slot } : e))
       );
 
-      const res = await fetch(`/api/decks/${deckId}/cards/${deckCardId}`, {
+      const res = await fetch(versionCardsUrl(deckId, versionId, deckCardId), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slot }),
@@ -177,7 +181,7 @@ export function DeckAnalysisView({
         });
       }
     },
-    [deckId, entries]
+    [deckId, versionId, entries]
   );
 
   const filledRolesByCard = useMemo(() => {

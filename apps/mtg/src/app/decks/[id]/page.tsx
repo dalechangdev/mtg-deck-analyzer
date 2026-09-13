@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { DeckBuilder } from "@/components/decks/deck-builder";
-import type { DeckEntry } from "@/lib/commander";
+import { resolveVersionId } from "@/lib/deck-version-loader";
+import { deckEntryInclude, deckEntryOrderBy, toDeckEntry } from "@/lib/deck-entry";
 
 export default async function DeckPage({
   params,
@@ -21,56 +22,36 @@ export default async function DeckPage({
     // another account's deck id resolves to notFound() rather than rendering.
     prisma.deck.findFirst({
       where: { id, userId },
-      include: {
-        themes: true,
-        cards: {
-          include: {
-            card: {
-              include: {
-                printings: { take: 1, orderBy: { setCode: "desc" } },
-                faces: { take: 1, orderBy: { faceIndex: "asc" } },
-                libraryEntries: { where: { userId }, take: 1 },
-              },
-            },
-          },
-          orderBy: [{ isCommander: "desc" }, { card: { name: "asc" } }],
-        },
-      },
+      include: { themes: true },
     }),
     prisma.deckTheme.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   if (!deck) notFound();
 
-  const entries: DeckEntry[] = deck.cards.map((dc) => {
-    const printing = dc.card.printings[0];
-    const imageUris = printing?.imageUris as Record<string, string> | null;
-    const imageUrl = imageUris?.normal ?? imageUris?.small ?? dc.card.faces[0]?.imageUri ?? null;
+  // Only after the ownership check above: resolveVersionId trusts its deckId.
+  const versionId = await resolveVersionId(id);
+  if (!versionId) notFound();
 
-    return {
-      deckCardId: dc.id,
-      isCommander: dc.isCommander,
-      quantity: dc.quantity,
-      slot: (dc.slot ?? "main") as "main" | "maybe" | "wishlist",
-      cardId: dc.card.id,
-      name: dc.card.name,
-      manaCost: dc.card.manaCost,
-      cmc: dc.card.cmc,
-      typeLine: dc.card.typeLine,
-      oracleText: dc.card.oracleText,
-      colorIdentity: dc.card.colorIdentity,
-      keywords: dc.card.keywords,
-      canBeCommander: dc.card.canBeCommander,
-      imageUrl,
-      ownedQuantity: dc.card.libraryEntries[0]?.quantity ?? 0,
-    };
+  const cards = await prisma.deckCard.findMany({
+    where: { versionId },
+    include: {
+      card: {
+        include: {
+          ...deckEntryInclude.card.include,
+          libraryEntries: { where: { userId }, take: 1 },
+        },
+      },
+    },
+    orderBy: deckEntryOrderBy,
   });
 
   return (
     <DeckBuilder
       deckId={id}
+      versionId={versionId}
       initialName={deck.name}
-      initialEntries={entries}
+      initialEntries={cards.map(toDeckEntry)}
       initialDescription={deck.description ?? ""}
       initialThemeIds={deck.themes.map((t) => t.id)}
       allThemes={allThemes}
