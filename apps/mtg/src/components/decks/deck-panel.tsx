@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { CATEGORY_ORDER, getCardCategory, validateDeck } from "@/lib/commander";
 import type { DeckEntry } from "@/lib/commander";
 import { CmcCompareModal } from "./cmc-compare-modal";
@@ -33,6 +33,7 @@ interface Props {
 export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCard, onAnnotate, maybeboardName, onMaybeboardNameChange, wishlistName, onWishlistNameChange }: Props) {
   const [groupBy, setGroupBy] = useState<"type" | "cmc">("type");
   const [comparingCmc, setComparingCmc] = useState<{ label: string; cards: DeckEntry[] } | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
 
   const validation = validateDeck(entries);
   const commander = entries.find((e) => e.isCommander);
@@ -56,6 +57,28 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
       .sort((a, b) => a.name.localeCompare(b.name));
     return acc;
   }, {} as Record<number, DeckEntry[]>);
+
+  // One list for both groupings, so collapse and rendering live in one place.
+  // Keys are shared across modes where the group is the same ("Lands").
+  const groups: { key: string; title: string; cards: DeckEntry[]; onCompare?: () => void }[] =
+    groupBy === "type"
+      ? CATEGORY_ORDER.map((cat) => ({ key: cat, title: cat, cards: grouped[cat] ?? [] }))
+      : [
+          ...[...CMC_BUCKETS, CMC_MAX].map((n) => {
+            const label = CMC_LABEL(n);
+            const cards = groupedByCmc[n] ?? [];
+            return { key: `cmc-${label}`, title: `CMC ${label}`, cards, onCompare: () => setComparingCmc({ label, cards }) };
+          }),
+          { key: "Lands", title: "Lands", cards: landMainCards },
+        ];
+
+  const toggleGroup = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const hasMaybe = maybeCards.length > 0;
   const hasWishlist = wishlistCards.length > 0;
@@ -148,88 +171,34 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
                 be the scroll container — with a fixed height, columns overflow
                 sideways instead of growing. */}
             <div className="columns-[14rem] gap-x-3">
-            {groupBy === "type"
-              ? CATEGORY_ORDER.map((cat) => {
-                  const cards = grouped[cat];
-                  if (!cards || cards.length === 0) return null;
-                  return (
-                    <section key={cat} className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
-                      <SectionHeader>
-                        {cat} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
-                      </SectionHeader>
-                      {cards.map((entry) => (
-                        <CardRow
-                          key={entry.deckCardId}
-                          entry={entry}
-                          onRemove={onRemove}
-                          isViolation={
-                            validation.colorViolations.includes(entry.cardId) ||
-                            validation.duplicates.includes(entry.cardId)
-                          }
-                          showCommanderToggle={entry.canBeCommander && !commander}
-                          onSetCommander={onSetCommander}
-                          onMoveCard={onMoveCard}
-                          onAnnotate={onAnnotate}
-                        />
-                      ))}
-                    </section>
-                  );
-                })
-              : <>
-                  {[...CMC_BUCKETS, CMC_MAX].map((n) => {
-                    const cards = groupedByCmc[n];
-                    if (!cards || cards.length === 0) return null;
-                    const label = CMC_LABEL(n);
-                    return (
-                      <section key={n} className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
-                        <SectionHeader
-                          className="cursor-pointer hover:bg-border transition-colors"
-                          onClick={() => setComparingCmc({ label, cards })}
-                          title="Click to compare cards at this CMC"
-                        >
-                          CMC {label} ({cards.reduce((sum, e) => sum + e.quantity, 0)})
-                        </SectionHeader>
-                        {cards.map((entry) => (
-                          <CardRow
-                            key={entry.deckCardId}
-                            entry={entry}
-                            onRemove={onRemove}
-                            isViolation={
-                              validation.colorViolations.includes(entry.cardId) ||
-                              validation.duplicates.includes(entry.cardId)
-                            }
-                            showCommanderToggle={entry.canBeCommander && !commander}
-                            onSetCommander={onSetCommander}
-                            onMoveCard={onMoveCard}
-                            onAnnotate={onAnnotate}
-                          />
-                        ))}
-                      </section>
-                    );
-                  })}
-                  {landMainCards.length > 0 && (
-                    <section className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
-                      <SectionHeader>
-                        Lands ({landMainCards.reduce((sum, e) => sum + e.quantity, 0)})
-                      </SectionHeader>
-                      {landMainCards.map((entry) => (
-                        <CardRow
-                          key={entry.deckCardId}
-                          entry={entry}
-                          onRemove={onRemove}
-                          isViolation={
-                            validation.colorViolations.includes(entry.cardId) ||
-                            validation.duplicates.includes(entry.cardId)
-                          }
-                          showCommanderToggle={entry.canBeCommander && !commander}
-                          onSetCommander={onSetCommander}
-                          onMoveCard={onMoveCard}
-                          onAnnotate={onAnnotate}
-                        />
-                      ))}
-                    </section>
-                  )}
-                </>}
+              {groups.map(({ key, title, cards, onCompare }) =>
+                cards.length === 0 ? null : (
+                  <CardGroup
+                    key={key}
+                    title={title}
+                    count={cards.reduce((sum, e) => sum + e.quantity, 0)}
+                    collapsed={collapsed.has(key)}
+                    onToggle={() => toggleGroup(key)}
+                    onCompare={onCompare}
+                  >
+                    {cards.map((entry) => (
+                      <CardRow
+                        key={entry.deckCardId}
+                        entry={entry}
+                        onRemove={onRemove}
+                        isViolation={
+                          validation.colorViolations.includes(entry.cardId) ||
+                          validation.duplicates.includes(entry.cardId)
+                        }
+                        showCommanderToggle={entry.canBeCommander && !commander}
+                        onSetCommander={onSetCommander}
+                        onMoveCard={onMoveCard}
+                        onAnnotate={onAnnotate}
+                      />
+                    ))}
+                  </CardGroup>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -309,6 +278,58 @@ export function DeckPanel({ deckId, entries, onRemove, onSetCommander, onMoveCar
 
       </div>
     </div>
+  );
+}
+
+function CardGroup({
+  title,
+  count,
+  collapsed,
+  onToggle,
+  onCompare,
+  children,
+}: {
+  title: string;
+  count: number;
+  collapsed: boolean;
+  onToggle: () => void;
+  onCompare?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mb-2 break-inside-avoid rounded-md border border-border/60 overflow-hidden">
+      {/* The whole band is the toggle; Compare is a sibling button, not nested
+          inside it, so it stays a valid, separately focusable control. */}
+      <SectionHeader className={cn("p-0 gap-0", collapsed && "border-b-0")}>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+          className="flex flex-1 min-w-0 items-center gap-1.5 px-3 py-1.5 text-left uppercase tracking-wider hover:bg-border transition-colors"
+        >
+          <span
+            aria-hidden
+            className={cn("inline-block w-2.5 text-center transition-transform", !collapsed && "rotate-90")}
+          >
+            ▸
+          </span>
+          <span className="truncate">
+            {title} ({count})
+          </span>
+        </button>
+        {onCompare && (
+          <button
+            type="button"
+            onClick={onCompare}
+            title="Compare cards at this CMC"
+            className="self-stretch px-2.5 text-micro font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-border transition-colors"
+          >
+            Compare
+          </button>
+        )}
+      </SectionHeader>
+      {!collapsed && children}
+    </section>
   );
 }
 
