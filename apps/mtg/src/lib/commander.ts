@@ -13,6 +13,11 @@ export type CardData = {
   // Split/adventure/MDFC text, which the card-level oracleText leaves empty.
   // Classifiers read it; omit it and those cards classify as blank.
   faces?: { typeLine: string; oracleText: string | null }[];
+  // Scryfall produced_mana and layout, for the land base matrix. Optional like
+  // `faces`: loaders that don't read them leave them out, and the land
+  // detectors fall back to oracle text / face type lines.
+  producedMana?: string[];
+  layout?: string | null;
 };
 
 export type DeckEntry = CardData & {

@@ -9,10 +9,11 @@ import { classifierText, isBasicLand, type CardData } from "@/lib/commander";
 import { COLOR_ORDER } from "@/lib/mtg-styles";
 
 /**
- * `producedMana` and `layout` are optional so a row loaded before those columns
- * existed still classifies; a null `layout` falls back to reading the faces.
+ * A card as the land detectors read it. `producedMana` and `layout` are optional
+ * on `CardData`, so a row loaded without them still classifies; a null `layout`
+ * falls back to reading the faces.
  */
-export type LandCard = CardData & { producedMana?: string[]; layout?: string | null };
+export type LandCard = CardData;
 
 export type ManaColumn = "W" | "U" | "B" | "R" | "G" | "C" | "any";
 
@@ -160,6 +161,11 @@ export function landColours(land: LandCard, identity: readonly string[]): Set<Ma
   return columns;
 }
 
+/** Searches your library for a land — the `fetch` row. */
+export function isFetch(land: LandCard): boolean {
+  return fetchTarget(landText(land)) !== null;
+}
+
 type Ability = { cost: string; effect: string };
 
 /** Every "cost: effect" line — mana abilities and channel costs included. */
@@ -247,7 +253,7 @@ export const LAND_CAPABILITIES: LandCapability[] = [
     group: "utility",
     label: "Fetch",
     description: "Searches your library for a land.",
-    test: (land) => fetchTarget(landText(land)) !== null,
+    test: isFetch,
   },
   {
     id: "sac-outlet",

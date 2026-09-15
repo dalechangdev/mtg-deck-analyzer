@@ -36,6 +36,9 @@ type DeckCardRow = {
     colorIdentity: string[];
     keywords: string[];
     canBeCommander: boolean;
+    /** Present whenever the query reads every Card column (`include`, not `select`). */
+    producedMana?: string[];
+    layout?: string | null;
     printings: { imageUris: unknown }[];
     faces: { imageUri: string | null }[];
     /** Include it filtered to the viewer (`where: { userId }`) to get ownedQuantity. */
@@ -59,6 +62,9 @@ export function toDeckEntry(dc: DeckCardRow): DeckEntry {
     keywords: dc.card.keywords,
     canBeCommander: dc.card.canBeCommander,
     imageUrl: toImageUrl(dc.card.printings, dc.card.faces),
+    // The land base matrix reads these; loaders that `select` fewer columns omit them.
+    ...(dc.card.producedMana && { producedMana: dc.card.producedMana }),
+    ...(dc.card.layout !== undefined && { layout: dc.card.layout }),
     ...(dc.card.libraryEntries && {
       ownedQuantity: dc.card.libraryEntries[0]?.quantity ?? 0,
     }),

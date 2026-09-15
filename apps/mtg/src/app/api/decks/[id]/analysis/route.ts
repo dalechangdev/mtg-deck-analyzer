@@ -6,6 +6,7 @@ import {
   resolveTemplateId,
 } from "@/lib/deck-template-loader";
 import { evaluateTemplate } from "@/lib/deck-template";
+import { analyzeLandBase } from "@/lib/land-base";
 import { requireDeckAccess } from "@/lib/ownership";
 import { resolveVersionId } from "@/lib/deck-version-loader";
 
@@ -18,6 +19,9 @@ type Ctx = { params: Promise<{ id: string }> };
  * stale scorecard behind. Falls back to the deck's attached template, then to
  * the built-in baseline; and to the deck's current version. A versionId that
  * isn't a version of this deck answers 404.
+ *
+ * Also returns `landBase`, the land base matrix for the same version. It doesn't
+ * depend on the template or on `includeCommander`.
  */
 export async function GET(req: Request, { params }: Ctx) {
   const { id } = await params;
@@ -52,5 +56,8 @@ export async function GET(req: Request, { params }: Ctx) {
     typeLine: e.typeLine,
   }));
 
-  return NextResponse.json({ analysis, cards });
+  // Counted from the entries already loaded, so the matrix costs no extra query.
+  const landBase = analyzeLandBase(entries);
+
+  return NextResponse.json({ analysis, cards, landBase });
 }

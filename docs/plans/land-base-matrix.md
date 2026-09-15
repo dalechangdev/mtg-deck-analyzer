@@ -11,8 +11,8 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 |---|---|---|
 | 1 | `Card.producedMana` column, migration, sync + every Card writer, re-sync | done (applied locally, uncommitted) |
 | 2 | `src/lib/land-capabilities.ts` detectors + fixture tests | done (`45818e4`) |
-| 2b | `Card.layout` column + re-sync; transform cards aren't MDFCs or land drops | done (applied locally, uncommitted) |
-| 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | not started |
+| 2b | `Card.layout` column + re-sync; transform cards aren't MDFCs or land drops | done (`5e4fb70`) |
+| 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | done (uncommitted) |
 | 4 | `LandBaseMatrix` component, wired into `deck-analysis-view.tsx` | not started |
 | 5 | Signed-in browser check against real decks | not started |
 
@@ -116,6 +116,47 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
   34 → 30, draw 69 → 60, any-colour 144 → 132, fetch 55 → 54, creature-land
   50 → 49, activated 505 → 481. Layouts among lands: normal 1,090, modal_dfc 60,
   adventure 5, transform 4 (land fronts, e.g. Westvale Abbey), meld 2, saga 1.
+
+### Step 3 notes
+
+- `src/lib/land-base.ts` — `analyzeLandBase(entries: DeckEntry[])`, pure, shapes as
+  designed below with one change: **`LandBaseRow.total` is a `LandBaseCell`**
+  (count + cardIds), not a number, so step 4 can make a row total clickable like a
+  cell.
+- Identity = union of every `isCommander` entry's identity (partners and
+  backgrounds), in WUBRG order; with no commander, the counted lands' identities.
+  Counts `slot === "main"`, not the commander, `isLand` only, weighted by quantity.
+  Not-applicable cells live in one `NOT_APPLICABLE` map (only `basic × any`).
+- `producesNothingIds` judges colours against all five, not the identity, so an
+  off-colour land isn't reported as producing nothing. `isFetch` is now exported
+  from `land-capabilities.ts` for it (the `fetch` row uses it too).
+- Plumbing: `CardData` gains optional `producedMana` / `layout`, so `LandCard` is now
+  just an alias of `CardData`. `DeckCardRow.card` gains them optionally and
+  `toDeckEntry` passes them through when present — every loader built on
+  `include` gets them; a `select` that omits them still typechecks.
+  `loadDeckCards` needed no change.
+- `GET /api/decks/[id]/analysis` returns `landBase` alongside `analysis` and
+  `cards`, from the entries it already loads — no extra query, same
+  `requireDeckAccess` → `resolveVersionId` path. Independent of `templateId` and
+  `includeCommander`.
+- Tests: `test/land-base.test.ts`, 12 cases over the fixture lands (dual counted in
+  both columns but once in its total, quantity weighting, maybe/wishlist/commander/
+  non-land excluded, transform land-back excluded, off-identity dropped, `basic ×
+  any` absent, colourless commander, no-commander identity, oracle fallback,
+  produces-nothing, row order at zero).
+- **Real decks** (script over every local deck's current version, not committed):
+  every loaded entry carried both fields. Initial Dina (BG, 36 lands): sources B 26,
+  G 25, C 5, any 17. Rick Roll (UBR, 35): U 15, B 20, R 15. Limitless Ashling
+  (WUBRG, 40): W 14, U 16, B 14, R 16, G 26; produces nothing: Ancient Ziggurat
+  (restricted mana only) — as expected.
+- **For step 4:** in a two-colour deck the `multi` and `any-colour` rows are
+  always identical (17 / 17 in Initial Dina) — "covers the identity" and "makes 2+
+  of its colours" coincide. Consider hiding `any-colour` when `identity.length <= 2`.
+- **Not exercised over HTTP:** port 3000 is occupied by a different app
+  (`next-server v14.2.35`, cdr-fyi), not this Next 16 deck builder, so the route
+  change is covered by `tsc` and the loader script only. Step 5's signed-in check
+  should hit it.
+- Verified: `pnpm test` 76/76, `tsc` 0, ESLint clean on touched files.
 
 ## Decisions
 
