@@ -16,6 +16,7 @@ function upsertCard(card: ScryfallCard) {
     colorIdentity: card.color_identity ?? [],
     keywords: card.keywords ?? [],
     producedMana: card.produced_mana ?? [],
+    layout: card.layout ?? null,
     power: card.power ?? null,
     toughness: card.toughness ?? null,
     loyalty: card.loyalty ?? null,

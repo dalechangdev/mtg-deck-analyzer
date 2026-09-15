@@ -8,8 +8,11 @@
 import { classifierText, isBasicLand, type CardData } from "@/lib/commander";
 import { COLOR_ORDER } from "@/lib/mtg-styles";
 
-/** `producedMana` is optional so a row loaded before the column existed still classifies. */
-export type LandCard = CardData & { producedMana?: string[] };
+/**
+ * `producedMana` and `layout` are optional so a row loaded before those columns
+ * existed still classifies; a null `layout` falls back to reading the faces.
+ */
+export type LandCard = CardData & { producedMana?: string[]; layout?: string | null };
 
 export type ManaColumn = "W" | "U" | "B" | "R" | "G" | "C" | "any";
 
@@ -31,12 +34,20 @@ export type LandCapability = {
 // "Island" contains "land" but not as a word, so this can't mistake a type for the supertype.
 const LAND_WORD = /\bland\b/i;
 
+// Layouts whose back face only exists once the front has flipped or transformed —
+// you can't play the back as a land drop.
+const FRONT_FACE_LAYOUTS = new Set(["transform", "flip", "meld"]);
+
 /**
- * Whether any face is a land, so spell // land MDFCs count. There is no stored
- * layout, so a transform card with a land back (Growing Rites of Itlimoc)
- * counts too.
+ * Whether the card can be played as a land. A modal DFC counts if either face
+ * is a land (Emeria's Call); a transform card only if its front is (Westvale
+ * Abbey yes, Growing Rites of Itlimoc no). With no layout synced yet, any land
+ * face counts.
  */
-export function isLand(card: CardData): boolean {
+export function isLand(card: LandCard): boolean {
+  if (card.layout && FRONT_FACE_LAYOUTS.has(card.layout)) {
+    return LAND_WORD.test(card.typeLine.split(" // ")[0]);
+  }
   return LAND_WORD.test(card.typeLine) || (card.faces?.some((f) => LAND_WORD.test(f.typeLine)) ?? false);
 }
 
@@ -256,8 +267,10 @@ export const LAND_CAPABILITIES: LandCapability[] = [
     id: "mdfc",
     group: "other",
     label: "MDFC",
-    description: "Double-faced, with a land on one side and a spell on the other.",
+    description: "Modal double-faced, with a land on one side and a spell on the other.",
     test: (land) => {
+      // Transform cards have a land face too; only the layout tells them apart.
+      if (land.layout && land.layout !== "modal_dfc") return false;
       const faces = land.faces ?? [];
       return (
         faces.length >= 2 &&

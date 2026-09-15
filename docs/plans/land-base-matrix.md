@@ -10,7 +10,8 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 | Step | Scope | State |
 |---|---|---|
 | 1 | `Card.producedMana` column, migration, sync + every Card writer, re-sync | done (applied locally, uncommitted) |
-| 2 | `src/lib/land-capabilities.ts` detectors + fixture tests | done (uncommitted) |
+| 2 | `src/lib/land-capabilities.ts` detectors + fixture tests | done (`45818e4`) |
+| 2b | `Card.layout` column + re-sync; transform cards aren't MDFCs or land drops | done (applied locally, uncommitted) |
 | 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | not started |
 | 4 | `LandBaseMatrix` component, wired into `deck-analysis-view.tsx` | not started |
 | 5 | Signed-in browser check against real decks | not started |
@@ -81,12 +82,40 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
   cycling 50; 25 lands with no colours and no fetch, all genuine (Maze of Ith,
   Vesuva, Dark Depths, restricted-only mana). Spot-read every unfamiliar name in
   activated / draw / sac-outlet / any-colour.
-- **Open — transform DFCs.** Without Scryfall's `layout`, a transform card with a
-  land back (Growing Rites of Itlimoc, Westvale Abbey, the Ixalan flip lands,
-  the LCI Ojer gods) is indistinguishable from a spell // land MDFC: it passes
-  `isLand` and the `mdfc` row (~35 of its 90). Fix is a `Card.layout` column the
-  same way as step 1; needs a decision before step 3.
+- **Transform DFCs** were indistinguishable from spell // land MDFCs without
+  Scryfall's `layout` (Growing Rites of Itlimoc, Westvale Abbey, the Ixalan flip
+  lands, the LCI Ojer gods): they passed `isLand` and the `mdfc` row. Resolved by
+  step 2b below.
 - Verified: `pnpm test` 61/61, `tsc` 0, ESLint clean on touched files.
+  Committed as `45818e4`.
+
+### Step 2b notes — `Card.layout`
+
+- Decided after step 2 to fix transform cards rather than accept the limitation.
+- `layout String?` on `Card`, **nullable on purpose**: `@default("normal")` would
+  make an unsynced transform card look like a normal one; null means "unknown" and
+  keeps the face heuristic. `layout: string` on `ScryfallCard`; `layout` in `base`
+  in both Card writers (sync-cards, library import).
+- Migration `20260915120000_add_card_layout`, hand-written and applied with
+  `migrate deploy` like step 1's. No GRANT (table-level grants).
+- `land-capabilities.ts`: `LandCard` gains `layout?: string | null`.
+  `isLand` — for `transform` / `flip` / `meld` only the front face's type line
+  counts (Westvale Abbey is a land, Growing Rites of Itlimoc isn't); otherwise any
+  land face, as before. `mdfc` — false whenever `layout` is known and isn't
+  `modal_dfc`; the face heuristic still applies to unsynced rows.
+- Tests: Westvale Abbey (transform, land front: sac outlet, not MDFC) and Growing
+  Rites of Itlimoc (transform, land back: not a land) added as fixtures, plus the
+  null-layout fallback for both.
+- Re-sync (`NODE_OPTIONS=--max-old-space-size=8192`): `Done. 107566 cards
+  upserted, 10398 skipped`, no OOM. Every commander-legal land has a layout.
+- **Corpus after layout:** 1,162 lands (was 1,194). The 32 dropped are all
+  `transform` cards whose land is the back face — Growing Rites of Itlimoc, the
+  Ixalan flip lands, the LCI Ojer gods, Treasure Map, Legion's Landing…
+  `mdfc` 90 → 50, every one a real spell // land modal DFC (Land // Land pathways
+  stay out). The other rows lost only those same transform cards: sac-outlet
+  34 → 30, draw 69 → 60, any-colour 144 → 132, fetch 55 → 54, creature-land
+  50 → 49, activated 505 → 481. Layouts among lands: normal 1,090, modal_dfc 60,
+  adventure 5, transform 4 (land fronts, e.g. Westvale Abbey), meld 2, saga 1.
 
 ## Decisions
 

@@ -22,6 +22,10 @@ model Card {
   // "produces nothing" and for rows synced before this column existed — the
   // land analysis falls back to oracle text when it's empty.
   producedMana     String[] @default([])
+  // Scryfall layout: "normal", "modal_dfc", "transform", "split", "adventure", …
+  // Null until the row is next synced. The only way to tell a spell // land
+  // MDFC (a land drop) from a transform card with a land back (not one).
+  layout           String?
   power            String?
   toughness        String?
   loyalty          String?

@@ -82,10 +82,15 @@ const EXPECTED: Record<string, string[]> = {
   "Multiversal Passage": ["nonbasic", "multi", "any-colour", "conditional"],
   "Bridgeworks Battle // Tanglespan Bridgeworks": ["nonbasic", "conditional", "mdfc"],
   "Barkchannel Pathway // Tidechannel Pathway": ["nonbasic", "multi"],
+  // Transform, not modal: a land face, but not an MDFC.
+  "Westvale Abbey // Ormendahl, Profane Prince": ["nonbasic", "sac-outlet", "activated"],
 };
 
+// Fixtures that are deliberately not lands — isLand must reject them.
+const NOT_LANDS = ["Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun"];
+
 test("every fixture has an expectation", () => {
-  assert.deepEqual(Object.keys(EXPECTED).sort(), Object.keys(LANDS).sort());
+  assert.deepEqual([...Object.keys(EXPECTED), ...NOT_LANDS].sort(), Object.keys(LANDS).sort());
 });
 
 for (const [name, expected] of Object.entries(EXPECTED)) {
@@ -125,10 +130,28 @@ test("isBasicLand: the Basic supertype, not a basic land type", () => {
   assert.equal(isBasicLand("Sorcery // Land"), false);
 });
 
-test("isLand: any land face counts, other cards don't", () => {
-  assert.equal(isLand(land("Plains")), true);
-  assert.equal(isLand(land("Bridgeworks Battle // Tanglespan Bridgeworks")), true);
+test("isLand: every fixture in EXPECTED is a land, every NOT_LANDS one isn't", () => {
+  for (const name of Object.keys(EXPECTED)) assert.equal(isLand(land(name)), true, name);
+  for (const name of NOT_LANDS) assert.equal(isLand(land(name)), false, name);
   assert.equal(isLand({ ...land("Plains"), typeLine: "Artifact", faces: undefined }), false);
+});
+
+test("isLand: a modal DFC counts by either face, a transform card by its front", () => {
+  assert.equal(land("Bridgeworks Battle // Tanglespan Bridgeworks").layout, "modal_dfc");
+  assert.equal(land("Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun").layout, "transform");
+  assert.equal(land("Westvale Abbey // Ormendahl, Profane Prince").layout, "transform");
+  // Before layout is synced, any land face counts — the old behaviour.
+  const unsynced = { ...land("Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun"), layout: null };
+  assert.equal(isLand(unsynced), true);
+});
+
+test("mdfc: needs the modal_dfc layout once layout is known", () => {
+  const abbey = land("Westvale Abbey // Ormendahl, Profane Prince");
+  const mdfc = LAND_CAPABILITIES.find((c) => c.id === "mdfc")!;
+  assert.equal(mdfc.test(abbey, landColours(abbey, WUBRG)), false);
+  // The face heuristic alone would have called it one.
+  const unsynced = { ...abbey, layout: null };
+  assert.equal(mdfc.test(unsynced, landColours(unsynced, WUBRG)), true);
 });
 
 test("landColours: off-identity colours are dropped", () => {

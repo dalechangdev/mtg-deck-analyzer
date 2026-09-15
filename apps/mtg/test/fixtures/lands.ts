@@ -1,7 +1,7 @@
 /**
  * Real Card/CardFace rows for the land capability tests, exported from the local
- * database after the produced_mana re-sync (2026-09-15). The tests assert
- * against this exact oracle text, so update a fixture by hand if Scryfall
+ * database after the produced_mana and layout re-syncs (2026-09-15). The tests
+ * assert against this exact oracle text, so update a fixture by hand if Scryfall
  * rewords a card.
  */
 
@@ -26,6 +26,7 @@ export const LANDS: Record<string, LandCard> = {
       "G",
       "U"
     ],
+    "layout": "modal_dfc",
     "faces": [
       {
         "typeLine": "Land",
@@ -50,7 +51,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "C"
-    ]
+    ],
+    "layout": "normal"
   },
   "Bojuka Bog": {
     "cardId": "bojuka-bog",
@@ -67,7 +69,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "B"
-    ]
+    ],
+    "layout": "normal"
   },
   "Boseiju, Who Endures": {
     "cardId": "boseiju-who-endures",
@@ -86,7 +89,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "G"
-    ]
+    ],
+    "layout": "normal"
   },
   "Bridgeworks Battle // Tanglespan Bridgeworks": {
     "cardId": "bridgeworks-battle-tanglespan-bridgeworks",
@@ -106,6 +110,7 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "G"
     ],
+    "layout": "modal_dfc",
     "faces": [
       {
         "typeLine": "Sorcery",
@@ -128,7 +133,8 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
   "Castle Doom": {
     "cardId": "castle-doom",
@@ -148,7 +154,8 @@ export const LANDS: Record<string, LandCard> = {
       "R",
       "U",
       "W"
-    ]
+    ],
+    "layout": "normal"
   },
   "Castle Vantress": {
     "cardId": "castle-vantress",
@@ -167,7 +174,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "U"
-    ]
+    ],
+    "layout": "normal"
   },
   "City of Brass": {
     "cardId": "city-of-brass",
@@ -186,7 +194,8 @@ export const LANDS: Record<string, LandCard> = {
       "R",
       "U",
       "W"
-    ]
+    ],
+    "layout": "normal"
   },
   "Command Tower": {
     "cardId": "command-tower",
@@ -205,7 +214,8 @@ export const LANDS: Record<string, LandCard> = {
       "R",
       "U",
       "W"
-    ]
+    ],
+    "layout": "normal"
   },
   "Deserted Temple": {
     "cardId": "deserted-temple",
@@ -220,7 +230,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "C"
-    ]
+    ],
+    "layout": "normal"
   },
   "Dwarven Mine": {
     "cardId": "dwarven-mine",
@@ -237,7 +248,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "R"
-    ]
+    ],
+    "layout": "normal"
   },
   "Evolving Wilds": {
     "cardId": "evolving-wilds",
@@ -250,7 +262,8 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
   "Fetid Pools": {
     "cardId": "fetid-pools",
@@ -271,7 +284,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "B",
       "U"
-    ]
+    ],
+    "layout": "normal"
   },
   "Glacial Fortress": {
     "cardId": "glacial-fortress",
@@ -290,6 +304,37 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "U",
       "W"
+    ],
+    "layout": "normal"
+  },
+  "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun": {
+    "cardId": "growing-rites-of-itlimoc-itlimoc-cradle-of-the-sun",
+    "name": "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun",
+    "manaCost": null,
+    "cmc": 0,
+    "typeLine": "Legendary Enchantment // Legendary Land",
+    "oracleText": null,
+    "colorIdentity": [
+      "G"
+    ],
+    "keywords": [
+      "Transform"
+    ],
+    "canBeCommander": false,
+    "imageUrl": null,
+    "producedMana": [
+      "G"
+    ],
+    "layout": "transform",
+    "faces": [
+      {
+        "typeLine": "Legendary Enchantment",
+        "oracleText": "When Growing Rites of Itlimoc enters, look at the top four cards of your library. You may reveal a creature card from among them and put it into your hand. Put the rest on the bottom of your library in any order.\nAt the beginning of your end step, if you control four or more creatures, transform Growing Rites of Itlimoc."
+      },
+      {
+        "typeLine": "Legendary Land",
+        "oracleText": "(Transforms from Growing Rites of Itlimoc.)\n{T}: Add {G}.\n{T}: Add {G} for each creature you control."
+      }
     ]
   },
   "Haven of the Spirit Dragon": {
@@ -310,7 +355,8 @@ export const LANDS: Record<string, LandCard> = {
       "R",
       "U",
       "W"
-    ]
+    ],
+    "layout": "normal"
   },
   "High Market": {
     "cardId": "high-market",
@@ -325,7 +371,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "C"
-    ]
+    ],
+    "layout": "normal"
   },
   "Kyoshi Village": {
     "cardId": "kyoshi-village",
@@ -344,7 +391,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "G",
       "W"
-    ]
+    ],
+    "layout": "normal"
   },
   "Maze of Ith": {
     "cardId": "maze-of-ith",
@@ -357,7 +405,8 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
   "Mikokoro, Center of the Sea": {
     "cardId": "mikokoro-center-of-the-sea",
@@ -372,7 +421,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "C"
-    ]
+    ],
+    "layout": "normal"
   },
   "Mount Doom": {
     "cardId": "mount-doom",
@@ -391,7 +441,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "B",
       "R"
-    ]
+    ],
+    "layout": "normal"
   },
   "Multiversal Passage": {
     "cardId": "multiversal-passage",
@@ -404,7 +455,8 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
   "Mutavault": {
     "cardId": "mutavault",
@@ -419,7 +471,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "C"
-    ]
+    ],
+    "layout": "normal"
   },
   "Mystic Sanctuary": {
     "cardId": "mystic-sanctuary",
@@ -436,7 +489,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "U"
-    ]
+    ],
+    "layout": "normal"
   },
   "Overgrown Tomb": {
     "cardId": "overgrown-tomb",
@@ -455,7 +509,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "B",
       "G"
-    ]
+    ],
+    "layout": "normal"
   },
   "Phyrexian Tower": {
     "cardId": "phyrexian-tower",
@@ -473,7 +528,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "B",
       "C"
-    ]
+    ],
+    "layout": "normal"
   },
   "Plains": {
     "cardId": "plains",
@@ -490,7 +546,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "W"
-    ]
+    ],
+    "layout": "normal"
   },
   "Prismatic Vista": {
     "cardId": "prismatic-vista",
@@ -503,7 +560,8 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
   "Reliquary Tower": {
     "cardId": "reliquary-tower",
@@ -518,7 +576,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "C"
-    ]
+    ],
+    "layout": "normal"
   },
   "Snow-Covered Forest": {
     "cardId": "snow-covered-forest",
@@ -535,7 +594,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "G"
-    ]
+    ],
+    "layout": "normal"
   },
   "Spirebluff Canal": {
     "cardId": "spirebluff-canal",
@@ -554,7 +614,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "R",
       "U"
-    ]
+    ],
+    "layout": "normal"
   },
   "Sunken Hollow": {
     "cardId": "sunken-hollow",
@@ -573,7 +634,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "B",
       "U"
-    ]
+    ],
+    "layout": "normal"
   },
   "Temple Garden": {
     "cardId": "temple-garden",
@@ -592,7 +654,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "G",
       "W"
-    ]
+    ],
+    "layout": "normal"
   },
   "Temple of Malady": {
     "cardId": "temple-of-malady",
@@ -613,7 +676,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "B",
       "G"
-    ]
+    ],
+    "layout": "normal"
   },
   "Thran Portal": {
     "cardId": "thran-portal",
@@ -626,7 +690,8 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
   "Tranquil Thicket": {
     "cardId": "tranquil-thicket",
@@ -645,7 +710,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "G"
-    ]
+    ],
+    "layout": "normal"
   },
   "Treetop Village": {
     "cardId": "treetop-village",
@@ -662,7 +728,8 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "G"
-    ]
+    ],
+    "layout": "normal"
   },
   "Vesuva": {
     "cardId": "vesuva",
@@ -675,7 +742,8 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
   "Volatile Fjord": {
     "cardId": "volatile-fjord",
@@ -694,7 +762,8 @@ export const LANDS: Record<string, LandCard> = {
     "producedMana": [
       "R",
       "U"
-    ]
+    ],
+    "layout": "normal"
   },
   "Wastes": {
     "cardId": "wastes",
@@ -709,6 +778,41 @@ export const LANDS: Record<string, LandCard> = {
     "imageUrl": null,
     "producedMana": [
       "C"
+    ],
+    "layout": "normal"
+  },
+  "Westvale Abbey // Ormendahl, Profane Prince": {
+    "cardId": "westvale-abbey-ormendahl-profane-prince",
+    "name": "Westvale Abbey // Ormendahl, Profane Prince",
+    "manaCost": null,
+    "cmc": 0,
+    "typeLine": "Land // Legendary Creature — Demon",
+    "oracleText": null,
+    "colorIdentity": [
+      "B"
+    ],
+    "keywords": [
+      "Flying",
+      "Lifelink",
+      "Indestructible",
+      "Transform",
+      "Haste"
+    ],
+    "canBeCommander": false,
+    "imageUrl": null,
+    "producedMana": [
+      "C"
+    ],
+    "layout": "transform",
+    "faces": [
+      {
+        "typeLine": "Land",
+        "oracleText": "{T}: Add {C}.\n{5}, {T}, Pay 1 life: Create a 1/1 white and black Human Cleric creature token.\n{5}, {T}, Sacrifice five creatures: Transform this land, then untap it."
+      },
+      {
+        "typeLine": "Legendary Creature — Demon",
+        "oracleText": "Flying, lifelink, indestructible, haste"
+      }
     ]
   },
   "Windswept Heath": {
@@ -722,6 +826,7 @@ export const LANDS: Record<string, LandCard> = {
     "keywords": [],
     "canBeCommander": false,
     "imageUrl": null,
-    "producedMana": []
+    "producedMana": [],
+    "layout": "normal"
   },
 };
