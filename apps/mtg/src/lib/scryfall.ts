@@ -12,6 +12,8 @@ export interface ScryfallCard {
   colors?: string[];
   color_identity: string[];
   keywords: string[];
+  /** Omitted by Scryfall when the card adds no mana. */
+  produced_mana?: string[];
   power?: string;
   toughness?: string;
   loyalty?: string;

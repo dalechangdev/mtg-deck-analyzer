@@ -18,6 +18,10 @@ model Card {
   colors           String[]
   colorIdentity    String[] // WUBRG subset — drives Commander legality checks
   keywords         String[]
+  // Scryfall produced_mana: WUBRG/C symbols the card can add. Empty both for
+  // "produces nothing" and for rows synced before this column existed — the
+  // land analysis falls back to oracle text when it's empty.
+  producedMana     String[] @default([])
   power            String?
   toughness        String?
   loyalty          String?

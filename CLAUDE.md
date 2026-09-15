@@ -50,7 +50,7 @@ Two apps that share one scraping core. There is no deployment config in the repo
 - `docs/DATA-MODEL.md`, `docs/RATE_LIMITING.md` — the reasoning behind the restock schema and crawl budgets.
 - `docs/plans/` — one Markdown file per multi-step feature: the design decision, the steps, and a
   status table. Write the plan there before starting, keep the status table current as steps land,
-  and read the relevant plan before resuming work on a feature. Active: `deck-versions.md`.
+  and read the relevant plan before resuming work on a feature. Active: `deck-versions.md`, `land-base-matrix.md`.
 
 ## Architecture invariants
 
