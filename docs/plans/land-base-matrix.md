@@ -10,7 +10,7 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 | Step | Scope | State |
 |---|---|---|
 | 1 | `Card.producedMana` column, migration, sync + every Card writer, re-sync | done (applied locally, uncommitted) |
-| 2 | `src/lib/land-capabilities.ts` detectors + fixture tests | not started |
+| 2 | `src/lib/land-capabilities.ts` detectors + fixture tests | done (uncommitted) |
 | 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | not started |
 | 4 | `LandBaseMatrix` component, wired into `deck-analysis-view.tsx` | not started |
 | 5 | Signed-in browser check against real decks | not started |
@@ -47,6 +47,46 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
   Fjord `{R,U}` and Tanglespan Bridgeworks `{G}` — both were only missing because
   the first run crashed. Totals: 2,500 cards with `producedMana`, 51 lands without,
   31,914 cards.
+
+### Step 2 notes
+
+- `src/lib/land-capabilities.ts`: `isLand`, `landColours(land, identity)`,
+  `LAND_CAPABILITIES` (13 rows, `test(land, colours)`), `MANA_COLUMN_ORDER`,
+  `LandCard = CardData & { producedMana? }`. Detectors read `landText` —
+  `classifierText` with the card's own name replaced by "this land" (Mount Doom
+  still names itself). Mana parsing reads `manaText`, which keeps reminder text
+  (Volatile Fjord's only mana ability is reminder text).
+- **`any` rule refined** from "covers every identity colour": a land is `any` when
+  it is *flexible* — all five colours, "choose a basic land type", or an untyped
+  fetch — or, in a 2+ colour identity, produces every identity colour. Without
+  the 2+ guard every Forest was `any` in a mono-green deck.
+- **Restricted mana ignored.** Scryfall lists Castle Doom, Cavern of Souls, Pillar
+  of the Paruns etc. as all five colours; any line with "spend this mana only" is
+  dropped and colours come from the remaining oracle text. Moved 32 lands out of
+  `any` and 5 (Mishra's Workshop, Ancient Ziggurat…) to "no colours" — all checked.
+- **Bug fixed in the shared `isBasicLand`** (`src/lib/commander.ts`): it matched a
+  single basic land *type*, so 12 non-basics — Mystic Sanctuary, Dwarven Mine,
+  Witch's Cottage… — counted as basic. That also let the builder
+  (`deck-builder.tsx`, `builder-view.tsx`, `search-panel.tsx`) and `validateDeck`
+  accept duplicates of those singleton lands. Now it tests the Basic supertype.
+- Sac outlet = an activated cost sacrificing anything but the land alone
+  (`this land` / `it`, unless followed by "and …"). Enumerating count words missed
+  Westvale Abbey's "five creatures"; a first cut of the negative form caught
+  Hellion Crucible's "sacrifice it".
+- Tests: `test/land-capabilities.test.ts` against 41 real rows in
+  `test/fixtures/lands.ts` (exported from the local DB) plus inline cost strings.
+- **Corpus check** (all 1,194 commander-legal lands, script not committed): basic 12,
+  nonbasic 1,182, multi 640, any-colour 144, etb-tapped 476, conditional 153,
+  fetch 55, sac-outlet 34, activated 505, mdfc 90, creature-land 50, draw 69,
+  cycling 50; 25 lands with no colours and no fetch, all genuine (Maze of Ith,
+  Vesuva, Dark Depths, restricted-only mana). Spot-read every unfamiliar name in
+  activated / draw / sac-outlet / any-colour.
+- **Open — transform DFCs.** Without Scryfall's `layout`, a transform card with a
+  land back (Growing Rites of Itlimoc, Westvale Abbey, the Ixalan flip lands,
+  the LCI Ojer gods) is indistinguishable from a spell // land MDFC: it passes
+  `isLand` and the `mdfc` row (~35 of its 90). Fix is a `Card.layout` column the
+  same way as step 1; needs a decision before step 3.
+- Verified: `pnpm test` 61/61, `tsc` 0, ESLint clean on touched files.
 
 ## Decisions
 
@@ -113,9 +153,10 @@ existing classifiers handle them.
   count for the colours of the basic land types they name (Forest→G, …), or for
   every identity colour when they say "basic land card".
 - Colours outside the commander's identity are dropped. `C` is kept.
-- `any` applies when the land covers every identity colour (Command Tower,
-  City of Brass, a 5-colour fetch in a 5-colour deck). Such a land counts in every
-  colour column **and** in `any`.
+- `any` applies when the land is flexible (all five colours, a chosen basic land
+  type, an untyped fetch) or, in a 2+ colour identity, produces every identity
+  colour (see step 2 notes). Such a land counts in every colour column **and** in
+  `any`. Restricted mana ("spend this mana only…") is not counted.
 - A colourless commander (`identity = []`) gets only the `C` and `any` columns.
 
 **Rows** (rows overlap on purpose; one land often fills several):

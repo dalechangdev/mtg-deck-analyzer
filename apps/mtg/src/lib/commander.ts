@@ -42,11 +42,14 @@ export type DeckValidation = {
   duplicates: string[];      // cardIds
 };
 
-const BASIC_LAND_TYPES = new Set(["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"]);
-
+/**
+ * The Basic supertype — not a basic land *type*. Mystic Sanctuary and Dwarven
+ * Mine are "Land — Island" / "Land — Mountain" and still singleton. Snow basics
+ * read "Basic Snow Land — Forest", so this matches the word, not "basic land".
+ */
 export function isBasicLand(typeLine: string): boolean {
-  return typeLine.toLowerCase().includes("basic land") ||
-    BASIC_LAND_TYPES.has(typeLine.split(" — ")[1]?.trim() ?? "");
+  const supertypes = typeLine.split(" // ")[0].split(" — ")[0];
+  return /\bbasic\b/i.test(supertypes);
 }
 
 export function isColorSubset(cardIdentity: string[], commanderIdentity: string[]): boolean {
