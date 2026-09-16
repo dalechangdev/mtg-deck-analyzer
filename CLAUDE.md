@@ -51,6 +51,9 @@ Two apps that share one scraping core. There is no deployment config in the repo
 - `docs/plans/` — one Markdown file per multi-step feature: the design decision, the steps, and a
   status table. Write the plan there before starting, keep the status table current as steps land,
   and read the relevant plan before resuming work on a feature. Active: `deck-versions.md`, `land-base-matrix.md`.
+- `docs/ideas/` — one Markdown file per cluster of "maybe later" work: what it would add,
+  a sketch against the current code, and where the awkwardness is. Nothing here is
+  committed to; move an idea into `docs/plans/` when it becomes a feature.
 
 ## Architecture invariants
 

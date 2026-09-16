@@ -444,7 +444,12 @@ computes client-side.
 
 ## Out of scope / follow-ups
 
+Written up with sketches and effort in **`docs/ideas/land-base-follow-ups.md`** — keep
+the detail there, not here.
+
 - Colour-source guidance, e.g. Karsten targets weighted by pip counts in the spells.
 - Exposing capabilities as `CLASSIFIER` predicates so templates can set targets.
 - Per-deck manual overrides for capabilities, like `DeckCardRole`.
-- Non-land mana sources (rocks, dorks), and a "preview with Potential" toggle.
+- Previewing the Potential pile as a delta on each count (the cheapest of these).
+- Non-land mana sources (rocks, dorks), as a separate row group rather than merged totals.
+- Operational: the `sync:cards` OOM, and `migrate dev` needing a shadow DB with `auth`.
