@@ -67,6 +67,15 @@ function add(cell: LandBaseCell, land: DeckEntry) {
   cell.cardIds.push(land.cardId);
 }
 
+/**
+ * The deck as it would stand if the whole potential pile were promoted. Feed it
+ * to `analyzeLandBase` alongside the real thing to show what promoting would do
+ * before doing it. The wishlist stays out — it isn't a candidate for this deck.
+ */
+export function withPotentialPromoted(entries: DeckEntry[]): DeckEntry[] {
+  return entries.map((entry) => (entry.slot === "maybe" ? { ...entry, slot: "main" } : entry));
+}
+
 export function analyzeLandBase(entries: DeckEntry[]): LandBaseAnalysis {
   // Main deck only: the potential pile is what the analysis page cuts from.
   const lands = entries.filter((e) => e.slot === "main" && !e.isCommander && isLand(e));

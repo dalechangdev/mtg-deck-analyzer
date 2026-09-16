@@ -8,7 +8,12 @@ import test from "node:test";
 
 import type { DeckEntry } from "@/lib/commander";
 import { LAND_CAPABILITIES } from "@/lib/land-capabilities";
-import { analyzeLandBase, type LandBaseAnalysis, type LandBaseRow } from "@/lib/land-base";
+import {
+  analyzeLandBase,
+  withPotentialPromoted,
+  type LandBaseAnalysis,
+  type LandBaseRow,
+} from "@/lib/land-base";
 import { LANDS } from "./fixtures/lands";
 
 let nextRow = 0;
@@ -147,6 +152,32 @@ test("a row synced before producedMana still counts, from oracle text", () => {
     entry("Temple Garden", { producedMana: [] }),
   ]);
   assert.deepEqual(counts(analysis.sources), { W: 1, G: 1, C: 0, any: 1 });
+});
+
+test("withPotentialPromoted: the pile counts, the wishlist doesn't", () => {
+  const entries = [
+    commander(["G", "W"]),
+    entry("Temple Garden"),
+    entry("Snow-Covered Forest", { slot: "maybe", quantity: 2 }),
+    entry("Plains", { slot: "wishlist" }),
+  ];
+  const live = analyzeLandBase(entries);
+  const preview = analyzeLandBase(withPotentialPromoted(entries));
+
+  assert.equal(live.landCount, 1);
+  assert.equal(preview.landCount, 3);
+  assert.deepEqual(counts(live.sources), { W: 1, G: 1, C: 0, any: 1 });
+  assert.deepEqual(counts(preview.sources), { W: 1, G: 3, C: 0, any: 1 });
+  // The promoted basics land in the basic row, not just the totals.
+  assert.equal(row(preview, "basic").total.count, 2);
+});
+
+test("withPotentialPromoted: leaves the caller's entries alone", () => {
+  const entries = [commander(["G"]), entry("Snow-Covered Forest", { slot: "maybe" })];
+  const promoted = withPotentialPromoted(entries);
+  assert.equal(entries[1].slot, "maybe");
+  assert.equal(promoted[1].slot, "main");
+  assert.notEqual(entries[1], promoted[1]);
 });
 
 test("producesNothingIds: no colour and no fetch", () => {

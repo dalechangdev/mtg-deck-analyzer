@@ -9,6 +9,8 @@ import type { ManaColumn } from "@/lib/land-capabilities";
 
 interface Props {
   analysis: LandBaseAnalysis;
+  /** The same count with the potential pile promoted, for the preview deltas. */
+  preview?: LandBaseAnalysis | null;
   /** Names for the drill-down list — the analysis carries only ids. */
   cardsById: ReadonlyMap<string, { name: string; typeLine: string; quantity: number }>;
   onInspect: (cardId: string) => void;
@@ -96,12 +98,15 @@ function ColumnChip({ column }: { column: ManaColumn }) {
 
 function CountCell({
   cell,
+  delta,
   selected,
   onSelect,
   title,
 }: {
   /** Undefined = not applicable. */
   cell: LandBaseCell | undefined;
+  /** How much promoting the whole potential pile would add. */
+  delta?: number;
   selected: boolean;
   onSelect: () => void;
   title: string;
@@ -114,7 +119,7 @@ function CountCell({
     );
   }
   return (
-    <td className="px-1 py-px text-center">
+    <td className="px-1 py-px text-center whitespace-nowrap">
       <button
         type="button"
         onClick={onSelect}
@@ -129,6 +134,11 @@ function CountCell({
       >
         {cell.count === 0 ? "·" : cell.count}
       </button>
+      {delta ? (
+        <span className="ml-0.5 font-mono text-micro text-info" title={`+${delta} if the potential pile were promoted`}>
+          +{delta}
+        </span>
+      ) : null}
     </td>
   );
 }
@@ -138,13 +148,29 @@ function CountCell({
  * counts once in every colour it can make, so a column reads "sources of X".
  * Click a count to list the lands behind it.
  */
-export function LandBaseMatrix({ analysis, cardsById, onInspect, hasDetail }: Props) {
+export function LandBaseMatrix({ analysis, preview, cardsById, onInspect, hasDetail }: Props) {
   const collapsed = useSyncExternalStore(subscribe, readCollapsed, () => false);
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const hidden = hiddenRows(analysis.identity);
   const rows = analysis.rows.filter((row) => !hidden.has(row.capabilityId));
   const span = analysis.columns.length + 2;
+
+  // Only offer the preview when the pile actually holds lands. The column guard
+  // covers a deck with no commander, where identity comes from the lands
+  // themselves and promoting could widen it.
+  const previewable =
+    !!preview &&
+    preview.landCount > analysis.landCount &&
+    preview.columns.join() === analysis.columns.join();
+  const previewing = previewable && showPreview;
+
+  /** How much promoting the whole pile would add to one count. */
+  const deltaOf = (live: number, promoted: number | undefined) =>
+    previewing && promoted !== undefined && promoted > live ? promoted - live : undefined;
+  const previewRow = (capabilityId: string) =>
+    preview?.rows.find((row) => row.capabilityId === capabilityId);
 
   const toggle = (next: Selection) =>
     setSelection((prev) =>
@@ -154,7 +180,8 @@ export function LandBaseMatrix({ analysis, cardsById, onInspect, hasDetail }: Pr
     selection?.rowId === rowId && selection.column === column;
 
   // Resolved against the current analysis on every render: promoting or cutting
-  // a land can empty the selected cell, and then the list just closes.
+  // a land can empty the selected cell, and then the list just closes. The
+  // drill-down always lists the real deck, never the preview.
   let selected: { title: string; cell: LandBaseCell } | null = null;
   if (selection) {
     const columnTitle = selection.column === "total" ? "all" : columnLabel(selection.column);
@@ -185,8 +212,27 @@ export function LandBaseMatrix({ analysis, cardsById, onInspect, hasDetail }: Pr
           >
             ▸
           </span>
-          <span className="truncate">Land base ({analysis.landCount})</span>
+          <span className="truncate">
+            Land base ({analysis.landCount}
+            {previewing && preview ? ` → ${preview.landCount}` : ""})
+          </span>
         </button>
+
+        {/* Sibling of the toggle, not nested inside it, so both stay focusable. */}
+        {!collapsed && previewable && preview && (
+          <button
+            type="button"
+            onClick={() => setShowPreview((on) => !on)}
+            aria-pressed={showPreview}
+            title={`Show what promoting all ${preview.landCount - analysis.landCount} potential land(s) would add`}
+            className={cn(
+              "self-stretch px-2.5 text-micro font-semibold uppercase tracking-wider transition-colors hover:bg-border",
+              showPreview ? "text-info" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {showPreview ? "hide potential" : "+ potential"}
+          </button>
+        )}
       </SectionHeader>
 
       {!collapsed &&
@@ -212,41 +258,46 @@ export function LandBaseMatrix({ analysis, cardsById, onInspect, hasDetail }: Pr
                 </thead>
 
                 <tbody>
-                  {rows.map((row, i) => (
-                    <Fragment key={row.capabilityId}>
-                      {row.group !== rows[i - 1]?.group && (
-                        <tr>
-                          <th colSpan={span} scope="colgroup" className="pt-2 pb-0.5 text-left">
-                            <SectionLabel size="micro">{LAND_GROUP_LABEL[row.group]}</SectionLabel>
+                  {rows.map((row, i) => {
+                    const ahead = previewRow(row.capabilityId);
+                    return (
+                      <Fragment key={row.capabilityId}>
+                        {row.group !== rows[i - 1]?.group && (
+                          <tr>
+                            <th colSpan={span} scope="colgroup" className="pt-2 pb-0.5 text-left">
+                              <SectionLabel size="micro">{LAND_GROUP_LABEL[row.group]}</SectionLabel>
+                            </th>
+                          </tr>
+                        )}
+                        <tr className="hover:bg-muted/30">
+                          <th
+                            scope="row"
+                            title={row.description}
+                            className="w-44 pr-3 text-left text-body font-normal"
+                          >
+                            {row.label}
                           </th>
-                        </tr>
-                      )}
-                      <tr className="hover:bg-muted/30">
-                        <th
-                          scope="row"
-                          title={row.description}
-                          className="w-44 pr-3 text-left text-body font-normal"
-                        >
-                          {row.label}
-                        </th>
-                        <CountCell
-                          cell={row.total}
-                          selected={isSelected(row.capabilityId, "total")}
-                          onSelect={() => toggle({ rowId: row.capabilityId, column: "total" })}
-                          title={`${row.label}: every land`}
-                        />
-                        {analysis.columns.map((column) => (
                           <CountCell
-                            key={column}
-                            cell={row.cells[column]}
-                            selected={isSelected(row.capabilityId, column)}
-                            onSelect={() => toggle({ rowId: row.capabilityId, column })}
-                            title={`${row.label} · ${columnLabel(column)}`}
+                            cell={row.total}
+                            delta={deltaOf(row.total.count, ahead?.total.count)}
+                            selected={isSelected(row.capabilityId, "total")}
+                            onSelect={() => toggle({ rowId: row.capabilityId, column: "total" })}
+                            title={`${row.label}: every land`}
                           />
-                        ))}
-                      </tr>
-                    </Fragment>
-                  ))}
+                          {analysis.columns.map((column) => (
+                            <CountCell
+                              key={column}
+                              cell={row.cells[column]}
+                              delta={deltaOf(row.cells[column]?.count ?? 0, ahead?.cells[column]?.count)}
+                              selected={isSelected(row.capabilityId, column)}
+                              onSelect={() => toggle({ rowId: row.capabilityId, column })}
+                              title={`${row.label} · ${columnLabel(column)}`}
+                            />
+                          ))}
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
 
                 <tfoot>
@@ -260,14 +311,20 @@ export function LandBaseMatrix({ analysis, cardsById, onInspect, hasDetail }: Pr
                     </th>
                     <td
                       title="Lands in the main deck"
-                      className="px-1 pt-1 text-center font-mono text-body text-muted-foreground"
+                      className="px-1 pt-1 text-center font-mono text-body text-muted-foreground whitespace-nowrap"
                     >
                       {analysis.landCount}
+                      {previewing && preview && preview.landCount > analysis.landCount ? (
+                        <span className="ml-0.5 text-micro text-info">
+                          +{preview.landCount - analysis.landCount}
+                        </span>
+                      ) : null}
                     </td>
                     {analysis.columns.map((column) => (
                       <CountCell
                         key={column}
                         cell={analysis.sources[column]}
+                        delta={deltaOf(analysis.sources[column]?.count ?? 0, preview?.sources[column]?.count)}
                         selected={isSelected("sources", column)}
                         onSelect={() => toggle({ rowId: "sources", column })}
                         title={`Sources of ${columnLabel(column)}`}
@@ -277,6 +334,12 @@ export function LandBaseMatrix({ analysis, cardsById, onInspect, hasDetail }: Pr
                 </tfoot>
               </table>
             </div>
+
+            {previewing && (
+              <p className="mt-1 text-label text-info">
+                Showing what promoting the potential pile would add.
+              </p>
+            )}
 
             {selected && selected.cell.count > 0 && (
               <div className="mt-2 rounded-md border border-border bg-muted/10 px-3 py-2">

@@ -14,7 +14,8 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 | 2b | `Card.layout` column + re-sync; transform cards aren't MDFCs or land drops | done (`5e4fb70`) |
 | 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | done (`18ec5b9`) |
 | 4 | `LandBaseMatrix` component, wired into `deck-analysis-view.tsx` | done (uncommitted; not yet seen signed in) |
-| 5 | Signed-in browser check against real decks | done (uncommitted) |
+| 5 | Signed-in browser check against real decks | done (`1175a9a`) |
+| 6 | Preview the potential pile as `+N` deltas | done (uncommitted) |
 
 ### Step 1 notes
 
@@ -252,6 +253,33 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 - Unrelated observation: `GET /api/cards/<id>/price` answers 404 after ~15s (the Ítaca
   lookup). Pre-existing, nothing to do with this feature.
 
+### Step 6 notes — previewing the potential pile
+
+- The first item off `docs/ideas/land-base-follow-ups.md`: show what promoting the pile
+  would do, before doing it.
+- `withPotentialPromoted(entries)` in `src/lib/land-base.ts` returns the deck with
+  `slot: "maybe"` rows re-slotted to `main`, leaving the caller's entries untouched
+  (the wishlist stays out — it isn't a candidate for this deck). Keeping it in the lib
+  rather than mapping inline in the view is what makes it testable.
+- `deck-analysis-view.tsx` runs `analyzeLandBase` a second time over that and passes the
+  result as `preview`; the matrix renders `+N` beside any count that would grow, tinted
+  with the info token, plus `Land base (40 → 42)` in the header and a one-line
+  explanation under the table. The drill-down deliberately still lists the **real** deck.
+- **The toggle is conditional and defaults to off.** It only renders when the pile holds
+  lands (`preview.landCount > analysis.landCount`), so most mid-build decks never see a
+  dead control, and it's guarded on `preview.columns` matching the live columns — with no
+  commander, identity comes from the lands, so promoting could widen it.
+- Verified signed in on Limitless Ashling, whose pile holds Eclipsed Realms and Flooded
+  Strand: title `40 → 42`, Non-basic +2, Taps 2+ colors +1, Fetch +1 (W/U), Activated
+  ability +1, Sources +2 with W 14→15, U 16→17, C 5→6, and Basic / Any color / B / R / G
+  unchanged. Exactly the prediction from the two cards' oracle text — including Eclipsed
+  Realms contributing **only** `C`, since its "any color" is restricted to a chosen
+  creature type, and therefore not counting as `multi`.
+  On Initial Dina, whose pile has no lands, the toggle is correctly absent.
+- Verified: `pnpm test` 87/87 (two new for `withPotentialPromoted`), `tsc` 0, ESLint clean.
+- Possible polish: a zero cell carrying a delta reads as `·+1`. Legible on screen thanks
+  to the spacing and tint, but a different zero glyph there might read better.
+
 ## Decisions
 
 These were settled when the plan was written. Don't reopen them without a reason.
@@ -450,6 +478,6 @@ the detail there, not here.
 - Colour-source guidance, e.g. Karsten targets weighted by pip counts in the spells.
 - Exposing capabilities as `CLASSIFIER` predicates so templates can set targets.
 - Per-deck manual overrides for capabilities, like `DeckCardRole`.
-- Previewing the Potential pile as a delta on each count (the cheapest of these).
+- ~~Previewing the Potential pile as a delta on each count~~ — shipped, step 6 below.
 - Non-land mana sources (rocks, dorks), as a separate row group rather than merged totals.
 - Operational: the `sync:cards` OOM, and `migrate dev` needing a shadow DB with `auth`.

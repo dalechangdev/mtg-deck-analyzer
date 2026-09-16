@@ -14,7 +14,7 @@ import {
 } from "@/lib/deck-template";
 import { PotentialPool } from "./potential-pool";
 import { LandBaseMatrix } from "./land-base-matrix";
-import { analyzeLandBase } from "@/lib/land-base";
+import { analyzeLandBase, withPotentialPromoted } from "@/lib/land-base";
 import { DeckSteps } from "./deck-steps";
 import { toastManager } from "@/lib/toast";
 import { deckPageUrl, versionCardsUrl } from "@/lib/deck-api";
@@ -84,6 +84,13 @@ export function DeckAnalysisView({
 
   // Pure like the evaluator, so promoting or cutting a land recounts instantly.
   const landBase = useMemo(() => analyzeLandBase(entries), [entries]);
+
+  // The same count with the potential pile promoted. The matrix shows the
+  // difference as a delta, so you can see what promoting would do first.
+  const landBasePreview = useMemo(
+    () => analyzeLandBase(withPotentialPromoted(entries)),
+    [entries]
+  );
 
   const setOverride = useCallback(
     async (cardId: string, roleId: string, next: Assignment | null) => {
@@ -331,6 +338,7 @@ export function DeckAnalysisView({
       <div className="flex-1 min-w-0 overflow-y-auto">
         <LandBaseMatrix
           analysis={landBase}
+          preview={landBasePreview}
           cardsById={cardsById}
           onInspect={(cardId) => setSelectedCardId(cardId)}
           hasDetail={(cardId) => Boolean(cardDetails[cardId])}

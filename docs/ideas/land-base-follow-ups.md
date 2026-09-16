@@ -79,18 +79,19 @@ and this is the way around it that doesn't need a release.
 
 ---
 
-## 4. Preview the Potential pile
+## 4. Preview the Potential pile — **shipped**
 
-**What it adds.** See what promoting would do before doing it: "26 → 28" beside each
-count.
+Built as step 6 of `docs/plans/land-base-matrix.md`, which has the details.
+`withPotentialPromoted` in `src/lib/land-base.ts` re-slots the pile, the view runs
+`analyzeLandBase` a second time over it, and the matrix renders the difference as `+N`
+beside each count behind a "+ potential" toggle in the header. No schema, no API change,
+as predicted.
 
-**Sketch.** Run `analyzeLandBase` twice — once over the main deck, once over main plus
-`slot === "maybe"` — and render the delta. A second `useMemo` in
-`deck-analysis-view.tsx` plus delta formatting in the component. No schema, no new data,
-no API change.
-
-**Effort.** Small. The cheapest useful thing on this list, which is why it's the one I'd
-do first.
+What it taught: the toggle has to be conditional. A deck whose pile holds no lands (most
+of them, mid-build) gains nothing from an always-on control, so it only appears when the
+preview would actually differ — and it's guarded against a preview whose columns differ
+from the live one, which can happen in a deck with no commander, where identity is
+derived from the lands themselves.
 
 ---
 
