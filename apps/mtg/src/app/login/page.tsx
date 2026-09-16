@@ -6,10 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn, signUp } from "./actions";
 
+// Inlined at build time. The detail line names the Supabase error code and
+// status, which helps while developing and says too much in production.
+const SHOW_DETAIL = process.env.NODE_ENV !== "production";
+
 export default function LoginPage() {
-  const [signInError, signInAction, signingIn] = useActionState(signIn, null);
-  const [signUpMessage, signUpAction, signingUp] = useActionState(signUp, null);
-  const message = signInError ?? signUpMessage;
+  const [signInResult, signInAction, signingIn] = useActionState(signIn, null);
+  const [signUpResult, signUpAction, signingUp] = useActionState(signUp, null);
+  const result = signInResult ?? signUpResult;
 
   return (
     <div className="mx-auto flex max-w-sm flex-col gap-6 px-[var(--gutter-x)] py-16">
@@ -37,10 +41,15 @@ export default function LoginPage() {
           />
         </div>
 
-        {message ? (
-          <p role="status" className="text-ui text-destructive">
-            {message}
-          </p>
+        {result ? (
+          <div role="status" aria-live="polite" className="flex flex-col gap-1">
+            <p className={result.tone === "error" ? "text-ui text-destructive" : "text-ui text-foreground"}>
+              {result.message}
+            </p>
+            {SHOW_DETAIL && result.detail ? (
+              <p className="font-mono text-label break-words text-muted-foreground">{result.detail}</p>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="flex items-center gap-2">
