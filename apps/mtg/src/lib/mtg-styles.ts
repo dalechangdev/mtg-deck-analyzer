@@ -7,6 +7,8 @@
  * --rarity-* tokens in globals.css, which are theme-independent by design.
  */
 
+import type { CapabilityGroup } from "@/lib/land-capabilities"
+
 export const COLOR_LABELS: Record<string, string> = {
   W: "White",
   U: "Blue",
@@ -18,6 +20,14 @@ export const COLOR_LABELS: Record<string, string> = {
 export const COLOR_ORDER = ["W", "U", "B", "R", "G"] as const
 
 export type ManaColor = (typeof COLOR_ORDER)[number]
+
+/** Sub-headings of the land base matrix's rows (`CapabilityGroup`). */
+export const LAND_GROUP_LABEL = {
+  mana: "Mana",
+  tempo: "Tempo",
+  utility: "Utility",
+  other: "Other",
+} satisfies Record<CapabilityGroup, string>
 
 /** Small filled circle with no text — used on card thumbnails and details. */
 export const MANA_PIP: Record<string, string> = {

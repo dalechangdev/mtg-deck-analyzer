@@ -12,8 +12,8 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 | 1 | `Card.producedMana` column, migration, sync + every Card writer, re-sync | done (applied locally, uncommitted) |
 | 2 | `src/lib/land-capabilities.ts` detectors + fixture tests | done (`45818e4`) |
 | 2b | `Card.layout` column + re-sync; transform cards aren't MDFCs or land drops | done (`5e4fb70`) |
-| 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | done (uncommitted) |
-| 4 | `LandBaseMatrix` component, wired into `deck-analysis-view.tsx` | not started |
+| 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | done (`18ec5b9`) |
+| 4 | `LandBaseMatrix` component, wired into `deck-analysis-view.tsx` | done (uncommitted; not yet seen signed in) |
 | 5 | Signed-in browser check against real decks | not started |
 
 ### Step 1 notes
@@ -152,11 +152,52 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 - **For step 4:** in a two-colour deck the `multi` and `any-colour` rows are
   always identical (17 / 17 in Initial Dina) — "covers the identity" and "makes 2+
   of its colours" coincide. Consider hiding `any-colour` when `identity.length <= 2`.
-- **Not exercised over HTTP:** port 3000 is occupied by a different app
-  (`next-server v14.2.35`, cdr-fyi), not this Next 16 deck builder, so the route
-  change is covered by `tsc` and the loader script only. Step 5's signed-in check
-  should hit it.
+- **Dev server port:** port 3000 is occupied by a different app (`next-server
+  v14.2.35`, cdr-fyi). This deck builder's dev server was already running on
+  **:3002** (a second `next dev` refuses to start while it runs). Checked there in
+  step 4: the route answers 401 `{"error":"Not signed in"}` unauthenticated. The
+  signed-in response is step 5.
 - Verified: `pnpm test` 76/76, `tsc` 0, ESLint clean on touched files.
+
+### Step 4 notes
+
+- `src/components/decks/land-base-matrix.tsx` — `LandBaseMatrix({ analysis,
+  cardsById, onInspect, hasDetail })`. Wired into `deck-analysis-view.tsx` as the
+  first thing in the left scroll column, above the requirements list:
+  `useMemo(() => analyzeLandBase(entries), [entries])`, so promoting or cutting a
+  land recounts instantly; `onInspect` reuses the page's `CardDetailModal`.
+- **Header** copies `CardGroup` in `deck-panel.tsx` (commit `7ad38cd`): the whole
+  `SectionHeader` band is the toggle, `▸` chevron, `aria-expanded`. Title reads
+  `Land base (N)`, matching the builder's group headers rather than the
+  `Land base · N lands` sketched above.
+- **Collapsed state** in `localStorage` (`land-base-matrix:collapsed`), read via
+  `useSyncExternalStore` with a server snapshot of "expanded", so SSR and hydration
+  agree; a module-level fallback keeps the toggle working when storage throws.
+- **Table:** a real `<table>` in an `overflow-x-auto` wrapper. Columns: label, Total,
+  then `analysis.columns` as `MANA_CHIP` circles (`C` included) and a muted `any`
+  pill, each with an `sr-only` name. Group sub-headings (`LAND_GROUP_LABEL`, added
+  to `mtg-styles.ts` with a type-only import of `CapabilityGroup`). Counts are
+  buttons: `·` and disabled at zero, `–` (not a button) when not applicable,
+  `aria-pressed` + info ring when selected. Row totals and footer sources are
+  clickable too; the footer's Total shows the land count.
+- **Drill-down:** one selection at a time, toggled by clicking again or `×`. It is
+  re-resolved against the current analysis each render, so a slot move that empties
+  the cell just closes it. Names in the same 2/3-column grid as the requirements
+  list, `×N` for multiple copies, type line as the tooltip, disabled without card
+  details.
+- **Hidden rows** (decided here, from the step 3 finding): `multi` when the
+  identity has fewer than 2 colors (it can't be non-zero), `any-colour` when it has
+  exactly 2 (it repeats `multi`). Data is unchanged — `analyzeLandBase` still
+  returns every row; only the component filters.
+- `producesNothingIds` renders as one `text-warning` line naming the lands, with a
+  tooltip pointing at re-syncing card data.
+- **Spelling:** the app's UI says "color" ("Color identity:", "Colorless"), so the
+  two visible capability labels/descriptions became "Taps 2+ colors" / "Any color".
+  Ids (`any-colour`) are unchanged.
+- Verified: `tsc` 0, ESLint clean on touched files, `pnpm test` 76/76. On the
+  running :3002 dev server, the analysis page for Initial Dina answers 307 → `/login`
+  and the route 401 unauthenticated — both modules compile with no errors logged.
+  **Not yet seen rendered signed in** — that is step 5.
 
 ## Decisions
 

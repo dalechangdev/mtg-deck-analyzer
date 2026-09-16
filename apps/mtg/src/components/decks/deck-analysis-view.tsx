@@ -13,6 +13,8 @@ import {
   type Template,
 } from "@/lib/deck-template";
 import { PotentialPool } from "./potential-pool";
+import { LandBaseMatrix } from "./land-base-matrix";
+import { analyzeLandBase } from "@/lib/land-base";
 import { DeckSteps } from "./deck-steps";
 import { toastManager } from "@/lib/toast";
 import { deckPageUrl, versionCardsUrl } from "@/lib/deck-api";
@@ -79,6 +81,9 @@ export function DeckAnalysisView({
     () => new Map(entries.map((e) => [e.cardId, e])),
     [entries]
   );
+
+  // Pure like the evaluator, so promoting or cutting a land recounts instantly.
+  const landBase = useMemo(() => analyzeLandBase(entries), [entries]);
 
   const setOverride = useCallback(
     async (cardId: string, roleId: string, next: Assignment | null) => {
@@ -324,6 +329,13 @@ export function DeckAnalysisView({
 
       <div className="flex-1 flex overflow-hidden min-h-0">
       <div className="flex-1 min-w-0 overflow-y-auto">
+        <LandBaseMatrix
+          analysis={landBase}
+          cardsById={cardsById}
+          onInspect={(cardId) => setSelectedCardId(cardId)}
+          hasDetail={(cardId) => Boolean(cardDetails[cardId])}
+        />
+
         {/* Requirements */}
         <ul className="border-b border-border">
           {analysis.requirements.map((req) => {

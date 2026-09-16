@@ -222,16 +222,16 @@ export const LAND_CAPABILITIES: LandCapability[] = [
   {
     id: "multi",
     group: "mana",
-    label: "Taps 2+ colours",
-    description: "Can produce at least two of the deck's colours, counting what a fetch can find.",
+    label: "Taps 2+ colors",
+    description: "Can produce at least two of the deck's colors, counting what a fetch can find.",
     test: (_, colours) => [...colours].filter(isColour).length >= 2,
   },
   {
     id: "any-colour",
     group: "mana",
-    label: "Any colour",
+    label: "Any color",
     description:
-      "Covers every colour the deck needs: Command Tower, untyped fetches, chosen-type lands, or a land producing all of a multicolour identity.",
+      "Covers every color the deck needs: Command Tower, untyped fetches, chosen-type lands, or a land producing all of a multicolor identity.",
     test: (_, colours) => colours.has("any"),
   },
   {
