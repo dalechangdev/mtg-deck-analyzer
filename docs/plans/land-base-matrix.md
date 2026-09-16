@@ -14,7 +14,7 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
 | 2b | `Card.layout` column + re-sync; transform cards aren't MDFCs or land drops | done (`5e4fb70`) |
 | 3 | `analyzeLandBase` aggregation + tests; thread `producedMana` into `DeckEntry`; `landBase` on the analysis route | done (`18ec5b9`) |
 | 4 | `LandBaseMatrix` component, wired into `deck-analysis-view.tsx` | done (uncommitted; not yet seen signed in) |
-| 5 | Signed-in browser check against real decks | not started |
+| 5 | Signed-in browser check against real decks | done (uncommitted) |
 
 ### Step 1 notes
 
@@ -198,6 +198,59 @@ activated ability, fetch, MDFC, creature land, card draw, cycling).
   running :3002 dev server, the analysis page for Initial Dina answers 307 → `/login`
   and the route 401 unauthenticated — both modules compile with no errors logged.
   **Not yet seen rendered signed in** — that is step 5.
+
+### Step 5 notes
+
+- **The environment moved mid-step.** The app now runs against the **hosted** Supabase
+  project for both auth and data: `.env` was repointed, the 19 migrations were applied
+  there, the card corpus was restored with `COPY` (31,913 cards / 31,913 printings /
+  1,652 faces, 14s — a `sync:cards` over the pooler measured 4.4 cards/sec ≈ 6.7h),
+  and the personal tables were copied with ownership remapped to the cloud account.
+  The six migration-seeded tables (CardRole, CardTheme, RoleMatcher, DeckTheme,
+  AnalysisTemplate, TemplateRequirement) were excluded from the copy — their
+  fingerprints are byte-identical on both sides, so every id the deck data references
+  already existed. Local stack and dumps kept as a fallback in `/Users/dalec/mtg-backups/`.
+- **Verified signed in, Initial Dina (BG, cloud data):**
+  - Header `LAND BASE (36)`; columns B, G, C, any; the `any-colour` **row** correctly
+    hidden at 2 colours while the `any` column stays.
+  - Basic 16 (B 8, G 8, C `·`, any `–`) — `basic × any` renders "–" as designed.
+  - Sources 36 | B 26 | G 25 | C 5 | any 17, matching an independent SQL count
+    (B 24 + 2 fetches, G 23 + 2 fetches, C 5).
+  - Enters tapped 6 + Conditionally tapped 4 = 10, matching SQL's "enters tapped" 10.
+    Fetch 2, Sac outlet 2 (colourless only), Draws 1, Cycling 1, MDFC/creature-land `·`.
+  - **Cell drill-down:** clicking `Sac outlet × Colorless` (2) selected the cell and
+    listed Grim Backwoods and High Market — exactly the deck's two sacrifice-outlet
+    lands per SQL, both `producedMana {C}`.
+  - **Card modal** opened from the drill-down (High Market) with image, oracle text and
+    the role toggles.
+  - **Collapse persisted across a reload** (localStorage); page rendered 200 server-side
+    with no errors in the dev log.
+- **Verified signed in, Limitless Ashling (WUBRG, cloud data):**
+  - Columns W U B R G C any, and the `any-colour` **row** now present (9) — the
+    identity-based hiding works in both directions.
+  - Sources 40 | W 14 | U 16 | B 14 | R 16 | G 26 | C 5 | any 9, matching the SQL
+    cross-check exactly. Basic 16 (2/2/2/2/8). Enters tapped 14 + Conditionally
+    tapped 3 = 17, matching SQL's 17. Fetch 0, Sac outlet 0, MDFC 0, Creature land 1,
+    Cycling 1, Activated ability 3.
+  - Warning line: "1 land makes no mana that counts toward a color: Ancient Ziggurat"
+    — the restricted-mana rule reaching the UI.
+  - **A crude SQL check disagreed and the app was right:** the query counted Draws
+    cards 1, the UI 0. The only candidate is the cycling land's reminder text
+    ("Discard this card: Draw a card"), which `classifierText` strips by design.
+- **Promote test passed.** Promoting Flooded Strand from Potential moved every number at
+  once: header 40 → 41, Fetch 0 → 1 (W 1 / U 1 — it fetches Plains or Island), sources
+  W 14 → 15 and U 16 → 17 with B/R/G unchanged, Non-basic 24 → 25, Taps 2+ 18 → 19,
+  Activated ability 3 → 4, Potential 16 → 15, deck 97 → 98, and the template's Land row
+  40/38 → 41/38. Confirmed in the database too (`slot main`, 41 main lands), so the
+  recount follows a real persisted change, not just local state. **Reverted afterwards**
+  (`DeckCard.slot` back to `maybe`) to leave the deck as found.
+- Tooling note: the Chrome extension intermittently answered "Couldn't determine which
+  page this action targets" / "Chrome blocked the extension" on this tab — recovered by
+  re-reading tab context and re-navigating. The `find` tool was rate-limited for part of
+  the session, so element clicks were done by coordinate from fresh screenshots (the
+  viewport size changed between shots, so cached coordinates are not reusable).
+- Unrelated observation: `GET /api/cards/<id>/price` answers 404 after ~15s (the Ítaca
+  lookup). Pre-existing, nothing to do with this feature.
 
 ## Decisions
 
