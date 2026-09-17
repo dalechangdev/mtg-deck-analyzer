@@ -1,0 +1,145 @@
+"""A card's canonical identity — one per Scryfall oracle_id."""
+type Card {
+  canBeCommander: Boolean!
+  cmc: Float!
+
+  """WUBRG subset — the Commander legality axis."""
+  colorIdentity: [String!]!
+  colors: [String!]!
+  faces: [CardFace!]!
+  id: ID!
+
+  """Newest printing's normal art, falling back to the first face."""
+  imageUrl: String
+  isCommanderLegal: Boolean!
+  keywords: [String!]!
+  largeImageUrl: String
+  layout: String
+  loyalty: String
+  manaCost: String
+  name: String!
+  oracleText: String
+
+  """
+  How many the signed-in user owns. 0 when signed out — RLS returns no library rows to anon.
+  """
+  ownedQuantity: Int!
+  power: String
+
+  """Newest set first."""
+  printings: [CardPrinting!]!
+
+  """Symbols this card can add. Empty also means 'not yet synced'."""
+  producedMana: [String!]!
+  toughness: String
+  typeLine: String!
+}
+
+"""One face of a double-faced, split, adventure or modal card."""
+type CardFace {
+  imageUrl: String
+  loyalty: String
+  manaCost: String
+  name: String!
+  oracleText: String
+  power: String
+  toughness: String
+  typeLine: String!
+}
+
+"""One Scryfall printing of a card — the same card in a particular set."""
+type CardPrinting {
+  collectorNumber: String!
+  id: ID!
+  imageUrl: String
+  rarity: String!
+  scryfallUri: String
+  setCode: String!
+  setName: String!
+}
+
+"""An ISO-8601 date-time string."""
+scalar DateTime
+
+type Deck {
+  createdAt: DateTime!
+
+  """Null only transiently, or if the current version was deleted."""
+  currentVersion: DeckVersion
+  description: String
+  id: ID!
+  name: String!
+  updatedAt: DateTime!
+
+  """Oldest first."""
+  versions: [DeckVersion!]!
+}
+
+"""One card in one version of a deck."""
+type DeckCard {
+  card: Card!
+  id: ID!
+  isCommander: Boolean!
+  quantity: Int!
+
+  """"main" or "maybe"."""
+  slot: String!
+}
+
+"""
+A named variant of a deck. Each version owns a full copy of its card list.
+"""
+type DeckVersion {
+  """
+  Commander first, then alphabetical — the order every deck view renders.
+  """
+  cards: [DeckCard!]!
+  createdAt: DateTime!
+  id: ID!
+
+  """Whether the deck opens on this version."""
+  isCurrent: Boolean!
+
+  """
+  Main-slot card quantity, commander included — the number checked against 100.
+  """
+  mainCount: Int!
+  name: String!
+  notes: String
+
+  """Lineage — survives the parent version's deletion."""
+  parentVersionId: ID
+  record: GameRecord!
+  updatedAt: DateTime!
+}
+
+"""
+A version's results. Games with no recorded result count only toward `games`.
+"""
+type GameRecord {
+  draws: Int!
+  games: Int!
+  losses: Int!
+  wins: Int!
+}
+
+type Mutation {
+  """Null when the deck does not exist or is not yours."""
+  renameDeck(id: ID!, name: String!): Deck
+}
+
+type Query {
+  card(id: ID!): Card
+  cards(commanderLegal: Boolean, limit: Int, name: String, offset: Int): [Card!]!
+
+  """
+  Null when the deck does not exist OR is not yours — deliberately the same answer.
+  """
+  deck(id: ID!): Deck
+
+  """
+  The signed-in user's decks, most recently updated first. Empty when signed out.
+  """
+  decks: [Deck!]!
+  version(id: ID!): DeckVersion
+}

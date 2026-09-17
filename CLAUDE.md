@@ -30,6 +30,18 @@ pnpm --filter @mtg/deck-builder db:migrate    # prisma migrate dev
 pnpm --filter @mtg/deck-builder sync:cards    # stream Scryfall bulk data into Card/CardPrinting
 ```
 
+GraphQL endpoint (`/api/graphql`, alongside REST — see `docs/plans/graphql-endpoint.md`):
+
+```bash
+pnpm --filter @mtg/deck-builder graphql:schema   # Pothos schema -> graphql/schema.graphql
+pnpm --filter @mtg/deck-builder graphql:types    # SDL -> src/generated/graphql (client types)
+DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+  pnpm --filter @mtg/deck-builder verify:graphql # RLS boundary; refuses a non-local database
+```
+
+Re-run both generators after touching the schema — `graphql/schema.graphql` is committed
+so a schema change shows up in review as a diff.
+
 Restock SaaS + crawler (Supabase CLI owns the schema):
 
 ```bash
@@ -50,7 +62,8 @@ Two apps that share one scraping core. There is no deployment config in the repo
 - `docs/DATA-MODEL.md`, `docs/RATE_LIMITING.md` — the reasoning behind the restock schema and crawl budgets.
 - `docs/plans/` — one Markdown file per multi-step feature: the design decision, the steps, and a
   status table. Write the plan there before starting, keep the status table current as steps land,
-  and read the relevant plan before resuming work on a feature. Active: `deck-versions.md`, `land-base-matrix.md`.
+  and read the relevant plan before resuming work on a feature. Active: `deck-versions.md`,
+  `land-base-matrix.md`, `graphql-endpoint.md`.
 - `docs/ideas/` — one Markdown file per cluster of "maybe later" work: what it would add,
   a sketch against the current code, and where the awkwardness is. Nothing here is
   committed to; move an idea into `docs/plans/` when it becomes a feature.
@@ -71,6 +84,18 @@ Every Prisma query over user-owned data must filter by the id from
 `src/lib/auth.ts` (`requireUserId` / `requireUserIdOr401`), and every deck- or
 template-scoped Route Handler goes through `src/lib/ownership.ts` first. A missing
 filter silently reads every account's rows. Someone else's row answers 404, not 403.
+
+**`/api/graphql` inverts that, deliberately.** The GraphQL endpoint is the one place
+where RLS *is* the boundary. `src/lib/graphql/rls.ts` opens a transaction, downgrades
+it to `authenticated` (or `anon`) with `set_config('role', …)` plus the verified JWT
+claims, and hands that transaction to every resolver. So resolvers carry no userId
+filter and no `ownership.ts` call — adding one would duplicate a policy that is
+already enforced a layer down. Two consequences worth knowing before editing it: a
+resolver that imports the `prisma` singleton instead of taking `ctx.db` runs
+privileged with RLS off and returns every account's rows without erroring
+(`test/graphql-schema.test.ts` fails if one does); and a row you do not own is
+*absent* rather than forbidden, so `deck(id:)` answers null — the same 404-not-403
+rule, arrived at by a different route. REST is untouched and still works as above.
 
 **Only `store-core` calls `fetch`.** Parsers get strings, never network access, so
 robots policy, per-host crawl delay and backoff cannot be bypassed by a caller.
