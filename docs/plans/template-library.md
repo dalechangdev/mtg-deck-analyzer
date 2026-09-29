@@ -9,7 +9,7 @@ signed-in user through search, previewed, and cloned into their own account.
 
 | Step | Scope | State |
 |---|---|---|
-| 1 | Schema: `isPublic`, `publishedAt`, `sourceTemplateId`; RLS for public rows | todo |
+| 1 | Schema: `isPublic`, `publishedAt`, `sourceTemplateId`; RLS for public rows | done (uncommitted) — `20260930120000_add_template_visibility` |
 | 2 | `ownership.ts`: split "can view" from "can use"; route the six inline ORs through it | todo |
 | 3 | `PATCH /api/templates/[id]` accepts `isPublic`; description length cap | todo |
 | 4 | Clone of another account's public template (duplicate route + naming) | todo |
@@ -154,10 +154,30 @@ survives refresh:
 (`template-browser.tsx`) rather than growing it further, and pull the read-only
 requirement table into a shared piece both panes use.
 
+## Deferred until asked
+
+- **Profile table / author attribution.** Not built until the user says so.
+  Until then, results show no author.
+- **Clone count on public templates.** Not built until the user says so.
+  `sourceTemplateId` is in place for it. Caveat when it lands: the "Own templates"
+  RLS policy lets an owner write any column of their own row through the Data
+  API, including `sourceTemplateId` and `publishedAt`. So a count over
+  `sourceTemplateId` can be inflated by creating templates that point at a public
+  one, and `publishedAt` can be back- or forward-dated to move in Browse. Either
+  count distinct owners, or restrict those columns (column-level `REVOKE UPDATE`
+  plus a trigger for INSERT). REST sets both server-side and isn't affected.
+
 ## Open questions
 
 - Should Browse also be reachable from `/decks/start` ("find a template")? It
   could be linked cheaply. Embedding it would be more work, and clone-to-use
   means the user must clone before the template can be picked.
-- A clone count or "cloned from" line on public templates. `sourceTemplateId`
-  makes both possible, but neither is needed for v1.
+
+## Notes
+
+- Step 1 RLS was checked as `authenticated` and `anon` in a rolled-back
+  transaction. Another account sees a public template and its requirements but
+  can't update or delete either. A private template is invisible to other
+  accounts and to anon.
+- `20260930120000_add_template_visibility` is applied to both the hosted and
+  local databases (2026-09-30).

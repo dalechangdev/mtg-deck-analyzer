@@ -34,6 +34,11 @@ pnpm --filter @mtg/deck-builder sync:cards    # stream Scryfall bulk data into C
 `apps/mtg/.env` does, and it may name the hosted project (`.env.example` shows both).
 Check it before any dev-server or browser test that writes rows; a one-off script can
 target local with `DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"`.
+The Prisma CLI (`migrate`, `db:migrate`) reads `DIRECT_URL` first (`prisma.config.ts`),
+so a `DATABASE_URL` override alone still migrates the hosted project — set both.
+Applying `apps/mtg` migrations to the hosted Supabase project is fine: `prisma migrate
+deploy` with `.env` as-is is an accepted way to ship a schema change. Keep the local
+database migrated too, since tests and `verify:graphql` run against it.
 A dev server is often already running on :3000; `next dev` refuses to start a second one
 in the same directory, so check the port and reuse it.
 
