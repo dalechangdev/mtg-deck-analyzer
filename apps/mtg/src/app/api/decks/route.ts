@@ -55,9 +55,20 @@ export async function POST(req: Request) {
   const auth = await requireUserIdOr401();
   if (auth.response) return auth.response;
 
-  const { name, commanderId } = await req.json();
+  const { name, commanderId, templateId } = await req.json();
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name required" }, { status: 400 });
+  }
+
+  // Optional: the template builder attaches one at creation. Same visibility
+  // rule as the attach route — the caller's own templates plus shared ones.
+  if (templateId) {
+    const visible = await prisma.analysisTemplate.count({
+      where: { id: templateId, OR: [{ ownerId: auth.userId }, { ownerId: null }] },
+    });
+    if (visible !== 1) {
+      return NextResponse.json({ error: "Template not found" }, { status: 404 });
+    }
   }
 
   // Every deck starts with a v1 and opens on it. Two writes, because the deck
@@ -78,6 +89,7 @@ export async function POST(req: Request) {
             }),
           },
         },
+        ...(templateId && { templates: { create: { templateId } } }),
       },
       include: { versions: { select: { id: true } } },
     });

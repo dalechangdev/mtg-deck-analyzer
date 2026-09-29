@@ -21,6 +21,20 @@ export function versionCardsUrl(deckId: string, versionId: string, deckCardId?: 
   return deckCardId ? `${base}/${deckCardId}` : base;
 }
 
+/** Cards that could fill one of the template's requirements — the template builder's list. */
+export function candidatesUrl(
+  deckId: string,
+  versionId: string,
+  params: { roleId: string; q?: string; owned?: boolean; offset?: number; limit?: number }
+): string {
+  const search = new URLSearchParams({ roleId: params.roleId });
+  if (params.q?.trim()) search.set("q", params.q.trim());
+  if (params.owned) search.set("owned", "1");
+  if (params.offset) search.set("offset", String(params.offset));
+  if (params.limit) search.set("limit", String(params.limit));
+  return `/api/decks/${deckId}/versions/${versionId}/candidates?${search}`;
+}
+
 /** The deck's version collection, or one version when `versionId` is given. */
 export function versionsApiUrl(deckId: string, versionId?: string): string {
   const base = `/api/decks/${deckId}/versions`;
@@ -37,7 +51,7 @@ export function versionsApiUrl(deckId: string, versionId?: string): string {
 export function deckPageUrl(
   deckId: string,
   versionId: string,
-  subpath: "" | "/builder" | "/builder/sacrifice" | "/analysis" | "/versions" = "",
+  subpath: "" | "/build" | "/builder" | "/builder/sacrifice" | "/analysis" | "/versions" = "",
   params: Record<string, string> = {}
 ): string {
   const search = new URLSearchParams({ ...params, v: versionId });

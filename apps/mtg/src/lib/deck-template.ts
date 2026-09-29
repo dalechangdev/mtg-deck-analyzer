@@ -1,4 +1,4 @@
-import type { DeckEntry } from "@/lib/commander";
+import type { CardData, DeckEntry } from "@/lib/commander";
 import {
   classifierText,
   isBoardClear,
@@ -7,8 +7,13 @@ import {
   isTargetedDisruption,
 } from "@/lib/commander";
 
-// A deck card plus the global CardTheme tags it carries — THEME matchers need them.
-export type AnalyzedCard = DeckEntry & { themeIds: string[] };
+// Any card plus the global CardTheme tags it carries — THEME matchers need them.
+// Role matching never reads deck fields, so it runs over the whole card pool too
+// (the template builder's candidate lists), not only over cards in a deck.
+export type ClassifiableCard = CardData & { themeIds: string[] };
+
+// A deck card plus its themes — what the template evaluator scores.
+export type AnalyzedCard = DeckEntry & ClassifiableCard;
 
 export type MatcherKind =
   | "CLASSIFIER"
@@ -60,7 +65,7 @@ export function toOverrides(rows: RoleOverrideRow[]): RoleOverrides {
 // CLASSIFIER matchers resolve against this registry. A matcher naming a
 // predicate that isn't here never matches — roles stay usable when a
 // classifier is renamed, they just fall back to their other matchers.
-const CLASSIFIERS: Record<string, (card: AnalyzedCard) => boolean> = {
+const CLASSIFIERS: Record<string, (card: ClassifiableCard) => boolean> = {
   isManaRamp,
   isBoardClear,
   isCardAdvantage,
@@ -80,7 +85,7 @@ function compile(source: string): RegExp | null {
   return regexCache.get(source) ?? null;
 }
 
-function matchesMatcher(card: AnalyzedCard, matcher: RoleMatcher): boolean {
+function matchesMatcher(card: ClassifiableCard, matcher: RoleMatcher): boolean {
   switch (matcher.kind) {
     case "MANUAL_ONLY":
       return false;
@@ -97,20 +102,25 @@ function matchesMatcher(card: AnalyzedCard, matcher: RoleMatcher): boolean {
   }
 }
 
+/** Does the card fill the role on its own merits, ignoring any deck's overrides? */
+export function matchesRole(card: ClassifiableCard, role: Role): boolean {
+  return role.matchers.some((m) => matchesMatcher(card, m));
+}
+
 /**
  * Does this card fill this role in this deck?
  * A manual assignment always wins — in both directions. Otherwise the role's
  * matchers are OR'd together.
  */
 export function fillsRole(
-  card: AnalyzedCard,
+  card: ClassifiableCard,
   role: Role,
   overrides: RoleOverrides
 ): boolean {
   const override = overrides.get(overrideKey(card.cardId, role.id));
   if (override) return override === "INCLUDED";
 
-  return role.matchers.some((m) => matchesMatcher(card, m));
+  return matchesRole(card, role);
 }
 
 export type RequirementResult = {

@@ -39,9 +39,14 @@ export default async function DecksPage() {
     <PageShell className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-title font-semibold">Decks</h1>
-        <Link href="/decks/new" className={cn(buttonVariants({ size: "sm" }))}>
-          New Deck
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/decks/new" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Blank Deck
+          </Link>
+          <Link href="/decks/start" className={cn(buttonVariants({ size: "sm" }))}>
+            Build from Template
+          </Link>
+        </div>
       </div>
 
       {decks.length === 0 ? (
