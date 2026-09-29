@@ -14,6 +14,7 @@ import {
 } from "@/lib/deck-template";
 import { PotentialPool } from "./potential-pool";
 import { LandBaseMatrix } from "./land-base-matrix";
+import { ColorPipHistogram } from "./color-pip-histogram";
 import { analyzeLandBase, withPotentialPromoted } from "@/lib/land-base";
 import { DeckSteps } from "./deck-steps";
 import { toastManager } from "@/lib/toast";
@@ -343,6 +344,13 @@ export function DeckAnalysisView({
           onInspect={(cardId) => setSelectedCardId(cardId)}
           hasDetail={(cardId) => Boolean(cardDetails[cardId])}
         />
+
+        <section className="border-b border-border px-4 py-3 max-w-2xl">
+          <ColorPipHistogram
+            cards={entries}
+            identity={entries.find((e) => e.isCommander)?.colorIdentity}
+          />
+        </section>
 
         {/* Requirements */}
         <ul className="border-b border-border">

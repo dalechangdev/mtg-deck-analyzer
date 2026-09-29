@@ -54,6 +54,20 @@ export const MANA_CHIP: Record<string, string> = {
   C: "bg-muted border-border text-muted-foreground",
 }
 
+/**
+ * The same colours as raw CSS values, for SVG (charts) where a Tailwind class
+ * can't reach `fill`/`stroke`. `ink` is the text colour that reads on `fill`.
+ * `C` is the colorless pip, drawn in the neutral tokens.
+ */
+export const MANA_SVG: Record<string, { fill: string; edge: string; ink: string }> = {
+  W: { fill: "var(--mana-w)", edge: "var(--mana-w-edge)", ink: "var(--mana-w-foreground)" },
+  U: { fill: "var(--mana-u)", edge: "var(--mana-u-edge)", ink: "var(--mana-u-foreground)" },
+  B: { fill: "var(--mana-b)", edge: "var(--mana-b-edge)", ink: "var(--mana-b-foreground)" },
+  R: { fill: "var(--mana-r)", edge: "var(--mana-r-edge)", ink: "var(--mana-r-foreground)" },
+  G: { fill: "var(--mana-g)", edge: "var(--mana-g-edge)", ink: "var(--mana-g-foreground)" },
+  C: { fill: "var(--muted)", edge: "var(--border)", ink: "var(--muted-foreground)" },
+}
+
 /** Pip labels including colourless, for the search filters. */
 export const SEARCH_COLOR_LABELS: Record<string, string> = {
   ...COLOR_LABELS,
