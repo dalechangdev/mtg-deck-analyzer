@@ -487,14 +487,16 @@ function DeckList({
                   {entry.quantity > 1 && <span className="tabular-nums">{entry.quantity}× </span>}
                   {entry.name}
                 </span>
-                <button
+                <Button
+                  variant="outline"
+                  size="icon-xs"
                   onClick={() => onRemove(entry)}
                   disabled={pending.has(entry.cardId)}
                   aria-label={`Remove ${entry.name}`}
-                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-destructive px-1"
+                  className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive active:scale-90 active:bg-destructive/20"
                 >
                   −
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
