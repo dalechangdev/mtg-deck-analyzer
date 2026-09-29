@@ -34,6 +34,8 @@ pnpm --filter @mtg/deck-builder sync:cards    # stream Scryfall bulk data into C
 `apps/mtg/.env` does, and it may name the hosted project (`.env.example` shows both).
 Check it before any dev-server or browser test that writes rows; a one-off script can
 target local with `DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"`.
+A dev server is often already running on :3000; `next dev` refuses to start a second one
+in the same directory, so check the port and reuse it.
 
 GraphQL endpoint (`/api/graphql`, alongside REST — see `docs/plans/graphql-endpoint.md`):
 
@@ -153,6 +155,13 @@ the fixed maps in that file reach `Prisma.raw`.
   `--rarity-*`) and the domain maps in `src/lib/mtg-styles.ts`. Don't reintroduce bare
   `text-[10px]` or per-component colour literals — those maps exist because five components
   had already drifted apart.
+- **Charts (Recharts/SVG) take raw tokens: `fill="var(--muted-foreground)"`, never
+  `hsl(var(--…))`.** The tokens are oklch values, so the `hsl()` wrapper is an invalid colour
+  that SVG silently paints black — invisible in dark mode. `mana-curve.tsx` and
+  `curve-probability.tsx` still do this. Mana colours for SVG come from `MANA_SVG` in
+  `mtg-styles.ts` (Tailwind classes can't reach `fill`). The white and black mana fills
+  nearly vanish on the light and dark surfaces, so a chart using them needs an outline and
+  a non-colour label per mark (see `color-pip-histogram.tsx`).
 - The deck builder never holds the Supabase service-role key; the crawler is the only
   component with a reason to.
 
