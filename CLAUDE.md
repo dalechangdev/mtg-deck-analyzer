@@ -30,6 +30,11 @@ pnpm --filter @mtg/deck-builder db:migrate    # prisma migrate dev
 pnpm --filter @mtg/deck-builder sync:cards    # stream Scryfall bulk data into Card/CardPrinting
 ```
 
+`supabase start` does not point the app at the local database — `DATABASE_URL` in
+`apps/mtg/.env` does, and it may name the hosted project (`.env.example` shows both).
+Check it before any dev-server or browser test that writes rows; a one-off script can
+target local with `DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"`.
+
 GraphQL endpoint (`/api/graphql`, alongside REST — see `docs/plans/graphql-endpoint.md`):
 
 ```bash
@@ -63,7 +68,7 @@ Two apps that share one scraping core. There is no deployment config in the repo
 - `docs/plans/` — one Markdown file per multi-step feature: the design decision, the steps, and a
   status table. Write the plan there before starting, keep the status table current as steps land,
   and read the relevant plan before resuming work on a feature. Active: `deck-versions.md`,
-  `land-base-matrix.md`, `graphql-endpoint.md`.
+  `land-base-matrix.md`, `graphql-endpoint.md`, `template-builder.md`.
 - `docs/ideas/` — one Markdown file per cluster of "maybe later" work: what it would add,
   a sketch against the current code, and where the awkwardness is. Nothing here is
   committed to; move an idea into `docs/plans/` when it becomes a feature.
@@ -116,6 +121,17 @@ a store is a new package plus a `stores` row, with no schema or scheduler change
 **`quantity` is nullable and must stay that way.** Some stores publish exact counts,
 some only availability. Null means "in stock, count unknown" — never coerce to 0 or 1.
 Money is integer cents everywhere, parsed at the edge.
+
+**Template roles are matched in JS, never SQL.** A role's matchers (`src/lib/deck-template.ts`)
+are mostly `CLASSIFIER` predicates from `src/lib/commander.ts` — regexes over
+`classifierText`, which strips reminder text and folds in face text. The analysis
+scorecard and the template builder's suggestions (`/decks/[id]/build`) must agree on
+what counts as ramp, so both run the same `matchesRole`/`fillsRole`; don't port a
+classifier to Postgres regex to "speed up" a query. For corpus-wide matching,
+`src/lib/card-pool.ts` holds every commander-legal card (classification fields only)
+in a process cache with per-role match sets keyed by matcher list. It must stay free
+of user data: deck overrides (`DeckCardRole`) are applied per request in
+`src/lib/template-candidates.ts`, never written into the cache.
 
 **Card search bypasses the Prisma query builder.** `src/lib/card-search-sql.ts`
 builds the WHERE/ORDER BY of a raw id query (array containment for colours, numeric
