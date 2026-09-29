@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import { requireUserIdOr401 } from "@/lib/auth";
 
 export async function GET() {
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
   // rule as the attach route — the caller's own templates plus shared ones.
   if (templateId) {
     const visible = await prisma.analysisTemplate.count({
-      where: { id: templateId, OR: [{ ownerId: auth.userId }, { ownerId: null }] },
+      where: { id: templateId, ...usableTemplateWhere(auth.userId) },
     });
     if (visible !== 1) {
       return NextResponse.json({ error: "Template not found" }, { status: 404 });

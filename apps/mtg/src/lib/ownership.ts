@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { viewableTemplateWhere } from "@/lib/template-visibility";
 import { getUserId } from "@/lib/auth";
 
 /**
@@ -60,8 +61,13 @@ export async function requireVersionAccess(deckId: string, versionId: string): P
 }
 
 /**
- * Same, for a template. Shared reference templates (ownerId null) are readable
- * by anyone but writable by no one, so `mode` says which question to ask.
+ * Same, for a template. `mode` says which question to ask:
+ *
+ * - "read"  — may the caller view or clone it? Own, shared reference (ownerId
+ *             null) and anyone's published template. Not the check for
+ *             attaching or scoring: that is usableTemplateWhere, which leaves
+ *             other accounts' public templates out.
+ * - "write" — does the caller own it? Shared and public templates answer 404.
  */
 export async function requireTemplateAccess(
   templateId: string,
@@ -76,7 +82,7 @@ export async function requireTemplateAccess(
     where:
       mode === "write"
         ? { id: templateId, ownerId: userId }
-        : { id: templateId, OR: [{ ownerId: userId }, { ownerId: null }] },
+        : { id: templateId, ...viewableTemplateWhere(userId) },
   });
   if (visible !== 1) {
     return { response: Response.json({ error: "Not found" }, { status: 404 }) };

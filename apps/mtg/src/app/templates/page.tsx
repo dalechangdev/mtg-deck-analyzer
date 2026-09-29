@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import { requireUserId } from "@/lib/auth";
 import { TemplateManager } from "@/components/templates/template-manager";
 
@@ -8,7 +9,7 @@ export default async function TemplatesPage() {
   const [templates, roles] = await Promise.all([
     // Own templates plus the shared reference ones.
     prisma.analysisTemplate.findMany({
-      where: { OR: [{ ownerId: userId }, { ownerId: null }] },
+      where: usableTemplateWhere(userId),
       orderBy: [{ isBuiltIn: "desc" }, { name: "asc" }],
       include: {
         requirements: {

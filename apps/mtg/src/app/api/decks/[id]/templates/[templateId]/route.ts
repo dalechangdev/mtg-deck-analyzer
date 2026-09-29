@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import { requireDeckAccess } from "@/lib/ownership";
 
 type Ctx = { params: Promise<{ id: string; templateId: string }> };
@@ -16,7 +17,7 @@ export async function PUT(_req: Request, { params }: Ctx) {
 
   // Attachable templates are the caller's own plus the shared reference ones.
   const template = await prisma.analysisTemplate.findFirst({
-    where: { id: templateId, OR: [{ ownerId: access.userId }, { ownerId: null }] },
+    where: { id: templateId, ...usableTemplateWhere(access.userId) },
   });
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import { DEFAULT_TEMPLATE_ID } from "@/lib/deck-template-loader";
 import { requireUserId } from "@/lib/auth";
 import { PageShell } from "@/components/ui/shell";
@@ -10,7 +11,7 @@ export default async function StartDeckPage() {
 
   // The caller's own templates plus the shared reference ones (ownerId null).
   const templates = await prisma.analysisTemplate.findMany({
-    where: { OR: [{ ownerId: userId }, { ownerId: null }] },
+    where: usableTemplateWhere(userId),
     orderBy: [{ isBuiltIn: "desc" }, { name: "asc" }],
     include: {
       requirements: {

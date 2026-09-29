@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import { requireUserId } from "@/lib/auth";
 import { PageShell } from "@/components/ui/shell";
 import { VersionCompare } from "@/components/decks/version-compare";
@@ -63,7 +64,7 @@ export default async function CompareVersionsPage({
     loadVersionComparison(id, pair.a, pair.b, templateId, userId),
     // The caller's own templates plus the shared reference ones — never another account's.
     prisma.analysisTemplate.findMany({
-      where: { OR: [{ ownerId: userId }, { ownerId: null }] },
+      where: usableTemplateWhere(userId),
       orderBy: [{ isBuiltIn: "desc" }, { name: "asc" }],
       select: { id: true, name: true, isBuiltIn: true },
     }),

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import { requireUserId } from "@/lib/auth";
 import {
   loadDeckCardDetails,
@@ -43,7 +44,7 @@ export default async function DeckAnalysisPage({
     // The template picker offers the caller's own templates plus the shared
     // reference ones — never another account's.
     prisma.analysisTemplate.findMany({
-      where: { OR: [{ ownerId: userId }, { ownerId: null }] },
+      where: usableTemplateWhere(userId),
       orderBy: [{ isBuiltIn: "desc" }, { name: "asc" }],
       select: { id: true, name: true, isBuiltIn: true },
     }),

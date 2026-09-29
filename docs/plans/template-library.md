@@ -10,7 +10,7 @@ signed-in user through search, previewed, and cloned into their own account.
 | Step | Scope | State |
 |---|---|---|
 | 1 | Schema: `isPublic`, `publishedAt`, `sourceTemplateId`; RLS for public rows | done (uncommitted) — `20260930120000_add_template_visibility` |
-| 2 | `ownership.ts`: split "can view" from "can use"; route the six inline ORs through it | todo |
+| 2 | `ownership.ts`: split "can view" from "can use"; route the six inline ORs through it | done (uncommitted) — `src/lib/template-visibility.ts`, guarded by `test/template-visibility.test.ts` |
 | 3 | `PATCH /api/templates/[id]` accepts `isPublic`; description length cap | todo |
 | 4 | Clone of another account's public template (duplicate route + naming) | todo |
 | 5 | `GET /api/templates/public` — search, filter, paginate | todo |
@@ -50,11 +50,12 @@ and it means the five "usable template" checks (`/decks/start`, analysis, compar
 `POST /api/decks`, the attach route, `loadTemplate`) keep their current meaning.
 It is also the flow the app already has for built-ins.
 
-**Two predicates, named.** `ownership.ts` gains:
+**Two predicates, named.** `src/lib/template-visibility.ts` holds them (pure, so
+`node:test` can import it; `ownership.ts` is `server-only`):
 
 - `usableTemplateWhere(userId)` — `ownerId = me OR ownerId IS NULL`. Attach,
-  analyse, start a deck. Unchanged semantics; replaces the six copies of the
-  inline `OR`.
+  analyse, compare, start a deck, list "My templates", `loadTemplate`. Unchanged
+  semantics; replaced the eight inline copies of the `OR`.
 - `viewableTemplateWhere(userId)` — usable, `OR isPublic`. Preview and clone only.
 
 `requireTemplateAccess(id, "read")` switches to the viewable predicate; its two

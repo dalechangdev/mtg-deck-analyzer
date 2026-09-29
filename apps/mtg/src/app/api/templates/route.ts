@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import { requireUserIdOr401 } from "@/lib/auth";
 import {
   isUniqueViolation,
@@ -13,7 +14,7 @@ export async function GET() {
 
   // The caller's own templates plus the shared reference ones (ownerId null).
   const templates = await prisma.analysisTemplate.findMany({
-    where: { OR: [{ ownerId: auth.userId }, { ownerId: null }] },
+    where: usableTemplateWhere(auth.userId),
     orderBy: [{ isBuiltIn: "desc" }, { name: "asc" }],
     include: {
       requirements: {

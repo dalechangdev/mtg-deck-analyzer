@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { usableTemplateWhere } from "@/lib/template-visibility";
 import type { CardDetail } from "@/components/cards/card-detail-modal";
 import { cardDetailInclude, toCardDetail } from "@/lib/card-detail";
 import { deckEntryOrderBy, toDeckEntry } from "@/lib/deck-entry";
@@ -69,7 +70,7 @@ export async function loadTemplate(
   const template = await prisma.analysisTemplate.findFirst({
     where: {
       id: templateId,
-      OR: [{ ownerId: viewerId }, { ownerId: null }],
+      ...usableTemplateWhere(viewerId),
     },
     include: {
       requirements: {
