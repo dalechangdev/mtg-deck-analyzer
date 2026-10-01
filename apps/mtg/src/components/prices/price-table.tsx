@@ -1,3 +1,4 @@
+import { LoaderCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { unitPriceCents } from "@/lib/price-summary";
 import type { CardPrice, PricedLine, PrintingAttempt } from "@/lib/price-events";
@@ -30,29 +31,38 @@ function describeAttempt(a: PrintingAttempt) {
   return `${a.setName}: ${formatCents(a.lowestPriceCents, a.currency)}`;
 }
 
-/** Sort buckets: in stock first (by line total), then sold out, not found, failed, pending, unknown. */
+/** The card the server is on, from the latest `checking` event. */
+export type Checking = { key: string; attempt: number; of: number };
+
+/**
+ * Sort buckets: in stock first (by line total), then sold out, not found,
+ * failed, the card being checked, still queued, unknown.
+ */
 const RANK: Record<CardPrice["status"], number> = { in_stock: 0, sold_out: 1, not_found: 2, error: 3 };
-function rank(line: PricedLine, result: CardPrice | undefined) {
-  if (!line.key) return 5;
-  return result ? RANK[result.status] : 4;
+function rank(line: PricedLine, result: CardPrice | undefined, checking: Checking | null) {
+  if (!line.key) return 6;
+  if (result) return RANK[result.status];
+  return line.key === checking?.key ? 4 : 5;
 }
 
 export function PriceTable({
   lines,
   results,
-  pendingLabel = "…",
+  pendingLabel = "Queued",
+  checking = null,
 }: {
   lines: PricedLine[];
   results: Map<string, CardPrice>;
-  /** Shown for a card with no result: "…" while running, "not checked" for a stopped saved run. */
+  /** Shown for a card with no result: "Queued" while running, "Not checked" for a stopped saved run. */
   pendingLabel?: string;
+  checking?: Checking | null;
 }) {
   const rows = lines
     .map((line) => {
       const result = line.key ? results.get(line.key) : undefined;
       const each = unitPriceCents(result);
       const total = each != null ? each * line.quantity : null;
-      return { line, result, each, total, rank: rank(line, result) };
+      return { line, result, each, total, rank: rank(line, result, checking) };
     })
     .sort(
       (a, b) =>
@@ -92,8 +102,13 @@ export function PriceTable({
             <td className="py-1.5 pr-2 text-right tabular-nums align-top">
               {total != null ? formatCents(total, result?.best?.currency ?? null) : ""}
             </td>
-            <td className="py-1.5 text-muted-foreground align-top">
-              <StatusCell line={line} result={result} pendingLabel={pendingLabel} />
+            <td className="py-1.5 text-muted-foreground align-top whitespace-nowrap">
+              <StatusCell
+                line={line}
+                result={result}
+                pendingLabel={pendingLabel}
+                checking={line.key && line.key === checking?.key ? checking : null}
+              />
             </td>
           </tr>
         ))}
@@ -113,10 +128,9 @@ function PrintingCell({ line, result }: { line: PricedLine; result: CardPrice | 
     <>
       {result.best.setName}
       {switched && (
-        <span className="block text-body">
-          {named
-            ? `listed: ${describeAttempt(named)}`
-            : `listed: ${line.namedSetCode!.toUpperCase()} (not on Ítaca)`}
+        <span className="text-body">
+          {" · listed: "}
+          {named ? describeAttempt(named) : `${line.namedSetCode!.toUpperCase()} (not on Ítaca)`}
         </span>
       )}
     </>
@@ -127,18 +141,31 @@ function StatusCell({
   line,
   result,
   pendingLabel,
+  checking,
 }: {
   line: PricedLine;
   result: CardPrice | undefined;
   pendingLabel: string;
+  checking: Checking | null;
 }) {
   if (!line.key) return <span className="text-destructive">Unknown card</span>;
+  if (checking) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-foreground" role="status">
+        <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
+        {checking.attempt > 0
+          ? `Checking printing ${checking.attempt} of ${checking.of}…`
+          : "Finding printings…"}
+      </span>
+    );
+  }
   if (!result) return <span>{pendingLabel}</span>;
 
   const checked = result.attempts.length;
   const detail = result.attempts.map(describeAttempt).join("\n");
   const summary = (
-    <span className="block text-body" title={detail}>
+    <span className="text-body" title={detail}>
+      {" · "}
       {checked === 0 ? "no printing on Ítaca" : `${checked} printing${checked === 1 ? "" : "s"} checked`}
     </span>
   );

@@ -166,20 +166,26 @@ async function fetchAttempt(card: CardToPrice, c: Candidate): Promise<PrintingAt
 /**
  * Prices one card across up to MAX_ATTEMPTS_PER_CARD printings, cache first.
  * Returns null if `signal` aborts mid-card; attempts made so far stay cached,
- * so a re-run resumes where this one stopped.
+ * so a re-run resumes where this one stopped. `onAttempt` fires before each
+ * Ítaca request with its 1-based position among the candidates.
  */
-export async function priceCard(card: CardToPrice, signal: AbortSignal): Promise<CardPrice | null> {
+export async function priceCard(
+  card: CardToPrice,
+  signal: AbortSignal,
+  onAttempt?: (attempt: number, of: number) => void
+): Promise<CardPrice | null> {
   const candidates = await candidatePrintings(card);
   const cached = await readFreshAttempts(card.cardId, candidates);
 
   const attempts: PrintingAttempt[] = [];
-  for (const c of candidates) {
+  for (const [i, c] of candidates.entries()) {
     const hit = cached.get(c.setCode);
     if (hit) {
       attempts.push(hit);
       continue;
     }
     if (signal.aborted) return null;
+    onAttempt?.(i + 1, candidates.length);
     attempts.push(await fetchAttempt(card, c));
   }
   return pickBest(card.cardId, attempts, card.namedSetCode);

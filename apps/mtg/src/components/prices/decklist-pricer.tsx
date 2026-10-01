@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { buttonVariants } from "@/components/ui/button";
-import { formatCents, PriceTable } from "@/components/prices/price-table";
+import { formatCents, PriceTable, type Checking } from "@/components/prices/price-table";
 import { cn } from "@/lib/utils";
 import { MAX_ATTEMPTS_PER_CARD } from "@/lib/printing-choice";
 import { summarize } from "@/lib/price-summary";
@@ -25,6 +25,7 @@ export function DecklistPricer({
   const [meta, setMeta] = useState<{ cards: number; skippedBasics: number; unparsed: string[] } | null>(null);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [checking, setChecking] = useState<Checking | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -46,6 +47,7 @@ export function DecklistPricer({
     setMeta(null);
     setEtaMinutes(null);
     setSavedId(null);
+    setChecking(null);
 
     try {
       const res = await fetch("/api/prices/decklist", {
@@ -76,6 +78,7 @@ export function DecklistPricer({
       if (!controller.signal.aborted) setError("Lost the connection while pricing");
     } finally {
       setRunning(false);
+      setChecking(null);
       abortRef.current = null;
     }
   }
@@ -85,7 +88,10 @@ export function DecklistPricer({
       pacing.current.total = event.cards;
       setLines(event.lines);
       setMeta({ cards: event.cards, skippedBasics: event.skippedBasics, unparsed: event.unparsed });
+    } else if (event.type === "checking") {
+      setChecking({ key: event.key, attempt: event.attempt, of: event.of });
     } else if (event.type === "price") {
+      setChecking((c) => (c?.key === event.result.key ? null : c));
       const now = Date.now();
       const p = pacing.current;
       if (event.result.attempts.some((a) => !a.cached)) {
@@ -180,7 +186,7 @@ export function DecklistPricer({
         </div>
       )}
 
-      <PriceTable lines={lines} results={results} />
+      <PriceTable lines={lines} results={results} checking={checking} />
     </div>
   );
 }

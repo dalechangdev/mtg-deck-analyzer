@@ -48,6 +48,12 @@ export type PriceEvent =
       skippedBasics: number;
       unparsed: string[];
     }
+  /**
+   * The server has started on this card. `attempt` is the printing about to be
+   * requested from Ítaca (1-based) of `of` candidates; 0 while it is still
+   * listing printings.
+   */
+  | { type: "checking"; key: string; attempt: number; of: number }
   | { type: "price"; result: CardPrice }
   /** `searchId` is the saved PriceSearch, or null if saving failed. */
   | { type: "done"; searchId: string | null };

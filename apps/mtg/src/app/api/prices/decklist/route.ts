@@ -76,7 +76,10 @@ export async function POST(request: Request) {
         });
         for (const card of cards) {
           // A closed tab stops spending the crawl budget.
-          const result = await priceCard(card, request.signal);
+          send({ type: "checking", key: card.cardId, attempt: 0, of: 0 });
+          const result = await priceCard(card, request.signal, (attempt, of) =>
+            send({ type: "checking", key: card.cardId, attempt, of })
+          );
           if (!result) return;
           results.push(result);
           send({ type: "price", result });
