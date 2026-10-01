@@ -242,6 +242,23 @@ model ShoppingCartCard {
   @@index([userId])
 }
 
+// Ítaca price lookups for /prices (docs/plans/moxfield-prices.md). Not user
+// data — a price is the same for every account — so no userId. A cache, not a
+// history: one row per (card, printing set), overwritten on refetch. cardId is
+// not a foreign key so a card resync never has to touch it.
+model ItacaPrice {
+  cardId           String
+  setCode          String
+  status           String // "found" | "not_found"
+  lowestPriceCents Int?
+  currency         String?
+  inStock          Boolean  @default(false)
+  url              String?
+  fetchedAt        DateTime @default(now())
+
+  @@id([cardId, setCode])
+}
+
 // How a card automatically qualifies for a role.
 // CLASSIFIER    — a predicate registered in src/lib/deck-template.ts (e.g. "isManaRamp")
 // THEME         — the card carries the CardTheme with this id

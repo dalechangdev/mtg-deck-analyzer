@@ -40,16 +40,40 @@ export class ItacaClient {
     return value;
   }
 
-  async findExpansionSlug(setName: string): Promise<string | null> {
+  /**
+   * Ítaca's slug for a set as another catalogue (Scryfall) names it. With
+   * `fuzzy: false` only exact and reordered-word matches count — for callers
+   * trying many printings, where a loose match would spend a 5s request on a
+   * set that probably isn't the one meant.
+   */
+  async findExpansionSlug(
+    setName: string,
+    opts: { fuzzy?: boolean } = {}
+  ): Promise<string | null> {
     const expansions = await this.listExpansions();
     const key = normalize(setName);
     const exact = expansions.find((e) => normalize(e.name) === key);
     if (exact) return exact.slug;
-    const fuzzy = expansions.find((e) => {
+
+    // Same words, different order: Scryfall's "Modern Horizons 3 Commander"
+    // is Ítaca's "Commander: Modern Horizons 3", and every recent precon set
+    // follows that pattern.
+    const words = (s: string) => s.split(" ").sort().join(" ");
+    const reordered = expansions.find((e) => words(normalize(e.name)) === words(key));
+    if (reordered) return reordered.slug;
+    if (opts.fuzzy === false) return null;
+
+    // Among names that contain or are contained by ours, the closest in length
+    // wins: "Modern Horizons 3" over the generic "Commander", and a set over
+    // its own ": Extras" listing.
+    let best: { slug: string; distance: number } | null = null;
+    for (const e of expansions) {
       const n = normalize(e.name);
-      return n.includes(key) || key.includes(n);
-    });
-    return fuzzy?.slug ?? null;
+      if (!n.includes(key) && !key.includes(n)) continue;
+      const distance = Math.abs(n.length - key.length);
+      if (!best || distance < best.distance) best = { slug: e.slug, distance };
+    }
+    return best?.slug ?? null;
   }
 
   /** One listing page: 20 cards with their complete SKU/stock tables. */
@@ -78,16 +102,35 @@ export class ItacaClient {
 
   /**
    * Single-card price lookup by name + set name, for the deck builder.
-   * Prefers the guessed slug and falls back to scanning the set's listing
-   * pages, which costs one request per 20 cards.
+   * Resolves the set to an Ítaca expansion, then see `getPricingInExpansion`.
    */
-  async getPricing(cardName: string, setName: string): Promise<ItacaPricing | null> {
+  async getPricing(
+    cardName: string,
+    setName: string,
+    opts: { scan?: boolean } = {}
+  ): Promise<ItacaPricing | null> {
     const setSlug = await this.findExpansionSlug(setName);
     if (!setSlug) return null;
+    return this.getPricingInExpansion(cardName, setSlug, opts);
+  }
 
+  /**
+   * One card in one Ítaca expansion. Prefers the guessed slug and falls back to
+   * scanning the set's listing pages, which costs one request per 20 cards.
+   *
+   * Pass `scan: false` when pricing many cards at once: the fallback walks up
+   * to MAX_PAGES_PER_EXPANSION pages (five minutes at the crawl delay) for a
+   * single card, which is unbounded across a deck. A slug miss then returns null.
+   */
+  async getPricingInExpansion(
+    cardName: string,
+    setSlug: string,
+    opts: { scan?: boolean } = {}
+  ): Promise<ItacaPricing | null> {
     let product = await this.fetchProduct(setSlug, slugify(cardName));
 
     if (!product || normalize(product.name) !== normalize(cardName)) {
+      if (opts.scan === false) return null;
       const target = normalize(cardName);
       let found: string | null = null;
       for await (const page of this.iterateExpansion(setSlug)) {

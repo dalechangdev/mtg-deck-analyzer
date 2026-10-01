@@ -32,6 +32,8 @@ export async function GET(_req: Request, { params }: Ctx) {
     format: template.format,
     deckSize: template.deckSize,
     isBuiltIn: template.isBuiltIn,
+    isPublic: template.isPublic,
+    isOwn: template.ownerId === access.userId,
     requirements: template.requirements.map((r) => ({
       roleId: r.roleId,
       roleName: r.role.name,
@@ -70,11 +72,16 @@ export async function PATCH(req: Request, { params }: Ctx) {
   // touches one field leaves the rest of the row alone.
   const { requirements, ...data } = parsed.value;
 
+  // publishedAt marks the FIRST publish, so Browse's "newest" order isn't
+  // reshuffled by an owner toggling a template off and on.
+  const publishedAt =
+    data.isPublic && template.publishedAt === null ? { publishedAt: new Date() } : {};
+
   try {
     // Requirements are replaced wholesale — simpler than diffing, and the set is
     // small. Wrapped so a bad requirement can't leave the template with none.
     await prisma.$transaction(async (tx) => {
-      await tx.analysisTemplate.update({ where: { id }, data });
+      await tx.analysisTemplate.update({ where: { id }, data: { ...data, ...publishedAt } });
 
       if (requirements) {
         await tx.templateRequirement.deleteMany({ where: { templateId: id } });

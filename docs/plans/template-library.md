@@ -11,7 +11,7 @@ signed-in user through search, previewed, and cloned into their own account.
 |---|---|---|
 | 1 | Schema: `isPublic`, `publishedAt`, `sourceTemplateId`; RLS for public rows | done (uncommitted) — `20260930120000_add_template_visibility` |
 | 2 | `ownership.ts`: split "can view" from "can use"; route the six inline ORs through it | done (uncommitted) — `src/lib/template-visibility.ts`, guarded by `test/template-visibility.test.ts` |
-| 3 | `PATCH /api/templates/[id]` accepts `isPublic`; description length cap | todo |
+| 3 | `PATCH /api/templates/[id]` accepts `isPublic`; description length cap | done (uncommitted) — tests in `test/template-input.test.ts`; HTTP path unexercised until step 8 |
 | 4 | Clone of another account's public template (duplicate route + naming) | todo |
 | 5 | `GET /api/templates/public` — search, filter, paginate | todo |
 | 6 | `/templates` page: "My templates" / "Browse" tabs, publish toggle, delete confirm | todo |
@@ -98,7 +98,10 @@ as a regression check.
 **Publishing.** `isPublic` is set through `PATCH /api/templates/[id]` (owner-only,
 built-ins still 403). `publishedAt` is set the first time it goes public and left
 alone on later toggles. Unpublishing hides it from Browse; existing clones are
-unaffected. Nothing else about a template changes when it's published, and it
+unaffected. `POST` ignores `isPublic` like any unknown key, so a new template
+always starts private. Both GETs return `isPublic`; the detail GET also returns
+`isOwn`, since it can now serve another account's public template, and the
+client needs that to hide Edit/Delete/Publish. Nothing else about a template changes when it's published, and it
 stays editable. Other users see the current version, since clones are snapshots.
 
 **Cloning.** The duplicate route already copies requirements into the caller's

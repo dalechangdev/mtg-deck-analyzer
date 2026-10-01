@@ -21,6 +21,7 @@ const NAV_LINKS = [
   { href: "/library", label: "Library" },
   { href: "/packs", label: "Packs" },
   { href: "/cart", label: "Cart" },
+  { href: "/prices", label: "Prices" },
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

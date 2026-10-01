@@ -29,12 +29,16 @@ export type TemplateInput = {
   format?: string;
   deckSize?: number;
   requirements?: RequirementInput[];
+  /** Update only: a new template always starts private. */
+  isPublic?: boolean;
 };
 
 export type ValidationFailure = { ok: false; error: string; status: 400 | 409 };
 export type ValidationResult<T> = { ok: true; value: T } | ValidationFailure;
 
 const MAX_NAME_LENGTH = 100;
+// Descriptions are shown to other accounts once a template is published.
+export const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_FORMAT_LENGTH = 40;
 const MAX_COUNT = 999;
 const MAX_DECK_SIZE = 1000;
@@ -209,6 +213,16 @@ async function validate(
       return fail("`description` must be a string or null");
     }
     input.description = toNullableString(body.description);
+    if (input.description && input.description.length > MAX_DESCRIPTION_LENGTH) {
+      return fail(`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`);
+    }
+  }
+
+  // Publishing is a separate act from creating: a POST that carries isPublic
+  // is ignored like any other unknown key, and the template starts private.
+  if (mode === "update" && "isPublic" in body) {
+    if (typeof body.isPublic !== "boolean") return fail("`isPublic` must be true or false");
+    input.isPublic = body.isPublic;
   }
 
   // Absent on a create means "take the column default", so neither needs a

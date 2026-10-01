@@ -32,6 +32,7 @@ export async function GET() {
       format: t.format,
       deckSize: t.deckSize,
       isBuiltIn: t.isBuiltIn,
+      isPublic: t.isPublic,
       requirements: t.requirements.map((r) => ({
         roleId: r.roleId,
         roleName: r.role.name,

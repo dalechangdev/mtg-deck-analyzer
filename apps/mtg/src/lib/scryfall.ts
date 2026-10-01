@@ -23,6 +23,7 @@ export interface ScryfallCard {
   card_faces?: ScryfallCardFace[];
   set: string;
   set_name: string;
+  released_at?: string;
   rarity: string;
   collector_number: string;
   scryfall_uri: string;
@@ -73,6 +74,56 @@ export async function fetchSets(): Promise<ScryfallSet[]> {
   return sets
     .filter((s) => BOOSTER_SET_TYPES.has(s.set_type) && !s.digital && s.card_count > 0)
     .sort((a, b) => (b.released_at ?? "").localeCompare(a.released_at ?? ""));
+}
+
+export type PaperPrinting = {
+  setCode: string;
+  setName: string;
+  releasedAt: string;
+};
+
+/** Scryfall asks for 50–100ms between API requests; pricing a deck makes one per card. */
+let scryfallQueue: Promise<unknown> = Promise.resolve();
+function paced<T>(task: () => Promise<T>): Promise<T> {
+  const run = scryfallQueue.then(task, task);
+  scryfallQueue = run.then(
+    () => new Promise((r) => setTimeout(r, 100)),
+    () => new Promise((r) => setTimeout(r, 100))
+  );
+  return run;
+}
+
+/**
+ * Every paper printing of a card, one per set, newest first. CardPrinting
+ * can't answer this (see sync-cards.ts), and /prices needs it to try a card's
+ * other sets on Ítaca. Only the first page (175 prints) — more than any card
+ * would get Ítaca attempts for.
+ */
+export async function fetchPaperPrintings(oracleId: string): Promise<PaperPrinting[]> {
+  const params = new URLSearchParams({
+    q: `oracleid:${oracleId} game:paper`,
+    unique: "prints",
+    order: "released",
+    dir: "desc",
+  });
+  const res = await paced(() =>
+    fetch(`${SCRYFALL_API}/cards/search?${params}`, {
+      headers: { "User-Agent": "mtg-deck-builder/1.0", Accept: "application/json" },
+      next: { revalidate: 86400 },
+    })
+  );
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`Scryfall printings fetch failed: ${res.status}`);
+  const data = (await res.json()) as { data: ScryfallCard[] };
+
+  const bySet = new Map<string, PaperPrinting>();
+  for (const card of data.data) {
+    const setCode = card.set.toLowerCase();
+    if (!bySet.has(setCode)) {
+      bySet.set(setCode, { setCode, setName: card.set_name, releasedAt: card.released_at ?? "" });
+    }
+  }
+  return [...bySet.values()];
 }
 
 // Cards belonging to a single set, optionally filtered by a name query,
