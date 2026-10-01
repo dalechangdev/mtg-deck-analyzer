@@ -49,4 +49,5 @@ export type PriceEvent =
       unparsed: string[];
     }
   | { type: "price"; result: CardPrice }
-  | { type: "done" };
+  /** `searchId` is the saved PriceSearch, or null if saving failed. */
+  | { type: "done"; searchId: string | null };

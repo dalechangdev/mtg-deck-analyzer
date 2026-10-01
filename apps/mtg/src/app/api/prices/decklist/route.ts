@@ -1,7 +1,9 @@
 import { requireUserIdOr401 } from "@/lib/auth";
 import { isBasicLand, parseDecklist } from "@/lib/decklist";
 import { priceCard, resolveLines, uniqueCards } from "@/lib/deck-pricing";
-import type { PriceEvent } from "@/lib/price-events";
+import { saveSearch } from "@/lib/price-history";
+import type { CardPrice, PriceEvent } from "@/lib/price-events";
+import type { PriceSnapshot } from "@/lib/price-summary";
 
 /** A pasted Commander deck is ~100 lines; this is room for that and some slack. */
 const MAX_TEXT_LENGTH = 20_000;
@@ -10,8 +12,8 @@ const MAX_CARDS = 150;
 
 /**
  * Prices a pasted decklist on Ítaca, streaming NDJSON (`PriceEvent` per line)
- * so the page fills in as each card's 5s-paced lookups land. Signed-in only:
- * no user rows are touched, but it makes outbound requests on the server.
+ * so the page fills in as each card's 5s-paced lookups land. Each run is saved
+ * to the caller's history (PriceSearch) when it ends, finished or stopped.
  */
 export async function POST(request: Request) {
   const auth = await requireUserIdOr401();
@@ -43,12 +45,27 @@ export async function POST(request: Request) {
     );
   }
 
+  const text = body.text;
+  const userId = auth.userId;
+  const results: CardPrice[] = [];
+  const snapshot = (): PriceSnapshot => ({
+    v: 1,
+    lines,
+    results,
+    skippedBasics: parsed.lines.length - kept.length,
+    unparsed: parsed.unparsed,
+  });
+  // Saving must never break the stream; a failed save just isn't in history.
+  const save = (status: "complete" | "stopped") =>
+    saveSearch(userId, { text, skipBasics, status, snapshot: snapshot() }).catch(() => null);
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (event: PriceEvent) =>
         controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
 
+      let saved = false;
       try {
         send({
           type: "deck",
@@ -61,12 +78,16 @@ export async function POST(request: Request) {
           // A closed tab stops spending the crawl budget.
           const result = await priceCard(card, request.signal);
           if (!result) return;
+          results.push(result);
           send({ type: "price", result });
         }
-        send({ type: "done" });
+        saved = true;
+        send({ type: "done", searchId: await save("complete") });
       } catch {
         // enqueue throws once the client has gone; nothing left to tell it.
       } finally {
+        // A closed tab or Stop still records what was checked, if anything was.
+        if (!saved && results.length > 0) await save("stopped");
         try {
           controller.close();
         } catch {}

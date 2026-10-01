@@ -259,6 +259,27 @@ model ItacaPrice {
   @@id([cardId, setCode])
 }
 
+// A saved /prices run: what the list cost when it was priced
+// (docs/plans/moxfield-prices.md, "History"). A snapshot, not a pointer into
+// ItacaPrice, which is a cache and gets overwritten. Per account; always query
+// with a userId filter.
+model PriceSearch {
+  id          String   @id @default(cuid())
+  userId      String   @db.Uuid // -> auth.users(id)
+  name        String
+  text        String // the pasted list, for "Price again"
+  skipBasics  Boolean
+  status      String // "complete" | "stopped"
+  totalCents  Int
+  currency    String?
+  pricedCards Int // copies with an in-stock price
+  totalCards  Int // copies in the list, after skipping basics
+  result      Json // PriceSnapshot (src/lib/price-summary.ts)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 // How a card automatically qualifies for a role.
 // CLASSIFIER    — a predicate registered in src/lib/deck-template.ts (e.g. "isManaRamp")
 // THEME         — the card carries the CardTheme with this id

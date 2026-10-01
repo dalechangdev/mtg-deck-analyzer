@@ -1,49 +1,30 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { formatCents, PriceTable } from "@/components/prices/price-table";
 import { cn } from "@/lib/utils";
 import { MAX_ATTEMPTS_PER_CARD } from "@/lib/printing-choice";
-import type { CardPrice, PricedLine, PriceEvent, PrintingAttempt } from "@/lib/price-events";
+import { summarize } from "@/lib/price-summary";
+import type { CardPrice, PricedLine, PriceEvent } from "@/lib/price-events";
 
-const BOARD_LABEL = { commanders: "Commander", mainboard: null } as const;
-
-function formatCents(cents: number, currency: string | null) {
-  return new Intl.NumberFormat("en", { style: "currency", currency: currency ?? "EUR" }).format(
-    cents / 100
-  );
-}
-
-function formatAge(iso: string) {
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  return `${Math.round(minutes / 60)}h ago`;
-}
-
-function describeAttempt(a: PrintingAttempt) {
-  if (a.status === "error") return `${a.setName}: lookup failed`;
-  if (a.status === "not_found") return `${a.setName}: not on Ítaca`;
-  if (!a.inStock || a.lowestPriceCents == null) return `${a.setName}: sold out`;
-  return `${a.setName}: ${formatCents(a.lowestPriceCents, a.currency)}`;
-}
-
-/** Sort buckets: in stock first (by line total), then sold out, not found, failed, pending, unknown. */
-const RANK: Record<CardPrice["status"], number> = { in_stock: 0, sold_out: 1, not_found: 2, error: 3 };
-function rank(line: PricedLine, result: CardPrice | undefined) {
-  if (!line.key) return 5;
-  return result ? RANK[result.status] : 4;
-}
-
-export function DecklistPricer() {
-  const [text, setText] = useState("");
-  const [skipBasics, setSkipBasics] = useState(true);
+export function DecklistPricer({
+  initialText = "",
+  initialSkipBasics = true,
+}: {
+  /** Prefilled from a saved search ("Price again"). */
+  initialText?: string;
+  initialSkipBasics?: boolean;
+}) {
+  const [text, setText] = useState(initialText);
+  const [skipBasics, setSkipBasics] = useState(initialSkipBasics);
   const [lines, setLines] = useState<PricedLine[]>([]);
   const [results, setResults] = useState<Map<string, CardPrice>>(new Map());
   const [meta, setMeta] = useState<{ cards: number; skippedBasics: number; unparsed: string[] } | null>(null);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -64,6 +45,7 @@ export function DecklistPricer() {
     setResults(new Map());
     setMeta(null);
     setEtaMinutes(null);
+    setSavedId(null);
 
     try {
       const res = await fetch("/api/prices/decklist", {
@@ -117,36 +99,12 @@ export function DecklistPricer() {
         setEtaMinutes(Math.ceil((left * p.fetchedMs) / p.fetchedCards / 60_000));
       }
       setResults((prev) => new Map(prev).set(event.result.key, event.result));
+    } else if (event.type === "done") {
+      setSavedId(event.searchId);
     }
   }
 
-  const rows = useMemo(
-    () =>
-      lines
-        .map((line) => {
-          const result = line.key ? results.get(line.key) : undefined;
-          const each = result?.status === "in_stock" ? result.best!.lowestPriceCents! : null;
-          const total = each != null ? each * line.quantity : null;
-          return { line, result, each, total, rank: rank(line, result) };
-        })
-        .sort((a, b) => a.rank - b.rank || (b.total ?? 0) - (a.total ?? 0) || a.line.name.localeCompare(b.line.name)),
-    [lines, results]
-  );
-
-  const summary = useMemo(() => {
-    let cents = 0;
-    let priced = 0;
-    let currency: string | null = null;
-    for (const r of rows) {
-      if (r.total == null) continue;
-      cents += r.total;
-      priced += r.line.quantity;
-      currency ??= r.result?.best?.currency ?? null;
-    }
-    const cards = rows.reduce((n, r) => n + r.line.quantity, 0);
-    return { cents, priced, cards, currency };
-  }, [rows]);
-
+  const summary = useMemo(() => summarize(lines, results), [lines, results]);
   const remaining = meta ? meta.cards - results.size : 0;
 
   return (
@@ -194,9 +152,9 @@ export function DecklistPricer() {
       {meta && (
         <div className="space-y-1">
           <p className="text-lead font-semibold">
-            {formatCents(summary.cents, summary.currency)}
+            {formatCents(summary.totalCents, summary.currency)}
             <span className="ml-2 text-ui font-normal text-muted-foreground">
-              for {summary.priced} of {summary.cards} cards
+              for {summary.pricedCards} of {summary.totalCards} cards
             </span>
           </p>
           <p className="text-body text-muted-foreground">
@@ -206,6 +164,15 @@ export function DecklistPricer() {
                 ? `Stopped with ${remaining} of ${meta.cards} cards not checked.`
                 : "All cards checked."}
             {meta.skippedBasics > 0 && ` ${meta.skippedBasics} basic land lines skipped.`}
+            {savedId && (
+              <>
+                {" "}
+                <Link href={`/prices/${savedId}`} className="underline underline-offset-2 hover:text-foreground">
+                  Saved to history
+                </Link>
+                .
+              </>
+            )}
           </p>
           {meta.unparsed.length > 0 && (
             <p className="text-body text-destructive">Couldn&apos;t read: {meta.unparsed.join(", ")}</p>
@@ -213,99 +180,7 @@ export function DecklistPricer() {
         </div>
       )}
 
-      {rows.length > 0 && (
-        <table className="w-full text-ui">
-          <thead className="text-label uppercase tracking-wide text-muted-foreground">
-            <tr className="border-b border-border text-left">
-              <th className="py-2 pr-2 font-medium">Qty</th>
-              <th className="py-2 pr-2 font-medium">Card</th>
-              <th className="py-2 pr-2 font-medium">Printing</th>
-              <th className="py-2 pr-2 font-medium text-right">Each</th>
-              <th className="py-2 pr-2 font-medium text-right">Total</th>
-              <th className="py-2 font-medium">Ítaca</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(({ line, result, each, total }, i) => (
-              <tr key={`${line.board}|${line.name}|${line.namedSetCode}|${i}`} className="border-b border-border/50">
-                <td className="py-1.5 pr-2 tabular-nums align-top">{line.quantity}</td>
-                <td className="py-1.5 pr-2 align-top">
-                  {line.name}
-                  {BOARD_LABEL[line.board] && (
-                    <Badge variant="secondary" className="ml-2">{BOARD_LABEL[line.board]}</Badge>
-                  )}
-                </td>
-                <td className="py-1.5 pr-2 text-muted-foreground align-top">
-                  <PrintingCell line={line} result={result} />
-                </td>
-                <td className="py-1.5 pr-2 text-right tabular-nums align-top">
-                  {each != null ? formatCents(each, result?.best?.currency ?? null) : ""}
-                </td>
-                <td className="py-1.5 pr-2 text-right tabular-nums align-top">
-                  {total != null ? formatCents(total, result?.best?.currency ?? null) : ""}
-                </td>
-                <td className="py-1.5 text-muted-foreground align-top">
-                  <StatusCell line={line} result={result} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <PriceTable lines={lines} results={results} />
     </div>
-  );
-}
-
-/** Where the price came from, and what happened to the printing the list asked for if that differs. */
-function PrintingCell({ line, result }: { line: PricedLine; result: CardPrice | undefined }) {
-  if (!result?.best) return <>—</>;
-  const named = line.namedSetCode
-    ? result.attempts.find((a) => a.setCode === line.namedSetCode)
-    : undefined;
-  const switched = line.namedSetCode && result.best.setCode !== line.namedSetCode;
-  return (
-    <>
-      {result.best.setName}
-      {switched && (
-        <span className="block text-body">
-          {named
-            ? `listed: ${describeAttempt(named)}`
-            : `listed: ${line.namedSetCode!.toUpperCase()} (not on Ítaca)`}
-        </span>
-      )}
-    </>
-  );
-}
-
-function StatusCell({ line, result }: { line: PricedLine; result: CardPrice | undefined }) {
-  if (!line.key) return <span className="text-destructive">Unknown card</span>;
-  if (!result) return <span>…</span>;
-
-  const checked = result.attempts.length;
-  const detail = result.attempts.map(describeAttempt).join("\n");
-  const summary = (
-    <span className="block text-body" title={detail}>
-      {checked === 0 ? "no printing on Ítaca" : `${checked} printing${checked === 1 ? "" : "s"} checked`}
-    </span>
-  );
-
-  if (result.status === "error") {
-    return <span className="text-destructive">Lookup failed{summary}</span>;
-  }
-  if (result.status === "not_found") return <span>Not found{summary}</span>;
-
-  const label = result.status === "in_stock" ? "In stock" : "Sold out everywhere checked";
-  const best = result.best!;
-  return (
-    <span title={`Checked ${formatAge(best.fetchedAt)}`}>
-      {best.url ? (
-        <a href={best.url} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-foreground">
-          {label} ↗
-        </a>
-      ) : (
-        label
-      )}
-      {summary}
-    </span>
   );
 }

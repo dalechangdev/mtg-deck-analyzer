@@ -18,6 +18,7 @@ waits on an approved User-Agent, and the pasted list feeds the same pipeline.
 | 7 | Tests | done — parser and itaca option; the route has no test (needs DB + network) |
 | 8 | Browser check against a real list | done 2026-10-01 — streaming, cache hits, DFC names, unknown cards, basics skip all confirmed; found two bugs, fixed below |
 | 9 | Cheapest in-stock copy across a card's printings (see "Other printings") | done (uncommitted) — `src/lib/printing-choice.ts`, `test/printing-choice.test.ts`; browser-checked 2026-10-01 (Aether Spellbomb MMA sold out → FDC €0.15; Sol Ring CMM €2.45 → €0.95; Arcane Signet M3C €0.95 → €0.25) |
+| 10 | Search history: `PriceSearch` snapshots, past-searches list, `/prices/[id]` (see "History") | done (uncommitted) — `20261001130000_add_price_search` (local + hosted), `src/lib/price-history.ts`, `test/price-summary.test.ts`; browser-checked 2026-10-02 (save on finish, past-searches list, saved page, Price again prefill, delete, 404 for unknown ids) |
 
 **As built, where it differs from the design below.** The route is
 `/api/prices/decklist` (body `{ text, skipBasics }`), not `/moxfield`. Cache rows
@@ -74,6 +75,28 @@ disallowed by robots.txt (`/search/*`, `/searchBuyList/*`), so:
 Cost: up to 8 × 5s per card uncached. Aether Spellbomb (8 paper sets, all on
 Ítaca) took 36s. A staple-heavy 100-card deck can take 30+ minutes cold; the
 cache makes re-pricing cheap.
+
+## History (step 10)
+
+Each run is saved as a `PriceSearch` row: the pasted text, a name, totals, and a
+JSON snapshot of the lines and per-card results exactly as the page showed them.
+A snapshot, not a pointer into `ItacaPrice`: that table is a cache, overwritten
+on refetch, and history is about what the list cost *then*.
+
+- **Saved when the run ends** — finished or stopped — from the route's
+  `finally`, so a closed tab still records what was checked. A server crash
+  mid-run loses that run; acceptable for a lookup tool.
+- **User-owned.** `userId` NOT NULL, FK to `auth.users` ON DELETE CASCADE, RLS
+  "own rows" policy for the Data API, and every Prisma query filters by
+  `requireUserId()`; another account's id answers 404.
+- **Bounded.** Newest 50 per account; older rows are deleted when a new one is saved.
+- **Pages.** `/prices` is the history list with a "New search" button;
+  `/prices/search` runs a search (form + live table); `/prices/[id]` renders a
+  saved table read-only with "Price again" (`/prices/search?from=<id>` refills
+  the form) and Delete (`DELETE /api/prices/searches/[id]`).
+- **Shared code.** Table and totals are one component/function used by the live
+  page and the saved page, so a snapshot renders exactly as it did live. The
+  JSON carries `v: 1` so a later shape change can tell old rows apart.
 
 ## The two constraints that shape everything
 
