@@ -58,6 +58,21 @@ export async function resolveLines(lines: DeckLine[]): Promise<PricedLine[]> {
   });
 }
 
+/**
+ * Attaches the caller's library quantity to each resolved line. Scoped by
+ * userId — Prisma bypasses RLS, so this filter is what keeps it to their library.
+ */
+export async function withOwnedCounts(userId: string, lines: PricedLine[]): Promise<PricedLine[]> {
+  const cardIds = [...new Set(lines.flatMap((l) => (l.key ? [l.key] : [])))];
+  if (cardIds.length === 0) return lines;
+  const owned = await prisma.libraryCard.findMany({
+    where: { userId, cardId: { in: cardIds } },
+    select: { cardId: true, quantity: true },
+  });
+  const byCard = new Map(owned.map((o) => [o.cardId, o.quantity]));
+  return lines.map((l) => (l.key ? { ...l, owned: byCard.get(l.key) ?? 0 } : l));
+}
+
 /** One entry per distinct card, carrying the first set any of its lines named. */
 export function uniqueCards(lines: PricedLine[]): CardToPrice[] {
   const out = new Map<string, CardToPrice>();

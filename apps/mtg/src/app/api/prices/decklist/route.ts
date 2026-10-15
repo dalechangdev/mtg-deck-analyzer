@@ -1,6 +1,6 @@
 import { requireUserIdOr401 } from "@/lib/auth";
 import { isBasicLand, parseDecklist } from "@/lib/decklist";
-import { priceCard, resolveLines, uniqueCards } from "@/lib/deck-pricing";
+import { priceCard, resolveLines, uniqueCards, withOwnedCounts } from "@/lib/deck-pricing";
 import { saveSearch } from "@/lib/price-history";
 import type { CardPrice, PriceEvent } from "@/lib/price-events";
 import type { PriceSnapshot } from "@/lib/price-summary";
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "No cards found in that list" }, { status: 400 });
   }
 
-  const lines = await resolveLines(kept);
+  const lines = await withOwnedCounts(auth.userId, await resolveLines(kept));
   const cards = uniqueCards(lines);
   if (cards.length > MAX_CARDS) {
     return Response.json(

@@ -71,50 +71,70 @@ export function PriceTable({
 
   if (rows.length === 0) return null;
 
+  // Every cell stays on one line so rows keep one height; on a narrow screen
+  // the table scrolls sideways instead of growing taller.
   return (
-    <table className="w-full text-ui">
-      <thead className="text-label uppercase tracking-wide text-muted-foreground">
-        <tr className="border-b border-border text-left">
-          <th className="py-2 pr-2 font-medium">Qty</th>
-          <th className="py-2 pr-2 font-medium">Card</th>
-          <th className="py-2 pr-2 font-medium">Printing</th>
-          <th className="py-2 pr-2 font-medium text-right">Each</th>
-          <th className="py-2 pr-2 font-medium text-right">Total</th>
-          <th className="py-2 font-medium">Ítaca</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(({ line, result, each, total }, i) => (
-          <tr key={`${line.board}|${line.name}|${line.namedSetCode}|${i}`} className="border-b border-border/50">
-            <td className="py-1.5 pr-2 tabular-nums align-top">{line.quantity}</td>
-            <td className="py-1.5 pr-2 align-top">
-              {line.name}
-              {BOARD_LABEL[line.board] && (
-                <Badge variant="secondary" className="ml-2">{BOARD_LABEL[line.board]}</Badge>
-              )}
-            </td>
-            <td className="py-1.5 pr-2 text-muted-foreground align-top">
-              <PrintingCell line={line} result={result} />
-            </td>
-            <td className="py-1.5 pr-2 text-right tabular-nums align-top">
-              {each != null ? formatCents(each, result?.best?.currency ?? null) : ""}
-            </td>
-            <td className="py-1.5 pr-2 text-right tabular-nums align-top">
-              {total != null ? formatCents(total, result?.best?.currency ?? null) : ""}
-            </td>
-            <td className="py-1.5 text-muted-foreground align-top whitespace-nowrap">
-              <StatusCell
-                line={line}
-                result={result}
-                pendingLabel={pendingLabel}
-                checking={line.key && line.key === checking?.key ? checking : null}
-              />
-            </td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-ui whitespace-nowrap">
+        <thead className="text-label uppercase tracking-wide text-muted-foreground">
+          <tr className="border-b border-border text-left">
+            <th className="py-2 pr-2 font-medium">Qty</th>
+            <th className="py-2 pr-2 font-medium" title="Copies in your library when this search ran">
+              Owned
+            </th>
+            <th className="py-2 pr-2 font-medium">Card</th>
+            <th className="py-2 pr-2 font-medium">Printing</th>
+            <th className="py-2 pr-2 font-medium text-right">Each</th>
+            <th className="py-2 pr-2 font-medium text-right">Total</th>
+            <th className="py-2 font-medium">Ítaca</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map(({ line, result, each, total }, i) => (
+            <tr key={`${line.board}|${line.name}|${line.namedSetCode}|${i}`} className="border-b border-border/50">
+              <td className="py-1.5 pr-2 tabular-nums align-top">{line.quantity}</td>
+              <td className="py-1.5 pr-2 tabular-nums align-top">
+                <OwnedCell line={line} />
+              </td>
+              <td className="py-1.5 pr-2 align-top">
+                {line.name}
+                {BOARD_LABEL[line.board] && (
+                  <Badge variant="secondary" className="ml-2">{BOARD_LABEL[line.board]}</Badge>
+                )}
+              </td>
+              <td className="py-1.5 pr-2 text-muted-foreground align-top">
+                <PrintingCell line={line} result={result} />
+              </td>
+              <td className="py-1.5 pr-2 text-right tabular-nums align-top">
+                {each != null ? formatCents(each, result?.best?.currency ?? null) : ""}
+              </td>
+              <td className="py-1.5 pr-2 text-right tabular-nums align-top">
+                {total != null ? formatCents(total, result?.best?.currency ?? null) : ""}
+              </td>
+              <td className="py-1.5 text-muted-foreground align-top">
+                <StatusCell
+                  line={line}
+                  result={result}
+                  pendingLabel={pendingLabel}
+                  checking={line.key && line.key === checking?.key ? checking : null}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
+}
+
+/** Library copies: muted at zero, plain when some are owned, marked when the list is covered. */
+function OwnedCell({ line }: { line: PricedLine }) {
+  if (line.owned === undefined) return <span className="text-muted-foreground">—</span>;
+  if (line.owned === 0) return <span className="text-muted-foreground">0</span>;
+  if (line.owned >= line.quantity) {
+    return <span title="You own enough copies for this list">{line.owned} ✓</span>;
+  }
+  return <>{line.owned}</>;
 }
 
 /** Where the price came from, and what happened to the printing the list asked for if that differs. */

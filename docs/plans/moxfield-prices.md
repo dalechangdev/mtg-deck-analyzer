@@ -94,6 +94,16 @@ on refetch, and history is about what the list cost *then*.
   `/prices/search` runs a search (form + live table); `/prices/[id]` renders a
   saved table read-only with "Price again" (`/prices/search?from=<id>` refills
   the form) and Delete (`DELETE /api/prices/searches/[id]`).
+- **Save as deck.** "Save as deck" on `/prices/[id]` (and on the live page once
+  the run is saved) calls `POST /api/prices/searches/[id]/deck`, which creates a
+  deck with a v1 and opens it in `/decks/[id]`. It re-parses the saved `text`,
+  not the snapshot, so basic lands come along even if the search skipped them;
+  sideboard/maybeboard stay dropped (the parser drops them). Lines merge per
+  card (`deckCardsFromLines`), commander-section cards get `isCommander`, and
+  unknown cards are left out. Each click makes a new deck.
+- **Owned column.** Each line carries `owned`, the caller's `LibraryCard.quantity`
+  for that card when the search ran (`withOwnedCounts`, userId-scoped). It is
+  part of the snapshot, like the prices; an older saved search without it shows "—".
 - **Shared code.** Table and totals are one component/function used by the live
   page and the saved page, so a snapshot renders exactly as it did live. The
   JSON carries `v: 1` so a later shape change can tell old rows apart.

@@ -15,6 +15,7 @@ import {
 import { PotentialPool } from "./potential-pool";
 import { LandBaseMatrix } from "./land-base-matrix";
 import { ColorPipHistogram } from "./color-pip-histogram";
+import { DeckBreakdown } from "./deck-breakdown";
 import { analyzeLandBase, withPotentialPromoted } from "@/lib/land-base";
 import { DeckSteps } from "./deck-steps";
 import { toastManager } from "@/lib/toast";
@@ -204,6 +205,11 @@ export function DeckAnalysisView({
     return map;
   }, [analysis]);
 
+  const roleContext = useMemo(
+    () => ({ roles, rolesByCard: filledRolesByCard }),
+    [roles, filledRolesByCard]
+  );
+
   // Clicking a role in the modal flips it: an unfilled role gets assigned by
   // hand, a filled one gets dropped — clearing the override first when the
   // current state came from one, so automatic classification takes back over.
@@ -337,6 +343,13 @@ export function DeckAnalysisView({
 
       <div className="flex-1 flex overflow-hidden min-h-0">
       <div className="flex-1 min-w-0 overflow-y-auto">
+        <DeckBreakdown
+          entries={entries}
+          roleContext={roleContext}
+          onInspect={(cardId) => setSelectedCardId(cardId)}
+          hasDetail={(cardId) => Boolean(cardDetails[cardId])}
+        />
+
         <LandBaseMatrix
           analysis={landBase}
           preview={landBasePreview}

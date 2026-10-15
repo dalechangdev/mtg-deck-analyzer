@@ -17,7 +17,7 @@ export default async function PriceSearchPage({ searchParams }: PageProps) {
   const source = from ? await getSearch(userId, from) : null;
 
   return (
-    <PageShell className="max-w-4xl space-y-0">
+    <PageShell className="max-w-6xl space-y-0">
       <Link href="/prices" className="text-body text-muted-foreground hover:text-foreground">
         ← Past searches
       </Link>

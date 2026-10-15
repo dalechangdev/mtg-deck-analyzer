@@ -57,3 +57,31 @@ export function searchName(lines: PricedLine[]): string {
   const rest = lines.length - 1;
   return rest > 0 ? `${lines[0].name} + ${rest} more` : lines[0].name;
 }
+
+export type DeckCardInput = { cardId: string; quantity: number; isCommander: boolean };
+
+/**
+ * The deck cards a priced list becomes: one row per card (DeckCard is unique
+ * per version and card), quantities summed across lines, a commander if any of
+ * its lines was in the commander section. Unknown cards are returned by name,
+ * since there is no Card row to point at.
+ */
+export function deckCardsFromLines(lines: PricedLine[]): { cards: DeckCardInput[]; unknown: string[] } {
+  const byCard = new Map<string, DeckCardInput>();
+  const unknown: string[] = [];
+  for (const line of lines) {
+    if (!line.key) {
+      unknown.push(line.name);
+      continue;
+    }
+    const isCommander = line.board === "commanders";
+    const seen = byCard.get(line.key);
+    if (seen) {
+      seen.quantity += line.quantity;
+      seen.isCommander ||= isCommander;
+    } else {
+      byCard.set(line.key, { cardId: line.key, quantity: line.quantity, isCommander });
+    }
+  }
+  return { cards: [...byCard.values()], unknown };
+}

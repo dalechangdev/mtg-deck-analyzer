@@ -1,7 +1,9 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { searchName, summarize, type PriceSnapshot } from "@/lib/price-summary";
+import { parseDecklist } from "@/lib/decklist";
+import { resolveLines } from "@/lib/deck-pricing";
+import { deckCardsFromLines, searchName, summarize, type PriceSnapshot } from "@/lib/price-summary";
 
 /**
  * Saved /prices runs. Every query here takes the caller's userId — Prisma
@@ -71,4 +73,44 @@ export async function getSearch(userId: string, id: string) {
 export async function deleteSearch(userId: string, id: string): Promise<boolean> {
   const { count } = await prisma.priceSearch.deleteMany({ where: { id, userId } });
   return count > 0;
+}
+
+/**
+ * Creates a deck (with its v1) from a saved search, for analysis in /decks.
+ * Built from the pasted text rather than the snapshot so basic lands come
+ * along even when the search skipped them. Null when the search isn't the
+ * caller's. Cards the database doesn't know are left out and named in `unknown`.
+ */
+export async function createDeckFromSearch(
+  userId: string,
+  id: string
+): Promise<{ deckId: string; unknown: string[] } | null> {
+  const search = await prisma.priceSearch.findFirst({
+    where: { id, userId },
+    select: { name: true, text: true, createdAt: true },
+  });
+  if (!search) return null;
+
+  const { cards, unknown } = deckCardsFromLines(await resolveLines(parseDecklist(search.text).lines));
+
+  // Same shape as POST /api/decks: the deck needs a version before
+  // currentVersionId can point at it, so one transaction for both writes.
+  const deck = await prisma.$transaction(async (tx) => {
+    const created = await tx.deck.create({
+      data: {
+        userId,
+        name: search.name,
+        description: `Imported from a /prices search on ${search.createdAt.toISOString().slice(0, 10)}.`,
+        versions: { create: { name: "v1", cards: { create: cards } } },
+      },
+      include: { versions: { select: { id: true } } },
+    });
+    return tx.deck.update({
+      where: { id: created.id },
+      data: { currentVersionId: created.versions[0].id },
+      select: { id: true },
+    });
+  });
+
+  return { deckId: deck.id, unknown };
 }

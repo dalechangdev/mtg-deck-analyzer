@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { buttonVariants } from "@/components/ui/button";
 import { formatCents, PriceTable, type Checking } from "@/components/prices/price-table";
+import { SaveAsDeckButton } from "@/components/prices/save-as-deck-button";
 import { cn } from "@/lib/utils";
 import { MAX_ATTEMPTS_PER_CARD } from "@/lib/printing-choice";
 import { summarize } from "@/lib/price-summary";
@@ -182,6 +183,11 @@ export function DecklistPricer({
           </p>
           {meta.unparsed.length > 0 && (
             <p className="text-body text-destructive">Couldn&apos;t read: {meta.unparsed.join(", ")}</p>
+          )}
+          {savedId && (
+            <div className="flex items-center gap-3 pt-2">
+              <SaveAsDeckButton id={savedId} />
+            </div>
           )}
         </div>
       )}

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { searchName, summarize } from "../src/lib/price-summary";
+import { deckCardsFromLines, searchName, summarize } from "../src/lib/price-summary";
 import type { CardPrice, PricedLine, PrintingAttempt } from "../src/lib/price-events";
 
 const line = (name: string, over: Partial<PricedLine> = {}): PricedLine => ({
@@ -71,4 +71,19 @@ test("searchName prefers the commanders", () => {
 test("searchName falls back to the first card and a count", () => {
   assert.equal(searchName([line("Sol Ring"), line("Arcane Signet"), line("Command Tower")]), "Sol Ring + 2 more");
   assert.equal(searchName([line("Sol Ring")]), "Sol Ring");
+});
+
+test("deckCardsFromLines merges a card's lines and keeps the commander flag", () => {
+  const { cards, unknown } = deckCardsFromLines([
+    line("Atraxa", { board: "commanders" }),
+    line("Forest", { quantity: 10 }),
+    line("Forest", { quantity: 2, namedSetCode: "fdn" }),
+    line("Atraxa"),
+    line("Not A Card", { key: null }),
+  ]);
+  assert.deepEqual(cards, [
+    { cardId: "atraxa", quantity: 2, isCommander: true },
+    { cardId: "forest", quantity: 12, isCommander: false },
+  ]);
+  assert.deepEqual(unknown, ["Not A Card"]);
 });

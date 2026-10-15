@@ -14,6 +14,11 @@ export type PricedLine = {
   key: string | null;
   /** Set code the list named, if any (`cmm`). */
   namedSetCode: string | null;
+  /**
+   * Copies in the user's library when the search ran. Absent for an unknown
+   * card, and on searches saved before this field existed.
+   */
+  owned?: number;
 };
 
 /** One Ítaca product page: this card in one printing's set. */

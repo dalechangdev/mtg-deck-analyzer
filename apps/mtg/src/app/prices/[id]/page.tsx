@@ -5,6 +5,7 @@ import { getSearch } from "@/lib/price-history";
 import { formatCents, PriceTable } from "@/components/prices/price-table";
 import { formatSearchDate } from "@/components/prices/past-searches";
 import { DeleteSearchButton } from "@/components/prices/delete-search-button";
+import { SaveAsDeckButton } from "@/components/prices/save-as-deck-button";
 import { buttonVariants } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/shell";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,7 @@ export default async function SavedPriceSearchPage({ params }: PageProps) {
   const unchecked = new Set(snapshot.lines.filter((l) => l.key).map((l) => l.key)).size - results.size;
 
   return (
-    <PageShell className="max-w-4xl space-y-6">
+    <PageShell className="max-w-6xl space-y-6">
       <div className="space-y-1">
         <Link href="/prices" className="text-body text-muted-foreground hover:text-foreground">
           ← Past searches
@@ -60,6 +61,7 @@ export default async function SavedPriceSearchPage({ params }: PageProps) {
         <Link href={`/prices/search?from=${search.id}`} className={cn(buttonVariants())}>
           Price again
         </Link>
+        <SaveAsDeckButton id={search.id} />
         <DeleteSearchButton id={search.id} />
       </div>
 
