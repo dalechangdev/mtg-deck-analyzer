@@ -15,7 +15,7 @@ the list, one click starts a deck with that commander already picked.
 | 5 | `/decks/start?commander=<cardId>` pre-fills `StartDeckForm` | done (uncommitted) — an id that isn't a legal commander is ignored |
 | 6 | `CommanderPicker` shows saved commanders as quick picks before typing | done (uncommitted) — covers `/decks/new` and `/decks/start` |
 | 7 | "Built as" deck links on `/commanders`, worked out when the page loads | done (uncommitted) — `loadSavedCommanders(…, { withDecks: true })` |
-| 8 | Browser check | blocked — the :3000 dev server predates `prisma generate` and its `globalThis` client lacks `savedCommander`; needs a restart |
+| 8 | Browser check | done 2026-10-18 — modal save toggle (survives reopening), /commanders art + pips + "Built as" link, note saved on blur and reloaded, Build pre-fills /decks/start, quick pick on /decks/new, Remove; API returns 400 for a non-commander or bad note and 404 for an unknown card or someone else's id. Test row removed from hosted |
 
 ## Design
 
