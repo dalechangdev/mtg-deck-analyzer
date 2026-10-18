@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { COLOR_LABELS, COLOR_ORDER, MANA_CHIP } from "@/lib/mtg-styles";
 
@@ -15,6 +15,14 @@ export function CardSearchForm({ initialQ, initialColors, initialCommanderOnly }
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  // Controlled, because a search re-renders this with a new initialQ and Base UI's
+  // Input rejects a changed defaultValue. Re-sync when the URL's q changes (back/forward).
+  const [q, setQ] = useState(initialQ);
+  const [syncedQ, setSyncedQ] = useState(initialQ);
+  if (syncedQ !== initialQ) {
+    setSyncedQ(initialQ);
+    setQ(initialQ);
+  }
 
   const push = useCallback(
     (updates: Record<string, string | null>) => {
@@ -31,8 +39,7 @@ export function CardSearchForm({ initialQ, initialColors, initialCommanderOnly }
 
   function handleSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const q = new FormData(e.currentTarget).get("q") as string;
-    push({ q });
+    push({ q: q.trim() });
   }
 
   function toggleColor(key: string) {
@@ -50,7 +57,8 @@ export function CardSearchForm({ initialQ, initialColors, initialCommanderOnly }
       <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
         <Input
           name="q"
-          defaultValue={initialQ}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
           placeholder="Search cards…"
           className="flex-1"
         />
