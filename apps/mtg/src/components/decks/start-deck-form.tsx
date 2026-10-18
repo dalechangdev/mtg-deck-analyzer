@@ -24,12 +24,14 @@ export type TemplateOption = {
 export function StartDeckForm({
   templates,
   defaultTemplateId,
+  initialCommander = null,
 }: {
   templates: TemplateOption[];
   defaultTemplateId: string;
+  initialCommander?: CardData | null;
 }) {
   const router = useRouter();
-  const [commander, setCommander] = useState<CardData | null>(null);
+  const [commander, setCommander] = useState<CardData | null>(initialCommander);
   const [templateId, setTemplateId] = useState<string | null>(
     templates.find((t) => t.id === defaultTemplateId)?.id ?? templates[0]?.id ?? null
   );
@@ -64,7 +66,7 @@ export function StartDeckForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <section className="space-y-1.5">
         <label className="text-ui font-medium">1. Commander</label>
-        <CommanderPicker value={commander} onChange={setCommander} autoFocus />
+        <CommanderPicker value={commander} onChange={setCommander} autoFocus={!initialCommander} />
       </section>
 
       <section className="space-y-1.5">

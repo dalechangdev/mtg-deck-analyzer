@@ -41,6 +41,7 @@ model Card {
   // filter and take the first.
   libraryEntries      LibraryCard[]
   shoppingCartEntries ShoppingCartCard[]
+  savedAsCommander    SavedCommander[]
 
   annotations     CardAnnotation[]
   themes          CardTheme[]
@@ -240,6 +241,22 @@ model ShoppingCartCard {
   @@unique([userId, cardId])
   @@index([cardId])
   @@index([userId])
+}
+
+// A commander the user wants to build around later (docs/plans/saved-commanders.md).
+// Per account, same shape as ShoppingCartCard: unique on (userId, cardId).
+model SavedCommander {
+  id     String  @id @default(cuid())
+  userId String  @db.Uuid // -> auth.users(id)
+  cardId String
+  card   Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  note   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, cardId])
+  @@index([cardId])
 }
 
 // Ítaca price lookups for /prices (docs/plans/moxfield-prices.md). Not user

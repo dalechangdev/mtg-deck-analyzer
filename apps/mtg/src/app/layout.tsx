@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 const NAV_LINKS = [
   { href: "/cards", label: "Cards" },
   { href: "/decks", label: "Decks" },
+  { href: "/commanders", label: "Commanders" },
   { href: "/library", label: "Library" },
   { href: "/packs", label: "Packs" },
   { href: "/cart", label: "Cart" },

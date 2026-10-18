@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import type { CardData } from "@/lib/commander";
+import type { SavedCommanderView } from "@/lib/saved-commanders";
 
 interface Props {
   value: CardData | null;
@@ -10,11 +11,29 @@ interface Props {
   autoFocus?: boolean;
 }
 
-/** Type-ahead over cards that can be a commander; shows the pick once chosen. */
+/**
+ * Type-ahead over cards that can be a commander; shows the pick once chosen.
+ * Before anything is typed, the user's saved commanders appear as quick picks.
+ */
 export function CommanderPicker({ value, onChange, autoFocus }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CardData[]>([]);
+  const [saved, setSaved] = useState<SavedCommanderView[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Quick picks are a convenience: a failed or signed-out fetch just shows none.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/commanders")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((rows: SavedCommanderView[]) => {
+        if (!cancelled) setSaved(rows);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Below two characters there's nothing to show, whatever the last fetch returned.
   const visible = query.length < 2 ? [] : results;
@@ -75,6 +94,22 @@ export function CommanderPicker({ value, onChange, autoFocus }: Props) {
                 <div className="text-ui font-medium truncate">{card.name}</div>
                 <div className="text-body text-muted-foreground truncate">{card.typeLine}</div>
               </div>
+            </button>
+          ))}
+        </div>
+      )}
+      {query.length === 0 && saved.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-body text-muted-foreground">Saved:</span>
+          {saved.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              onClick={() => onChange(entry.card)}
+              title={entry.note ?? undefined}
+              className="rounded-full border border-border px-2.5 py-0.5 text-body hover:bg-muted"
+            >
+              {entry.card.name}
             </button>
           ))}
         </div>

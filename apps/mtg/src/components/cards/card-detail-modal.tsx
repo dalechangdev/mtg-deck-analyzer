@@ -6,6 +6,7 @@ import { DialogTitle } from "@/components/ui/dialog";
 import { Modal, ModalCloseButton } from "@/components/ui/modal";
 import { MANA_PIP, rarityStyle } from "@/lib/mtg-styles";
 import { Button } from "@/components/ui/button";
+import { SaveCommanderButton } from "@/components/commanders/save-commander-button";
 
 export interface CardFaceDetail {
   name: string;
@@ -261,7 +262,7 @@ export function CardDetailModal({
                   {cartError && <span className="text-destructive">Couldn&apos;t add — try again.</span>}
                 </>
               )}
-              {card.canBeCommander && <span className="font-medium text-warning">⭐ Can be your Commander</span>}
+              {card.canBeCommander && <SaveCommanderButton cardId={card.id} />}
               {card.scryfallUri && (
                 <a
                   href={card.scryfallUri}
