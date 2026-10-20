@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { CardData } from "@/lib/commander";
 import type { SavedCommanderView } from "@/lib/saved-commanders";
 
@@ -13,7 +14,7 @@ interface Props {
 
 /**
  * Type-ahead over cards that can be a commander; shows the pick once chosen.
- * Before anything is typed, the user's saved commanders appear as quick picks.
+ * Before anything is typed, the user's saved commanders appear in a dropdown.
  */
 export function CommanderPicker({ value, onChange, autoFocus }: Props) {
   const [query, setQuery] = useState("");
@@ -99,20 +100,24 @@ export function CommanderPicker({ value, onChange, autoFocus }: Props) {
         </div>
       )}
       {query.length === 0 && saved.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-body text-muted-foreground">Saved:</span>
-          {saved.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => onChange(entry.card)}
-              title={entry.note ?? undefined}
-              className="rounded-full border border-border px-2.5 py-0.5 text-body hover:bg-muted"
-            >
-              {entry.card.name}
-            </button>
-          ))}
-        </div>
+        <Select
+          value={null}
+          onValueChange={(id) => {
+            const entry = saved.find((s) => s.id === id);
+            if (entry) onChange(entry.card);
+          }}
+        >
+          <SelectTrigger aria-label="Saved commanders" className="mt-2 w-full text-body">
+            <SelectValue placeholder="Or pick a saved commander…" />
+          </SelectTrigger>
+          <SelectContent>
+            {saved.map((entry) => (
+              <SelectItem key={entry.id} value={entry.id} title={entry.note ?? undefined}>
+                {entry.card.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
     </div>
   );
