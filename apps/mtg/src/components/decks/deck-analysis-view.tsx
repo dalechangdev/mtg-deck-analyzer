@@ -16,6 +16,7 @@ import { PotentialPool } from "./potential-pool";
 import { LandBaseMatrix } from "./land-base-matrix";
 import { ColorPipHistogram } from "./color-pip-histogram";
 import { DeckBreakdown } from "./deck-breakdown";
+import { DeckCardStacks } from "./deck-card-stacks";
 import { analyzeLandBase, withPotentialPromoted } from "@/lib/land-base";
 import { DeckSteps } from "./deck-steps";
 import { toastManager } from "@/lib/toast";
@@ -348,6 +349,12 @@ export function DeckAnalysisView({
           roleContext={roleContext}
           onInspect={(cardId) => setSelectedCardId(cardId)}
           hasDetail={(cardId) => Boolean(cardDetails[cardId])}
+        />
+
+        <DeckCardStacks
+          entries={entries}
+          cardDetails={cardDetails}
+          onInspect={(cardId) => setSelectedCardId(cardId)}
         />
 
         <LandBaseMatrix
