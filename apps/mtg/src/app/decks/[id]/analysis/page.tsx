@@ -10,6 +10,7 @@ import {
   resolveTemplateId,
 } from "@/lib/deck-template-loader";
 import { resolveVersionId } from "@/lib/deck-version-loader";
+import { loadTriviaTagLabels } from "@/lib/oracle-tags";
 import { DeckAnalysisView } from "@/components/decks/deck-analysis-view";
 
 export default async function DeckAnalysisPage({
@@ -35,7 +36,7 @@ export default async function DeckAnalysisPage({
   ]);
   if (!versionId) notFound();
 
-  const [template, entries, cardDetails, overrideRows, templates] = await Promise.all([
+  const [template, entries, cardDetails, overrideRows, templates, trivia] = await Promise.all([
     loadTemplate(templateId, userId),
     loadDeckCards(versionId, { oracleTags: true }),
     loadDeckCardDetails(versionId),
@@ -48,10 +49,15 @@ export default async function DeckAnalysisPage({
       orderBy: [{ isBuiltIn: "desc" }, { name: "asc" }],
       select: { id: true, name: true, isBuiltIn: true },
     }),
+    loadTriviaTagLabels(),
   ]);
 
   // The attached template could have been deleted out from under the deck.
   if (!template) notFound();
+
+  // Only the trivia tags this deck carries; the full list runs to ~1,700.
+  const deckTags = new Set(entries.flatMap((e) => e.oracleTags ?? []));
+  const triviaTags = trivia.filter((label) => deckTags.has(label));
 
   return (
     <DeckAnalysisView
@@ -63,6 +69,7 @@ export default async function DeckAnalysisPage({
       entries={entries}
       cardDetails={cardDetails}
       initialOverrides={overrideRows}
+      triviaTags={triviaTags}
     />
   );
 }

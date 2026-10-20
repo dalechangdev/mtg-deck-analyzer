@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { DeckEntry } from "@/lib/commander";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { TagGraph } from "./tag-graph";
+import { buildTagGraph } from "@/lib/deck-tag-graph";
 import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -22,6 +25,8 @@ import {
 interface Props {
   entries: DeckEntry[];
   roleContext: RoleContext;
+  /** Hidden from the graph unless "Trivia tags" is on. */
+  triviaTags: string[];
   onInspect: (cardId: string) => void;
   hasDetail: (cardId: string) => boolean;
 }
@@ -34,6 +39,12 @@ const COLUMN_DIMENSIONS = DIMENSIONS.filter((d) => !ROW_ONLY.has(d));
 
 /** Tag rows shown before "Show all"; a 100-card deck carries several hundred. */
 const TAG_ROW_LIMIT = 25;
+
+type View = "table" | "graph";
+
+/** Past ~40 hubs the graph stops separating into readable clusters. */
+const GRAPH_MAX_TAGS = 40;
+const GRAPH_MIN_CARDS = [2, 3, 4, 5, 6, 8, 10];
 
 function DimensionSelect({
   label,
@@ -112,18 +123,46 @@ function CountCell({
  * by default. Click any count, row or column total to list the cards behind it,
  * grouped by type the way Moxfield lays out a deck.
  */
-export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Props) {
+export function DeckBreakdown({ entries, roleContext, triviaTags, onInspect, hasDetail }: Props) {
   const [rowDimension, setRowDimension] = useState<BreakdownDimension>("type");
   const [columnDimension, setColumnDimension] = useState<BreakdownDimension>("cmc");
   const [selection, setSelection] = useState<Selection | null>(null);
   const [tagFilter, setTagFilter] = useState("");
   const [showAllTags, setShowAllTags] = useState(false);
+  const [view, setView] = useState<View>("table");
+  const [graphMinCards, setGraphMinCards] = useState(3);
+  const [showTrivia, setShowTrivia] = useState(false);
 
   const breakdown = useMemo(
     () => breakdownDeck(entries, rowDimension, columnDimension, roleContext),
     [entries, rowDimension, columnDimension, roleContext]
   );
   const cardsById = useMemo(() => new Map(entries.map((e) => [e.cardId, e])), [entries]);
+
+  // Graph mode reads tags whatever the table's dimensions are; its tag
+  // selection resolves against this rather than the table's breakdown.
+  const graphMode = view === "graph";
+  const tagBreakdown = useMemo(
+    () => (graphMode ? breakdownDeck(entries, "tag", "none", roleContext) : null),
+    [graphMode, entries, roleContext]
+  );
+  const graph = useMemo(
+    () =>
+      graphMode
+        ? buildTagGraph(entries, {
+            minCards: graphMinCards,
+            maxTags: GRAPH_MAX_TAGS,
+            filter: tagFilter,
+            exclude: showTrivia ? undefined : new Set(triviaTags),
+          })
+        : null,
+    [graphMode, entries, graphMinCards, tagFilter, showTrivia, triviaTags]
+  );
+
+  const changeView = (next: View) => {
+    setView(next);
+    setSelection(null);
+  };
 
   const changeRows = (next: BreakdownDimension) => {
     setRowDimension(next);
@@ -165,7 +204,10 @@ export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Pr
 
   // Re-resolved every render: a promotion or override can empty the selection.
   let selected: { title: string; cell: BreakdownCell } | null = null;
-  if (selection) {
+  if (selection && tagBreakdown) {
+    const cell = tagBreakdown.rowTotals.get(selection.row);
+    if (cell && cell.count > 0) selected = { title: selection.row, cell };
+  } else if (selection) {
     const { row, column } = selection;
     const cell =
       row === ALL && column === ALL
@@ -188,155 +230,240 @@ export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Pr
     ? selected.cell.cardIds.flatMap((id) => cardsById.get(id) ?? [])
     : [];
 
+  // Shared by the table's tag rows and the graph, so a filter survives a switch.
+  const filterInput = (
+    <Input
+      type="search"
+      value={tagFilter}
+      onChange={(e) => setTagFilter(e.target.value)}
+      placeholder="Filter tags"
+      aria-label="Filter tags"
+      className="h-7 w-44 text-body"
+    />
+  );
+
   return (
     <section className="border-b border-border">
       <SectionHeader className="justify-between gap-3 px-4">
         <span>Breakdown ({breakdown.total.count})</span>
+        <ToggleGroup
+          value={[view]}
+          onValueChange={(value) => {
+            // Base UI allows an empty selection; keep the last choice.
+            const next = value[0] as View | undefined;
+            if (next) changeView(next);
+          }}
+          multiple={false}
+          variant="outline"
+          size="sm"
+          spacing={0}
+        >
+          <ToggleGroupItem value="table" className="h-6 min-w-0 px-2 text-micro">
+            Table
+          </ToggleGroupItem>
+          <ToggleGroupItem value="graph" className="h-6 min-w-0 px-2 text-micro">
+            Tag graph
+          </ToggleGroupItem>
+        </ToggleGroup>
       </SectionHeader>
 
       <div className="px-4 py-2">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <DimensionSelect label="Rows" value={rowDimension} options={DIMENSIONS} onChange={changeRows} />
-          <button
-            type="button"
-            onClick={swap}
-            disabled={!canSwap}
-            title={canSwap ? "Swap rows and columns" : `${DIMENSION_LABEL[rowDimension]} can only be rows`}
-            className="rounded-md border border-border px-1.5 py-0.5 text-label text-muted-foreground enabled:hover:text-foreground enabled:hover:border-input disabled:opacity-40"
-          >
-            ⇄
-          </button>
-          <DimensionSelect
-            label="Columns"
-            value={columnDimension}
-            options={COLUMN_DIMENSIONS}
-            onChange={changeColumns}
-          />
-          {tagRows && (
-            <Input
-              type="search"
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              placeholder="Filter tags"
-              aria-label="Filter tags"
-              className="h-7 w-44 text-body"
-            />
+          {graphMode ? (
+            <>
+              <label className="flex items-center gap-1.5">
+                <SectionLabel size="micro">Tags on at least</SectionLabel>
+                <Select value={String(graphMinCards)} onValueChange={(v) => setGraphMinCards(Number(v))}>
+                  <SelectTrigger size="sm" className="text-body">
+                    <SelectValue>{(v) => `${v} cards`}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GRAPH_MIN_CARDS.map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n} cards
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+              {filterInput}
+              <label
+                className="flex items-center gap-1.5 text-label text-muted-foreground"
+                title="Tags about the card itself rather than its play: names, cycles, vanilla-ness"
+              >
+                <input
+                  type="checkbox"
+                  checked={showTrivia}
+                  onChange={(e) => setShowTrivia(e.target.checked)}
+                  className="accent-[var(--info)]"
+                />
+                Trivia tags
+              </label>
+            </>
+          ) : (
+            <>
+              <DimensionSelect label="Rows" value={rowDimension} options={DIMENSIONS} onChange={changeRows} />
+              <button
+                type="button"
+                onClick={swap}
+                disabled={!canSwap}
+                title={canSwap ? "Swap rows and columns" : `${DIMENSION_LABEL[rowDimension]} can only be rows`}
+                className="rounded-md border border-border px-1.5 py-0.5 text-label text-muted-foreground enabled:hover:text-foreground enabled:hover:border-input disabled:opacity-40"
+              >
+                ⇄
+              </button>
+              <DimensionSelect
+                label="Columns"
+                value={columnDimension}
+                options={COLUMN_DIMENSIONS}
+                onChange={changeColumns}
+              />
+              {tagRows && filterInput}
+            </>
           )}
         </div>
 
-        {breakdown.total.count === 0 ? (
-          <p className="text-label text-muted-foreground">No cards in the main deck yet.</p>
+        {graphMode && graph ? (
+          breakdown.total.count === 0 ? (
+            <p className="text-label text-muted-foreground">No cards in the main deck yet.</p>
+          ) : graph.nodes.length === 0 ? (
+            <p className="text-label text-muted-foreground">
+              {graph.totalTags === 0
+                ? "None of these cards has a Scryfall tag."
+                : "No tag matches the filter and threshold."}
+            </p>
+          ) : (
+            <>
+              <TagGraph
+                graph={graph}
+                selectedTag={selection?.row ?? null}
+                onSelectTag={(tag) => toggle({ row: tag, column: ALL })}
+                onInspect={(cardId) => hasDetail(cardId) && onInspect(cardId)}
+              />
+              <p className="mt-1 text-label text-muted-foreground">
+                {graph.nodes.filter((n) => n.kind === "tag").length} of {graph.totalTags} tags
+                {graph.hiddenCards > 0 && ` · ${graph.hiddenCards} cards carry none of them`}. Click a tag to
+                list its cards, a card to open it. Drag to move or pan; ⌘/Ctrl + scroll to zoom.
+              </p>
+            </>
+          )
         ) : (
-          <div className="overflow-x-auto">
-            <table className="border-collapse">
-              {showColumns && (
-                <thead>
-                  <tr>
-                    <th className="w-44" />
-                    {breakdown.columns.map((column) => (
-                      <th key={column.key} scope="col" className="px-0.5 pb-1 text-center">
-                        <SectionLabel size="micro" className="whitespace-nowrap">
-                          {column.label}
-                        </SectionLabel>
-                      </th>
-                    ))}
-                    <th scope="col" className="px-0.5 pb-1 pl-2 text-center">
-                      <SectionLabel size="micro">Total</SectionLabel>
-                    </th>
-                  </tr>
-                </thead>
-              )}
+          <>
+            {breakdown.total.count === 0 ? (
+              <p className="text-label text-muted-foreground">No cards in the main deck yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="border-collapse">
+                  {showColumns && (
+                    <thead>
+                      <tr>
+                        <th className="w-44" />
+                        {breakdown.columns.map((column) => (
+                          <th key={column.key} scope="col" className="px-0.5 pb-1 text-center">
+                            <SectionLabel size="micro" className="whitespace-nowrap">
+                              {column.label}
+                            </SectionLabel>
+                          </th>
+                        ))}
+                        <th scope="col" className="px-0.5 pb-1 pl-2 text-center">
+                          <SectionLabel size="micro">Total</SectionLabel>
+                        </th>
+                      </tr>
+                    </thead>
+                  )}
 
-              <tbody>
-                {visibleRows.map((row) => (
-                  <tr key={row.key} className="hover:bg-muted/30">
-                    <th
-                      scope="row"
-                      title={tagRows ? row.label : undefined}
-                      className="w-44 max-w-56 truncate pr-3 text-left text-body font-normal whitespace-nowrap"
-                    >
-                      {row.label}
-                    </th>
-                    {showColumns &&
-                      breakdown.columns.map((column) => (
+                  <tbody>
+                    {visibleRows.map((row) => (
+                      <tr key={row.key} className="hover:bg-muted/30">
+                        <th
+                          scope="row"
+                          title={tagRows ? row.label : undefined}
+                          className="w-44 max-w-56 truncate pr-3 text-left text-body font-normal whitespace-nowrap"
+                        >
+                          {row.label}
+                        </th>
+                        {showColumns &&
+                          breakdown.columns.map((column) => (
+                            <CountCell
+                              key={column.key}
+                              cell={breakdown.cells.get(cellKey(row.key, column.key))}
+                              max={max}
+                              selected={isSelected(row.key, column.key)}
+                              onSelect={() => toggle({ row: row.key, column: column.key })}
+                              title={`${row.label} · ${DIMENSION_LABEL[columnDimension]} ${column.label}`}
+                            />
+                          ))}
                         <CountCell
-                          key={column.key}
-                          cell={breakdown.cells.get(cellKey(row.key, column.key))}
-                          max={max}
-                          selected={isSelected(row.key, column.key)}
-                          onSelect={() => toggle({ row: row.key, column: column.key })}
-                          title={`${row.label} · ${DIMENSION_LABEL[columnDimension]} ${column.label}`}
+                          cell={breakdown.rowTotals.get(row.key)}
+                          selected={isSelected(row.key, ALL)}
+                          onSelect={() => toggle({ row: row.key, column: ALL })}
+                          title={`${row.label}: all`}
+                          strong
                         />
-                      ))}
-                    <CountCell
-                      cell={breakdown.rowTotals.get(row.key)}
-                      selected={isSelected(row.key, ALL)}
-                      onSelect={() => toggle({ row: row.key, column: ALL })}
-                      title={`${row.label}: all`}
-                      strong
-                    />
-                  </tr>
-                ))}
-              </tbody>
+                      </tr>
+                    ))}
+                  </tbody>
 
-              <tfoot>
-                <tr className="border-t border-border">
-                  <th scope="row" className="w-44 pt-1 pr-3 text-left text-body font-medium">
-                    Total
-                  </th>
-                  {showColumns &&
-                    breakdown.columns.map((column) => (
+                  <tfoot>
+                    <tr className="border-t border-border">
+                      <th scope="row" className="w-44 pt-1 pr-3 text-left text-body font-medium">
+                        Total
+                      </th>
+                      {showColumns &&
+                        breakdown.columns.map((column) => (
+                          <CountCell
+                            key={column.key}
+                            cell={breakdown.columnTotals.get(column.key)}
+                            selected={isSelected(ALL, column.key)}
+                            onSelect={() => toggle({ row: ALL, column: column.key })}
+                            title={`${DIMENSION_LABEL[columnDimension]} ${column.label}: all`}
+                            strong
+                          />
+                        ))}
                       <CountCell
-                        key={column.key}
-                        cell={breakdown.columnTotals.get(column.key)}
-                        selected={isSelected(ALL, column.key)}
-                        onSelect={() => toggle({ row: ALL, column: column.key })}
-                        title={`${DIMENSION_LABEL[columnDimension]} ${column.label}: all`}
+                        cell={breakdown.total}
+                        selected={isSelected(ALL, ALL)}
+                        onSelect={() => toggle({ row: ALL, column: ALL })}
+                        title="Every card in the main deck"
                         strong
                       />
-                    ))}
-                  <CountCell
-                    cell={breakdown.total}
-                    selected={isSelected(ALL, ALL)}
-                    onSelect={() => toggle({ row: ALL, column: ALL })}
-                    title="Every card in the main deck"
-                    strong
-                  />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
-
-        {tagRows && breakdown.total.count > 0 && (
-          <div className="mt-1 flex items-center gap-2 text-label text-muted-foreground">
-            {matchingRows.length === 0 ? (
-              <span>No tags match “{tagFilter.trim()}”.</span>
-            ) : (
-              <span>
-                {visibleRows.length} of {matchingRows.length}
-                {needle ? " matching" : ""} tags, from Scryfall Tagger.
-              </span>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             )}
-            {matchingRows.length > TAG_ROW_LIMIT && (
-              <button
-                type="button"
-                onClick={() => setShowAllTags((v) => !v)}
-                className="underline hover:text-foreground"
-              >
-                {showAllTags ? `Show top ${TAG_ROW_LIMIT}` : "Show all"}
-              </button>
-            )}
-          </div>
-        )}
 
-        {multiValued.length > 0 && breakdown.total.count > 0 && (
-          <p className="mt-1 text-label text-muted-foreground">
-            {multiValued.includes("tag")
-              ? "A card can carry many tags — “draw” also counts under “card advantage” — so tag counts overlap."
-              : "A card can fill several roles, so role counts overlap."}{" "}
-            Totals count each card once.
-          </p>
+            {tagRows && breakdown.total.count > 0 && (
+              <div className="mt-1 flex items-center gap-2 text-label text-muted-foreground">
+                {matchingRows.length === 0 ? (
+                  <span>No tags match “{tagFilter.trim()}”.</span>
+                ) : (
+                  <span>
+                    {visibleRows.length} of {matchingRows.length}
+                    {needle ? " matching" : ""} tags, from Scryfall Tagger.
+                  </span>
+                )}
+                {matchingRows.length > TAG_ROW_LIMIT && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTags((v) => !v)}
+                    className="underline hover:text-foreground"
+                  >
+                    {showAllTags ? `Show top ${TAG_ROW_LIMIT}` : "Show all"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {multiValued.length > 0 && breakdown.total.count > 0 && (
+              <p className="mt-1 text-label text-muted-foreground">
+                {multiValued.includes("tag")
+                  ? "A card can carry many tags — “draw” also counts under “card advantage” — so tag counts overlap."
+                  : "A card can fill several roles, so role counts overlap."}{" "}
+                Totals count each card once.
+              </p>
+            )}
+          </>
         )}
 
         {selected && (

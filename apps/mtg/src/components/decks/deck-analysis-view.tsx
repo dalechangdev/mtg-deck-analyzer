@@ -42,6 +42,8 @@ interface Props {
   entries: AnalyzedCard[];
   cardDetails: Record<string, CardDetail>;
   initialOverrides: RoleOverrideRow[];
+  /** Scryfall tags about the card as an object (name, cycle), hidden in the tag graph by default. */
+  triviaTags: string[];
 }
 
 export function DeckAnalysisView({
@@ -53,6 +55,7 @@ export function DeckAnalysisView({
   entries: initialEntries,
   cardDetails,
   initialOverrides,
+  triviaTags,
 }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -347,6 +350,7 @@ export function DeckAnalysisView({
         <DeckBreakdown
           entries={entries}
           roleContext={roleContext}
+          triviaTags={triviaTags}
           onInspect={(cardId) => setSelectedCardId(cardId)}
           hasDetail={(cardId) => Boolean(cardDetails[cardId])}
         />
