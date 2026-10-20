@@ -15,6 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "sync:cards": "tsx scripts/sync-cards.ts",
+    "sync:tags": "tsx scripts/sync-oracle-tags.ts",
     "graphql:schema": "tsx scripts/emit-graphql-schema.ts",
     "graphql:types": "graphql-codegen --config codegen.ts",
     "verify:graphql": "tsx scripts/verify-graphql-rls.ts"

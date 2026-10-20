@@ -162,8 +162,8 @@ export async function fetchCollection(scryfallIds: string[]): Promise<ScryfallCa
   return out;
 }
 
-export async function fetchBulkDataUrl(): Promise<string> {
-  const res = await fetch(`${SCRYFALL_API}/bulk-data/${BULK_DATA_TYPE}`, {
+export async function fetchBulkDataUrl(type: string = BULK_DATA_TYPE): Promise<string> {
+  const res = await fetch(`${SCRYFALL_API}/bulk-data/${type}`, {
     headers: { "User-Agent": "mtg-deck-builder/1.0" },
   });
   if (!res.ok) throw new Error(`Scryfall bulk-data fetch failed: ${res.status}`);

@@ -45,6 +45,7 @@ model Card {
 
   annotations     CardAnnotation[]
   themes          CardTheme[]
+  oracleTags      CardOracleTag[]
   roleAssignments DeckCardRole[]
 
   createdAt DateTime @default(now())
@@ -59,6 +60,33 @@ model CardTheme {
   name        String  @unique
   description String?
   cards       Card[]
+}
+
+// Scryfall Tagger oracle tags ("card advantage", "ramp", "sweeper", …), from
+// the oracle_tags bulk file via `pnpm sync:tags`. Tags form a hierarchy:
+// "draw" is a child of "card advantage", and most cards are tagged only at the
+// leaves.
+model OracleTag {
+  id          String   @id // Scryfall tag id
+  slug        String   @unique // what `otag:` takes
+  label       String   @unique
+  description String?
+  parentIds   String[]
+  cards       CardOracleTag[]
+}
+
+// One row per card per tag, ancestors included — a card tagged "draw" also
+// has a "card advantage" row with `direct` false. Rolled up at sync time so
+// that a tag's cards match what `otag:` returns on Scryfall.
+model CardOracleTag {
+  cardId String
+  card   Card      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    OracleTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  direct Boolean
+
+  @@id([cardId, tagId])
+  @@index([tagId])
 }
 
 // Double-faced cards, adventure cards, split cards, etc.

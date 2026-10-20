@@ -3,11 +3,14 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { DeckEntry } from "@/lib/commander";
+import { Input } from "@/components/ui/input";
 import { SectionHeader, SectionLabel } from "@/components/ui/section-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ALL,
   DIMENSION_LABEL,
+  MULTI_VALUED,
+  ROW_ONLY,
   breakdownDeck,
   cellKey,
   groupByType,
@@ -26,15 +29,21 @@ interface Props {
 /** A clicked count; `ALL` on either axis means that axis's total. */
 type Selection = { row: string; column: string };
 
-const DIMENSIONS: BreakdownDimension[] = ["type", "cmc", "color", "role", "none"];
+const DIMENSIONS: BreakdownDimension[] = ["type", "cmc", "color", "role", "tag", "none"];
+const COLUMN_DIMENSIONS = DIMENSIONS.filter((d) => !ROW_ONLY.has(d));
+
+/** Tag rows shown before "Show all"; a 100-card deck carries several hundred. */
+const TAG_ROW_LIMIT = 25;
 
 function DimensionSelect({
   label,
   value,
+  options,
   onChange,
 }: {
   label: string;
   value: BreakdownDimension;
+  options: BreakdownDimension[];
   onChange: (next: BreakdownDimension) => void;
 }) {
   return (
@@ -45,7 +54,7 @@ function DimensionSelect({
           <SelectValue>{(v) => DIMENSION_LABEL[v as BreakdownDimension]}</SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {DIMENSIONS.map((d) => (
+          {options.map((d) => (
             <SelectItem key={d} value={d}>
               {DIMENSION_LABEL[d]}
             </SelectItem>
@@ -107,6 +116,8 @@ export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Pr
   const [rowDimension, setRowDimension] = useState<BreakdownDimension>("type");
   const [columnDimension, setColumnDimension] = useState<BreakdownDimension>("cmc");
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [tagFilter, setTagFilter] = useState("");
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const breakdown = useMemo(
     () => breakdownDeck(entries, rowDimension, columnDimension, roleContext),
@@ -129,7 +140,19 @@ export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Pr
   };
 
   const showColumns = columnDimension !== "none";
-  const multiValued = rowDimension === "role" || columnDimension === "role";
+  const multiValued = [rowDimension, columnDimension].filter((d) => MULTI_VALUED.has(d));
+  const canSwap = !ROW_ONLY.has(rowDimension);
+
+  // Tag rows are searchable and capped; the selection survives either, since
+  // it's resolved against the full breakdown below.
+  const tagRows = rowDimension === "tag";
+  const needle = tagFilter.trim().toLowerCase();
+  const matchingRows =
+    tagRows && needle
+      ? breakdown.rows.filter((r) => r.label.toLowerCase().includes(needle))
+      : breakdown.rows;
+  const visibleRows =
+    tagRows && !showAllTags ? matchingRows.slice(0, TAG_ROW_LIMIT) : matchingRows;
   const max = Math.max(0, ...[...breakdown.cells.values()].map((c) => c.count));
 
   const toggle = (next: Selection) =>
@@ -173,16 +196,32 @@ export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Pr
 
       <div className="px-4 py-2">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <DimensionSelect label="Rows" value={rowDimension} onChange={changeRows} />
+          <DimensionSelect label="Rows" value={rowDimension} options={DIMENSIONS} onChange={changeRows} />
           <button
             type="button"
             onClick={swap}
-            title="Swap rows and columns"
-            className="rounded-md border border-border px-1.5 py-0.5 text-label text-muted-foreground hover:text-foreground hover:border-input"
+            disabled={!canSwap}
+            title={canSwap ? "Swap rows and columns" : `${DIMENSION_LABEL[rowDimension]} can only be rows`}
+            className="rounded-md border border-border px-1.5 py-0.5 text-label text-muted-foreground enabled:hover:text-foreground enabled:hover:border-input disabled:opacity-40"
           >
             ⇄
           </button>
-          <DimensionSelect label="Columns" value={columnDimension} onChange={changeColumns} />
+          <DimensionSelect
+            label="Columns"
+            value={columnDimension}
+            options={COLUMN_DIMENSIONS}
+            onChange={changeColumns}
+          />
+          {tagRows && (
+            <Input
+              type="search"
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              placeholder="Filter tags"
+              aria-label="Filter tags"
+              className="h-7 w-44 text-body"
+            />
+          )}
         </div>
 
         {breakdown.total.count === 0 ? (
@@ -209,9 +248,13 @@ export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Pr
               )}
 
               <tbody>
-                {breakdown.rows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr key={row.key} className="hover:bg-muted/30">
-                    <th scope="row" className="w-44 pr-3 text-left text-body font-normal whitespace-nowrap">
+                    <th
+                      scope="row"
+                      title={tagRows ? row.label : undefined}
+                      className="w-44 max-w-56 truncate pr-3 text-left text-body font-normal whitespace-nowrap"
+                    >
                       {row.label}
                     </th>
                     {showColumns &&
@@ -265,9 +308,34 @@ export function DeckBreakdown({ entries, roleContext, onInspect, hasDetail }: Pr
           </div>
         )}
 
-        {multiValued && breakdown.total.count > 0 && (
+        {tagRows && breakdown.total.count > 0 && (
+          <div className="mt-1 flex items-center gap-2 text-label text-muted-foreground">
+            {matchingRows.length === 0 ? (
+              <span>No tags match “{tagFilter.trim()}”.</span>
+            ) : (
+              <span>
+                {visibleRows.length} of {matchingRows.length}
+                {needle ? " matching" : ""} tags, from Scryfall Tagger.
+              </span>
+            )}
+            {matchingRows.length > TAG_ROW_LIMIT && (
+              <button
+                type="button"
+                onClick={() => setShowAllTags((v) => !v)}
+                className="underline hover:text-foreground"
+              >
+                {showAllTags ? `Show top ${TAG_ROW_LIMIT}` : "Show all"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {multiValued.length > 0 && breakdown.total.count > 0 && (
           <p className="mt-1 text-label text-muted-foreground">
-            A card can fill several roles, so role counts overlap. Totals count each card once.
+            {multiValued.includes("tag")
+              ? "A card can carry many tags — “draw” also counts under “card advantage” — so tag counts overlap."
+              : "A card can fill several roles, so role counts overlap."}{" "}
+            Totals count each card once.
           </p>
         )}
 

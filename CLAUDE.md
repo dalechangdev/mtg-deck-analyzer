@@ -28,6 +28,7 @@ Deck builder database (Prisma owns it, see below):
 cd apps/mtg && supabase start                 # local Postgres + Auth on :54321
 pnpm --filter @mtg/deck-builder db:migrate    # prisma migrate dev
 pnpm --filter @mtg/deck-builder sync:cards    # stream Scryfall bulk data into Card/CardPrinting
+pnpm --filter @mtg/deck-builder sync:tags     # Scryfall Tagger oracle tags (ancestors rolled up); run after sync:cards
 ```
 
 `supabase start` does not point the app at the local database — `DATABASE_URL` in

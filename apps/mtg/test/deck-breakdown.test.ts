@@ -10,6 +10,7 @@ import type { DeckEntry } from "@/lib/commander";
 import {
   ALL,
   NO_ROLE,
+  NO_TAG,
   breakdownDeck,
   cellKey,
   groupByType,
@@ -119,6 +120,30 @@ test("role is multi-valued: totals count distinct cards, not cell sums", () => {
   assert.equal(count(b, "ramp", "Creatures"), 2);
   assert.equal(count(b, "draw", "Creatures"), 1);
   // Solemn appears in two role rows but once in the Creatures column.
+  assert.equal(b.columnTotals.get("Creatures")?.count, 4);
+  assert.equal(b.total.count, 14);
+});
+
+test("tag is multi-valued and ordered by how many cards carry it", () => {
+  const tagged = DECK.map((c) => {
+    const tags: Record<string, string[]> = {
+      "Llanowar Elves": ["ramp", "mana dork"],
+      Cultivate: ["ramp", "land ramp"],
+      "Solemn Simulacrum": ["ramp", "land ramp", "card advantage", "draw"],
+      "Hydroid Krasis": ["card advantage", "draw"],
+    };
+    return tags[c.cardId] ? { ...c, oracleTags: tags[c.cardId] } : c;
+  });
+  const b = breakdownDeck(tagged, "tag", "type", NO_ROLES);
+  assert.deepEqual(
+    b.rows.map((r) => r.key),
+    // Ties break alphabetically; untagged cards come last.
+    ["ramp", "card advantage", "draw", "land ramp", "mana dork", NO_TAG]
+  );
+  assert.equal(count(b, "card advantage", "Creatures"), 2);
+  assert.equal(count(b, "ramp", "Sorceries"), 1);
+  assert.equal(b.rowTotals.get(NO_TAG)?.count, 10);
+  // Solemn carries four tags but is one card in the Creatures column.
   assert.equal(b.columnTotals.get("Creatures")?.count, 4);
   assert.equal(b.total.count, 14);
 });

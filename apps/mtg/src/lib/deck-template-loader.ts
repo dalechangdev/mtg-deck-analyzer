@@ -102,7 +102,12 @@ export async function loadTemplate(
   };
 }
 
-export async function loadDeckCards(versionId: string): Promise<AnalyzedCard[]> {
+export async function loadDeckCards(
+  versionId: string,
+  // Tags run ~20 a card once ancestors are rolled up, so only the analysis
+  // page, whose breakdown reads them, asks for them.
+  { oracleTags = false }: { oracleTags?: boolean } = {}
+): Promise<AnalyzedCard[]> {
   const deckCards = await prisma.deckCard.findMany({
     where: { versionId },
     include: {
@@ -119,10 +124,24 @@ export async function loadDeckCards(versionId: string): Promise<AnalyzedCard[]> 
     orderBy: deckEntryOrderBy,
   });
 
+  const tagsByCard = new Map<string, string[]>();
+  if (oracleTags) {
+    const rows = await prisma.cardOracleTag.findMany({
+      where: { cardId: { in: deckCards.map((dc) => dc.cardId) } },
+      select: { cardId: true, tag: { select: { label: true } } },
+    });
+    for (const row of rows) {
+      const labels = tagsByCard.get(row.cardId) ?? [];
+      labels.push(row.tag.label);
+      tagsByCard.set(row.cardId, labels);
+    }
+  }
+
   return deckCards.map((dc) => ({
     ...toDeckEntry(dc),
     faces: dc.card.faces.map((f) => ({ typeLine: f.typeLine, oracleText: f.oracleText })),
     themeIds: dc.card.themes.map((t) => t.id),
+    ...(oracleTags && { oracleTags: tagsByCard.get(dc.cardId) ?? [] }),
   }));
 }
 

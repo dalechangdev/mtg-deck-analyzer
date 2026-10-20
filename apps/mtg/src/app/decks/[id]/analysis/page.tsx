@@ -37,7 +37,7 @@ export default async function DeckAnalysisPage({
 
   const [template, entries, cardDetails, overrideRows, templates] = await Promise.all([
     loadTemplate(templateId, userId),
-    loadDeckCards(versionId),
+    loadDeckCards(versionId, { oracleTags: true }),
     loadDeckCardDetails(versionId),
     // Role overrides are deck-level: a card plays the same role in every version.
     loadRoleOverrideRows(id),

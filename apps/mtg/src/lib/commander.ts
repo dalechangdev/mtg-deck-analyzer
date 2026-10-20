@@ -18,6 +18,9 @@ export type CardData = {
   // detectors fall back to oracle text / face type lines.
   producedMana?: string[];
   layout?: string | null;
+  // Scryfall Tagger oracle tag labels, ancestors included ("draw" brings
+  // "card advantage"). Only the analysis loader reads them.
+  oracleTags?: string[];
 };
 
 export type DeckEntry = CardData & {
